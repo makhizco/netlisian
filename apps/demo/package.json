@@ -1,0 +1,32 @@
+{
+  "name": "@netlisian/demo",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "start": "next start ",
+    "dev": "next dev -p 3002",
+    "lint": "next lint",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf .next"
+  },
+  "dependencies": {
+    "@measured/puck": "^0.20.2",
+    "@netlisian/softconfig": "workspace:*",
+    "@netlisian/tailwind": "workspace:*",
+    "@netlisian/utils": "workspace:*",
+    "lucide-react": "^0.475.0",
+    "next": "^15.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "sonner": "^2.0.7"
+  },
+  "devDependencies": {
+    "@netlisian/eslint-config": "workspace:*",
+    "@netlisian/tsconfig": "workspace:*",
+  "@next/eslint-plugin-next": "^14.1.5",
+    "@types/node": "^20.11.24",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "5.9.3"
+  }
+}

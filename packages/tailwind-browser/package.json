@@ -1,0 +1,40 @@
+{
+  "name": "@netlisian/tailwind",
+  "version": "4.1.8",
+  "description": "A utility-first CSS framework for rapidly building custom user interfaces.",
+  "license": "MIT",
+  "main": "./dist/index.global.js",
+  "browser": "./dist/index.global.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tailwindlabs/tailwindcss.git",
+    "directory": "packages/@tailwindcss-browser"
+  },
+  "bugs": "https://github.com/tailwindlabs/tailwindcss/issues",
+  "homepage": "https://tailwindcss.com",
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "build": "tsup-node src/index.ts",
+    "build:dev": "pnpm run build -- --watch",
+    "test:ui": "playwright test"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "provenance": true,
+    "access": "public"
+  },
+  "devDependencies": {
+    "h3": "^1.15.3",
+    "listhen": "^1.9.0",
+    "tailwindcss": "^4.1.8",
+    "tsup": "^8.5.0",
+    "@netlisian/eslint-config": "workspace:*",
+    "@netlisian/tsconfig": "workspace:*"
+  }
+}

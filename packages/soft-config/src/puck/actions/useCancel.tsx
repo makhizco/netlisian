@@ -1,0 +1,32 @@
+import { createUsePuck } from "@measured/puck";
+import { useSoftConfig } from "../context/useStore";
+import { notify } from "../lib/notify";
+
+const useCustomPuck = createUsePuck();
+
+export const useCancel = () => {
+  const cancel = useSoftConfig((s) => s.builder.cancel);
+  const setHistories = useCustomPuck((s) => s.history.setHistories);
+  const status = useSoftConfig((s) => s.state);
+
+  const handleCancel = () => {
+    if (status === "ready") {
+      notify.error("Nothing to cancel.");
+      return;
+    }
+
+    try {
+      cancel(setHistories);
+    } catch (error) {
+      console.error("Failed to cancel:", error);
+      notify.error(
+        "Failed to cancel: " +
+          (error instanceof Error ? error.message : String(error))
+      );
+    }
+  };
+
+  const canCancel = status === "building" || status === "remodeling";
+
+  return { handleCancel, canCancel };
+};

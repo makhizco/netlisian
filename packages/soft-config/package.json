@@ -1,0 +1,60 @@
+{
+  "name": "@netlisian/softconfig",
+  "version": "0.0.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "license": "MIT",
+  "files": [
+    "dist/**"
+  ],
+  "exports": {
+    ".": {
+      "import": {
+        "development": "./src/index.tsx",
+        "default": "./dist/index.mjs"
+      },
+      "require": "./dist/index.js"
+    },
+    "./puck": {
+      "import": {
+        "development": "./src/puck/index.tsx",
+        "default": "./dist/puck/index.mjs"
+      },
+      "require": "./dist/puck/index.js"
+    },
+    "./styles.css": "./dist/index.css",
+    "./dist/index.css": "./dist/index.css"
+  },
+  "scripts": {
+    "build": "tsup src/index.tsx src/puck/index.tsx --format esm,cjs --dts --out-dir dist --external react --external react-dom",
+    "dev": "tsup src/index.tsx src/puck/index.tsx --format esm,cjs --watch --dts --out-dir dist --external react --external react-dom",
+    "lint": "eslint \"src/**/*.ts*\"",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+  },
+  "devDependencies": {
+    "@netlisian/eslint-config": "workspace:*",
+    "@netlisian/tsconfig": "workspace:*",
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.0.0 || ^19.0.0",
+    "@types/react-dom": "^18.0.0 || ^19.0.0",
+    "eslint": "^9.36.0",
+    "tsup": "^8.0.2",
+    "typescript": "5.9.3",
+    "typescript-plugin-css-modules": "^5.1.0"
+  },
+  "peerDependencies": {
+    "@measured/puck": "0.20.x",
+    "react": ">=18.0.0 <20.3.0"
+  },
+  "dependencies": {
+    "classnames": "^2.5.1",
+    "lucide-react": "^0.475.0",
+    "uuid": "^11.0.0",
+    "zustand": "^5.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

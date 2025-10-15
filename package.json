@@ -8,17 +8,17 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build --filter=@acme/docs^... && changeset publish"
+    "release": "turbo run build --filter=@netlisian/docs^... && changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.27.1",
-    "eslint": "^8.57.0",
-    "prettier": "^3.2.5",
+    "@changesets/cli": "^2.29.7",
+    "eslint": "^9.36.0",
+    "prettier": "^3.6.2",
     "turbo": "^2.5.8"
   },
   "packageManager": "pnpm@8.15.6",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "name": "with-changesets"
 }

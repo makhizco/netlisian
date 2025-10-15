@@ -1,0 +1,33 @@
+import { createUsePuck } from "@measured/puck";
+import { useSoftConfig } from "../context/useStore";
+import { notify } from "../lib/notify";
+
+const useCustomPuck = createUsePuck();
+
+export const useBuild = () => {
+  const build = useSoftConfig((s) => s.builder.build);
+  const history = useCustomPuck((s) => s.history.histories);
+  const selectedItem = useCustomPuck((s) => s.selectedItem);
+  const itemSelector = useCustomPuck((s) => s.appState.ui.itemSelector);
+  const dispatch = useCustomPuck((s) => s.dispatch);
+  const status = useSoftConfig((s) => s.state);
+
+  const handleBuild = () => {
+    if (status !== "ready") {
+      notify.error("Can only build when in ready state.");
+      return;
+    }
+
+    try {
+      build(history, selectedItem, itemSelector, dispatch);
+    } catch (error) {
+      console.error("Failed to build:", error);
+      notify.error(
+        "Failed to build: " +
+          (error instanceof Error ? error.message : String(error))
+      );
+    }
+  };
+
+  return { handleBuild, canBuild: status === "ready" };
+};

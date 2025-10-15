@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["dom", "ES2019"],
+    "module": "NodeNext",
+    "target": "es6",
+    "plugins": [{ "name": "typescript-plugin-css-modules" }]
+  }
+}
