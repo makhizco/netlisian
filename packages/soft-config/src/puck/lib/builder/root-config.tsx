@@ -14,6 +14,7 @@ import { setPropertyByPath } from "../set-prop-by-path";
 import { useEffect, useState } from "react";
 import { useSoftConfig } from "../../context/useStore";
 import { confirm } from "../confirm";
+import { AppStore } from "../../store";
 
 const useCustomPuck = createUsePuck();
 
@@ -42,6 +43,7 @@ const updateVersion = (
 
 export const builderRootConfig = (
   config: Config,
+  overrides: AppStore["overrides"],
   editingComponent?: string
 ): RootConfig<BuilderRootConfig> => ({
   fields: {
@@ -91,9 +93,8 @@ export const builderRootConfig = (
             data!._fields || [],
             data!._fieldSettings || {}
           ),
-        }
-      else
-        delete fields._fieldSettings;
+        };
+      else delete fields._fieldSettings;
 
     if (
       data?._versions?.length &&
@@ -101,7 +102,7 @@ export const builderRootConfig = (
     ) {
       const latestVersion =
         data._versions[data._versions.length - 1] || "1.0.0";
-      
+
       delete fields._version;
       fields._version = {
         type: "select",
@@ -109,16 +110,16 @@ export const builderRootConfig = (
         options: [
           ...data._versions.map((v) => ({ label: v, value: v })),
           {
-        label: `${updateVersion(latestVersion, "patch")} (Patch)`,
-        value: updateVersion(latestVersion, "patch"),
+            label: `${updateVersion(latestVersion, "patch")} (Patch)`,
+            value: updateVersion(latestVersion, "patch"),
           },
           {
-        label: `${updateVersion(latestVersion, "minor")} (Minor)`,
-        value: updateVersion(latestVersion, "minor"),
+            label: `${updateVersion(latestVersion, "minor")} (Minor)`,
+            value: updateVersion(latestVersion, "minor"),
           },
           {
-        label: `${updateVersion(latestVersion, "major")} (Major)`,
-        value: updateVersion(latestVersion, "major"),
+            label: `${updateVersion(latestVersion, "major")} (Major)`,
+            value: updateVersion(latestVersion, "major"),
           },
         ],
       } as Field<string | undefined>;
@@ -143,7 +144,6 @@ export const builderRootConfig = (
     const getSelectorForId = useCustomPuck((s) => s.getSelectorForId);
     const setVersion = useSoftConfig((s) => s.builder.setVersion);
     const state = useSoftConfig((s) => s.state);
-
     useEffect(() => {
       const propagateChanges = setTimeout(() => {
         if (!fieldSettings || Object.keys(fieldSettings).length === 0) return;
@@ -155,26 +155,86 @@ export const builderRootConfig = (
           },
           (content) =>
             content.map((child) => {
-              const map: { from: string; to: string }[] =
-                child.props?._map || [];
+              const map: {
+                from?: string | string[];
+                to?: string | string[];
+                transform?: (values: any[], props: any) => any;
+              }[] = child.props?._map || [];
               if (map.length) {
-                map.forEach(({ from, to }) => {
+                map.forEach(({ from, to, transform }) => {
                   if (!from || !to) return;
-                  const setting = getFieldSettingsByPath(fieldSettings, from);
-                  const defaultValue = setting?.defaultValue;
-                  const originalValue = getFieldSettingsByPath(child.props, to);
-                  const value =
-                    defaultValue !== undefined ? defaultValue : originalValue;
-                  if (originalValue !== value) {
-                    const itemSelector = getSelectorForId(child.props.id);
-                    if (!itemSelector) return;
-                    setPropertyByPath(child.props, to, value);
-                    dispatch({
-                      type: "replace",
-                      data: child,
-                      destinationIndex: itemSelector?.index,
-                      destinationZone: itemSelector?.zone,
+
+                  const fromPaths = Array.isArray(from) ? from : [from];
+                  const toPaths = Array.isArray(to) ? to : [to];
+
+                  const inputValues = fromPaths.map((f) =>
+                    getFieldSettingsByPath(props._fieldSettings || {}, f)
+                  );
+
+                  // Apply transform if provided, otherwise use first input value
+                  console.log(inputValues);
+                  let value = transform
+                    ? transform(
+                        inputValues.map((v) => v?.defaultValue),
+                        child.props
+                      )
+                    : inputValues[0];
+
+                  // Handle array result - map to multiple toPaths
+                  if (Array.isArray(value)) {
+                    value.forEach((val, i) => {
+                      if (toPaths[i]) {
+                        const originalValue = getFieldSettingsByPath(
+                          child.props,
+                          toPaths[i]
+                        );
+                        if (originalValue !== val) {
+                          const itemSelector = getSelectorForId(child.props.id);
+                          if (!itemSelector) return;
+                          setPropertyByPath(child.props, toPaths[i], val);
+                          dispatch({
+                            type: "replace",
+                            data: child,
+                            destinationIndex: itemSelector?.index,
+                            destinationZone: itemSelector?.zone,
+                          });
+                        }
+                      }
                     });
+                  } else if (toPaths[0]) {
+                    // Handle single value - map to first toPath
+                    const setting = getFieldSettingsByPath(
+                      fieldSettings,
+                      fromPaths.length === 1
+                        ? fromPaths[0]
+                        : fromPaths.join(".")
+                    );
+                    const defaultValue = setting?.defaultValue;
+                    const originalValue = getFieldSettingsByPath(
+                      child.props,
+                      toPaths[0]
+                    );
+
+                    // Prefer transform result if transform was provided and produced a value,
+                    // otherwise fall back to configured defaultValue, otherwise use computed value
+                    const finalValue =
+                      transform !== undefined && value !== undefined
+                        ? value
+                        : defaultValue !== undefined
+                          ? defaultValue
+                          : value;
+
+                    if (originalValue !== finalValue) {
+                      const itemSelector = getSelectorForId(child.props.id);
+                      if (!itemSelector) return;
+                      setPropertyByPath(child.props, toPaths[0], finalValue);
+                      dispatch({
+                        type: "replace",
+                        data: child,
+                        destinationIndex: itemSelector?.index,
+                        destinationZone: itemSelector?.zone,
+                      });
+                    }
                   }
                 });
               }
@@ -189,9 +249,9 @@ export const builderRootConfig = (
     useEffect(() => {
       if (state !== "remodeling") return;
       if (!props?._version || !props?._name) return;
-      
+
       const currentVersion = props?._version;
-      
+
       // Check if this is switching to an existing version (not a version bump)
       if (
         props._versions?.includes(currentVersion) &&

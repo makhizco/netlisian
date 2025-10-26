@@ -12,17 +12,17 @@ import { BuildersSlice, createBuildersSlice } from "./slices/builder";
 import { SoftComponent, SoftComponents } from "../types/SoftComponent";
 import { createVersionedComponentConfig } from "../lib/create-versioned-component-config";
 import { buildInitialSoftComponents } from "../lib/build-initial-soft-components";
+import { Overrides } from "../types/Overrides";
 
 type Status = "building" | "remodeling" | "ready" | "inspecting";
 
 export type AppStore = {
   softConfig: Config;
   softComponents: SoftComponents;
-  // hardConfig: Config;
   state: Status;
   originalHistory: History[];
   storedConfig?: Config;
-
+  overrides: Overrides;
   itemSelector: {
     index: number;
     zone: string;
@@ -69,13 +69,15 @@ export const createSoftConfigStore = (
   hardConfig: Config = {
     components: {},
   },
-  softComponents: SoftComponents = {}
+  softComponents: SoftComponents = {},
+  overrides: Overrides = {}
 ) =>
   create<AppStore>()(
     subscribeWithSelector(
       devtools((set, get) => ({
         state: "ready",
         originalHistory: [],
+        overrides,
         storeHistory: (history: History[]) => set({ originalHistory: history }),
         removeHistory: () => set({ originalHistory: [] }),
         itemSelector: null,

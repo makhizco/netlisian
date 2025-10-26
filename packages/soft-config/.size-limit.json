@@ -1,0 +1,16 @@
+[
+  {
+    "name": "soft-config (main)",
+    "path": "dist/index.mjs",
+    "limit": "1 KB",
+    "import": "*",
+    "ignore": ["react", "react-dom", "@measured/puck"]
+  },
+  {
+    "name": "soft-config (puck)",
+    "path": "dist/puck/index.mjs",
+    "limit": "20 KB",
+    "import": "*",
+    "ignore": ["react", "react-dom", "@measured/puck"]
+  }
+]

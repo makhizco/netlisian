@@ -1,8 +1,9 @@
 import { DefaultComponentProps, Fields } from "@measured/puck";
+import { BuilderComponentConfig } from "./BuilderConfig";
 
 export type SoftSubComponent = {
   type: string;
-  map: { from: string; to: string }[];
+  map: BuilderComponentConfig['_map'];
   components: { [slot: string]: SoftSubComponent };
   fixedProps?: DefaultComponentProps;
   enabledSlots: {

@@ -162,21 +162,9 @@ export const createBuildersSlice = (
       }),
     });
 
-    // puckDispatch({
-    //   type: "setData",
-    //   data: (previous) => ({
-    //     ...previous,
-    //     root: {
-    //       props: {
-    //         title: "Soft Component Builder",
-    //         _name: "New Soft Component",
-    //       },
-    //     } as Data["root"],
-    //     content: [{ ...selectedItem }],
-    //   }),
-    // });
     const config = { ...get().softConfig };
-    const buildConfig = builderConfig(config);
+    const overrides = get().overrides;
+    const buildConfig = builderConfig(config, overrides);
 
     set((s) => ({
       ...s,
@@ -261,7 +249,8 @@ export const createBuildersSlice = (
     });
 
     const config = { ...get().softConfig };
-    const buildConfig = builderConfig(config, softComponentName);
+    const overrides = get().overrides;
+    const buildConfig = builderConfig(config, overrides, softComponentName);
 
     set((s) => ({
       ...s,

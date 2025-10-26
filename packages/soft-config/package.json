@@ -31,15 +31,20 @@
     "build": "tsup src/index.tsx src/puck/index.tsx --format esm,cjs --dts --out-dir dist --external react --external react-dom",
     "dev": "tsup src/index.tsx src/puck/index.tsx --format esm,cjs --watch --dts --out-dir dist --external react --external react-dom",
     "lint": "eslint \"src/**/*.ts*\"",
-    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
+    "size": "size-limit"
   },
   "devDependencies": {
     "@netlisian/eslint-config": "workspace:*",
     "@netlisian/tsconfig": "workspace:*",
+    "@size-limit/esbuild": "^11.1.6",
+    "@size-limit/esbuild-why": "^11.1.6",
+    "@size-limit/file": "^11.1.6",
     "@types/node": "^20.11.24",
     "@types/react": "^18.0.0 || ^19.0.0",
     "@types/react-dom": "^18.0.0 || ^19.0.0",
     "eslint": "^9.36.0",
+    "size-limit": "^11.1.6",
     "tsup": "^8.0.2",
     "typescript": "5.9.3",
     "typescript-plugin-css-modules": "^5.1.0"

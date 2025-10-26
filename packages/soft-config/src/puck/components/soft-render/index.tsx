@@ -1,9 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { SoftComponent, SoftSubComponent } from "../../types/SoftComponent";
 import { Config, WithId, WithPuckProps } from "@measured/puck";
 import { getFieldSettingsByPath } from "../../lib/get-settings-by-path";
 import { setPropertyByPath } from "../../lib/set-prop-by-path";
-import { generateId } from "../../lib/generate-id";
 import { ErrorBoundary } from "../error-boundary";
 
 export function SoftRender({
@@ -11,6 +11,7 @@ export function SoftRender({
   softSubComponent,
   configComponents,
   props,
+  depth = 0,
 }: {
   softComponentFields: SoftComponent["fields"];
   softSubComponent: SoftSubComponent;
@@ -20,60 +21,106 @@ export function SoftRender({
       [x: string]: any;
     }>
   >;
+  depth?: number;
 }) {
   const { id, puck, editMode, ...rest } = props;
+  const mapCacheRef = useRef(new Map<string, any>());
+  const prevPropsRef = useRef<string>("");
+
+  // Clear cache when props change
+  const propsSnapshot = JSON.stringify(props);
+  if (prevPropsRef.current !== propsSnapshot) {
+    mapCacheRef.current.clear();
+    prevPropsRef.current = propsSnapshot;
+  }
+
+  // Extract root props that trigger updates
+  const subComponentRootProps = useMemo(
+    () =>
+      Object.entries(softComponentFields || {})
+        .filter(([_, field]) => field.type !== "slot")
+        .reduce(
+          (acc, [fieldKey]) => {
+            acc[fieldKey] = props[fieldKey];
+            return acc;
+          },
+          {} as Record<string, any>
+        ),
+    [softComponentFields, props]
+  );
+
+  const valuesToUpdateKey = useMemo(
+    () => JSON.stringify(subComponentRootProps),
+    [subComponentRootProps]
+  );
 
   return (
     <>
       {softSubComponent?.length > 0 &&
         softSubComponent.map((subComponent, index) => {
           const componentConfig = configComponents[subComponent?.type];
-          if (!componentConfig) {
-            return null;
-          }
+          if (!componentConfig) return null;
 
           const resolvedProps = subComponent.fixedProps || {};
 
+          // Generate ID: use parent id if depth 0, otherwise combine type + parent id + uuid + depth
           const stableId = useMemo(
-            () => generateId(subComponent.type),
-            [subComponent.type]
+            () =>
+              depth === 0
+                ? id
+                : `${subComponent.type}-${id}-d${depth}-${uuidv4()}`,
+            [id, depth, subComponent.type]
           );
 
-          // Check root props changed
-          const subComponentRootProps = Object.entries(
-            softComponentFields || {}
-          )
-            .filter(([key, field]) => field.type !== "slot")
-            .reduce(
-              (acc, [fieldKey, _]) => {
-                acc[fieldKey] = props[fieldKey];
-                return acc;
-              },
-              {} as { [key: string]: any }
-            );
+          // Apply property mappings with cache
+          if (subComponent.map?.length) {
+            subComponent.map.forEach(({ from, to, transform }) => {
+              const fromPaths = Array.isArray(from) ? from : from ? [from] : [];
+              const toPaths = Array.isArray(to) ? to : to ? [to] : [];
 
-          const valuesToUpdateKey = useMemo(
-            () => JSON.stringify(subComponentRootProps),
-            [subComponentRootProps]
-          );
+              const inputValues = fromPaths.map((f) =>
+                getFieldSettingsByPath(props || {}, f)
+              );
+              const cacheKey = JSON.stringify(inputValues);
 
+              let result = mapCacheRef.current.get(cacheKey);
+              if (!result) {
+                result = transform
+                  ? transform(inputValues, props)
+                  : inputValues[0];
+                mapCacheRef.current.set(cacheKey, result);
+              }
+
+              if (Array.isArray(result)) {
+                result.forEach(
+                  (val, i) =>
+                    toPaths[i] &&
+                    setPropertyByPath(resolvedProps, toPaths[i], val)
+                );
+              } else if (toPaths[0]) {
+                setPropertyByPath(resolvedProps, toPaths[0], result);
+              }
+            });
+          }
+
+          // Apply slot configurations
           Object.entries(componentConfig.fields || {}).forEach(
-            ([key, field]) => {
+            ([slotKey, field]) => {
               if (field.type === "slot") {
-                if (
-                  subComponent?.enabledSlots &&
-                  subComponent.enabledSlots?.some((s) => s.slot == key)
-                ) {
-                  const slotName =
-                    subComponent.enabledSlots.find((s) => s.slot === key)
-                      ?.name || `${subComponent.fixedProps?.id}-${key}`;
+                const enabledSlot = subComponent?.enabledSlots?.find(
+                  (s) => s.slot === slotKey
+                );
 
-                  resolvedProps[key] = useMemo(
+                if (enabledSlot) {
+                  const slotName =
+                    enabledSlot.name ||
+                    `${subComponent.fixedProps?.id}-${slotKey}`;
+                  resolvedProps[slotKey] = useMemo(
                     () => rest[slotName] || (() => null),
                     [slotName]
                   );
                 } else {
-                  resolvedProps[key] = useMemo(() => {
+                  resolvedProps[slotKey] = useMemo(() => {
                     return ({
                       className,
                       style,
@@ -83,29 +130,20 @@ export function SoftRender({
                     }) => (
                       <div className={className} style={style}>
                         <SoftRender
-                          key={key}
+                          key={slotKey}
                           softComponentFields={softComponentFields}
                           softSubComponent={
-                            subComponent?.components[key]
-                              ? subComponent.components[key]
-                              : []
+                            subComponent?.components?.[slotKey] ?? []
                           }
                           configComponents={configComponents}
-                          props={{ ...props }}
+                          props={props}
+                          depth={depth + 1}
                         />
                       </div>
                     );
                   }, [valuesToUpdateKey]);
                 }
               }
-            }
-          );
-
-          subComponent.map.forEach(
-            (mapItem: { from?: string; to?: string }) => {
-              const value = getFieldSettingsByPath(props, mapItem.from || "");
-
-              setPropertyByPath(resolvedProps, mapItem.to || "", value);
             }
           );
 

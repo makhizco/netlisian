@@ -4,20 +4,23 @@ import { Config } from "@measured/puck";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { appStoreContext } from "./useStore";
 import { createSoftConfigStore } from "../store";
-import { SoftComponents } from "../types/SoftComponent";
+import type { SoftComponents } from "../types/SoftComponent";
+import type { Overrides } from "../types/Overrides"
 
 export const SoftConfigProvider = ({
   children,
   hardConfig,
   softComponents,
+  overrides
 }: {
   children: (softConfig: Config, softComponents: SoftComponents) => ReactNode;
   hardConfig: Config;
   softComponents: SoftComponents;
+  overrides: Overrides;
 }) => {
   const store = useMemo(
-    () => createSoftConfigStore(hardConfig, softComponents),
-    [hardConfig, softComponents]
+    () => createSoftConfigStore(hardConfig, softComponents, overrides),
+    [hardConfig, softComponents, overrides]
   );
   const [softConfig, setSoftConfig] = useState(
     () => store.getState().softConfig
@@ -38,7 +41,7 @@ export const SoftConfigProvider = ({
 
   return (
     <appStoreContext.Provider value={store}>
-      {children(softConfig as Config, internalSoftComponents)}
+      {children(softConfig as Config , internalSoftComponents)}
     </appStoreContext.Provider>
   );
 };

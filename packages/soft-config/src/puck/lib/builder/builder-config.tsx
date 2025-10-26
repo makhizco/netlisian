@@ -1,5 +1,8 @@
-import { ComponentConfig, Config, Fields } from "@measured/puck";
-import { BuilderConfig } from "../../types/BuilderConfig";
+import { AutoField, ComponentConfig, Config, Fields } from "@measured/puck";
+import {
+  BuilderConfig,
+  BuilderComponentConfig,
+} from "../../types/BuilderConfig";
 import { getRootProps } from "../get-root-props";
 import { builderRootConfig } from "./root-config";
 import {
@@ -8,6 +11,7 @@ import {
 } from "./generate-field-options";
 
 import { ErrorBoundary } from "../../components/error-boundary";
+import { AppStore } from "../../store";
 
 /* Generates builder soft config
  *  - Update root to include: name, fields, fieldSettings, for soft component
@@ -15,17 +19,18 @@ import { ErrorBoundary } from "../../components/error-boundary";
  */
 export const builderConfig = (
   config: Config,
+  overrides: AppStore["overrides"],
   editingComponent?: string
 ): BuilderConfig => ({
-  root: builderRootConfig(config, editingComponent),
+  root: builderRootConfig(config, overrides, editingComponent),
   components: Object.entries({
     ...config.components,
   }).reduce(
     (acc, [name, component]) => {
       if (!editingComponent || name !== editingComponent) {
-        const tempComponent: ComponentConfig = {
+        const tempComponent: ComponentConfig<BuilderComponentConfig> = {
           ...component,
-          resolveFields(data, params) {
+          async resolveFields(data, params) {
             let fields: Fields = {};
 
             if (!fields._slot) {
@@ -68,38 +73,57 @@ export const builderConfig = (
                 };
             }
 
-            const defaultFields: Fields = component.resolveFields
-              ? (component.resolveFields(data, params) as Fields<any>)
-              : component.fields || {};
+            const defaultFields: Fields<BuilderComponentConfig> =
+              component.resolveFields
+                ? await component.resolveFields(data, params)
+                : component.fields || {};
 
             if (!fields._map) {
               const rootProps = getRootProps(params.appState);
 
-              fields._map = {
-                type: "array",
-                label: "Dynamic Field Map",
-                arrayFields: {
-                  from: {
-                    type: "select",
-                    label: "From",
-                    options: [
-                      { label: "Select a field", value: "" },
-                      ...generateDynamicFieldOptions(
-                        rootProps?._fields || [],
-                        rootProps?._fieldSettings || {}
-                      ),
-                    ],
-                  },
-                  to: {
-                    type: "select",
-                    label: "To",
-                    options: [
-                      { label: "Select a field", value: "" },
-                      ...generateFieldOptions(defaultFields, []),
-                    ],
-                  },
-                } as any,
-              };
+              fields._map = overrides.map
+                ? {
+                    type: "custom",
+                    render: ({ value, onChange, id }) => {
+                      return overrides.map!({
+                        rootProps,
+                        value,
+                        onChange,
+                        id,
+                        props: data.props || {},
+                        fromOptions: generateDynamicFieldOptions(
+                          rootProps?._fields || [],
+                          rootProps?._fieldSettings || {}
+                        ),
+                        toOptions: generateFieldOptions(defaultFields, []),
+                      });
+                    },
+                  }
+                : {
+                    type: "array",
+                    label: "Dynamic Field Map",
+                    arrayFields: {
+                      from: {
+                        type: "select",
+                        label: "From",
+                        options: [
+                          { label: "Select a field", value: "" },
+                          ...generateDynamicFieldOptions(
+                            rootProps?._fields || [],
+                            rootProps?._fieldSettings || {}
+                          ),
+                        ],
+                      },
+                      to: {
+                        type: "select",
+                        label: "To",
+                        options: [
+                          { label: "Select a field", value: "" },
+                          ...generateFieldOptions(defaultFields, []),
+                        ],
+                      },
+                    } as any,
+                  };
             }
 
             fields = {
@@ -109,31 +133,40 @@ export const builderConfig = (
 
             return fields;
           },
-          resolveData: ({ props }, {
-            lastData
-          }) => {
-            const _map: { from: string; to: string }[] = props._map || [];
+          resolveData: ({ props }, { lastData }) => {
+            const _map = props._map || [];
 
             const readOnlyFields = _map.flatMap((item) => item.to);
 
             if (_map.length) {
               return {
-              props,
-              readOnly: readOnlyFields.reduce(
-                (acc, field) => ({ ...acc, [field]: true }),
-                {}
-              ) as any,
+                props,
+                readOnly: readOnlyFields.reduce(
+                  (acc, field) => ({ ...acc, [field]: true }),
+                  {}
+                ) as any,
               };
             }
-            
-            const prevMap: { from: string; to: string }[] | undefined =
-              lastData?.props?._map;
+
+            // Resetting the read-only props
+            const prevMap = lastData?.props?._map;
             if (prevMap && prevMap.length === 1) {
               const lastField = prevMap[0].to;
-              return {
-              props,
-              readOnly: { [lastField]: false } as any,
-              };
+              if (typeof lastField === "string") {
+                return {
+                  props,
+                  readOnly: { [lastField]: false },
+                };
+              }
+              if (Array.isArray(lastField)) {
+                return {
+                  props,
+                  readOnly: lastField.reduce(
+                    (acc, field) => ({ ...acc, [String(field)]: false }),
+                    {}
+                  ) as any,
+                };
+              }
             }
 
             // Default: no readOnly fields
