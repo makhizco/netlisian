@@ -14,5 +14,5 @@ export default defineConfig({
     "process.env.FEATURES_ENV": '"stable"',
   },
   splitting: false, // Disable splitting for single file output
-  dts: false, // Disable TypeScript declarations to avoid build errors
+  dts: true, // Disable TypeScript declarations to avoid build errors
 });
