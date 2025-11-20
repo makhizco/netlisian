@@ -1,6 +1,6 @@
 {
   "name": "@netlisian/tailwind",
-  "version": "0.1.3",
+  "version": "0.1.6",
   "description": "A utility-first CSS framework for rapidly building custom user interfaces.",
   "license": "MIT",
   "main": "./dist/index.global.js",

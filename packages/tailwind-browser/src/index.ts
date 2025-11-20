@@ -1,23 +1,16 @@
 import * as tailwindcss from "tailwindcss";
 import index from "tailwindcss/index.css";
+import theme from "tailwindcss/theme.css";
+import utilities from "tailwindcss/utilities.css";
 
-// Standard assets setup
 const assets = {
   css: {
     index,
+    theme,
+    utilities,
   },
 };
 
-// Global cache definition
-declare global {
-  interface GlobalThis {
-    __NETLISIAN_TAILWIND__?: {
-      compilerPromises?: Record<string, Promise<Awaited<ReturnType<typeof tailwindcss.compile>>>>;
-    };
-  }
-}
-
-// --- Performance Instrumentation ---
 class Instrumentation {
   start(label: string) {
     performance.mark(`${label} (start)`);
@@ -25,42 +18,77 @@ class Instrumentation {
 
   end(label: string, detail?: any) {
     performance.mark(`${label} (end)`);
-    try {
-      performance.measure(label, {
-        start: `${label} (start)`,
-        end: `${label} (end)`,
-        detail,
-      });
-    } catch (e) {
-      // Ignore measurement errors
-    }
+
+    performance.measure(label, {
+      start: `${label} (start)`,
+      end: `${label} (end)`,
+      detail,
+    });
+  }
+
+  hit(label: string, detail?: any) {
+    performance.mark(label, {
+      detail,
+    });
   }
 
   error(error: any) {
+    performance.mark(`(error)`, {
+      detail: { error: `${error}` },
+    });
+
     console.error(error);
-    throw error;
   }
 }
 
+/**
+ * The type used by `<style>` tags that contain input CSS.
+ */
 const STYLE_TYPE = "text/tailwindcss";
 
-/**
- * Tailwind processor instance for a specific document.
- * Optimized for low-overhead reuse in iframes.
- */
 export class TailwindProcessor {
-  private compiler: Awaited<ReturnType<typeof tailwindcss.compile>> | null = null;
+  /**
+   * The current Tailwind CSS compiler.
+   *
+   * This gets recreated:
+   * - When stylesheets change
+   */
+  private compiler: Awaited<ReturnType<typeof tailwindcss.compile>> | undefined;
+
+  /**
+   * The list of all seen classes on the page so far. The compiler already has a
+   * cache of classes but this lets us only pass new classes to `build(…)`.
+   */
   private classes = new Set<string>();
+
+  /**
+   * The last input CSS that was compiled. If stylesheets "change" without
+   * actually changing, we can avoid a full rebuild.
+   */
   private lastCss = "";
+
+  /**
+   * The stylesheet that we use to inject the compiled CSS into the page.
+   */
   private sheet: HTMLStyleElement;
 
-  // Debouncing and Queueing
+  /**
+   * The queue of build tasks that need to be run. This is used to ensure that we
+   * don't run multiple builds concurrently.
+   */
   private buildQueue = Promise.resolve();
-  private nextBuildId = 1;
-  private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
-  private pendingRebuildKind: "full" | "incremental" | null = null;
 
+  /**
+   * What build this is
+   */
+  private nextBuildId = 1;
+
+  /**
+   * Used for instrumenting the build process. This data shows up in the
+   * performance tab of the browser's devtools.
+   */
   private I = new Instrumentation();
+
   private styleObserver: MutationObserver;
   private documentObserver: MutationObserver | undefined;
   private targetDocument: Document;
@@ -70,51 +98,56 @@ export class TailwindProcessor {
     this.sheet = this.targetDocument.createElement("style");
     this.sheet.id = "generated-tailwindcss";
 
-    // Initialize observers but don't start yet
-    this.styleObserver = new MutationObserver(() => this.triggerRebuild("full"));
+    this.styleObserver = new MutationObserver(() => this.rebuild("full"));
     this.setupDocumentObserver();
   }
 
-  /**
-   * Initialize the Tailwind processor for the target document
-   */
   async init(): Promise<void> {
-    await this.triggerRebuild("full");
+    await this.rebuild("full");
     this.sheet.setAttribute("data-tailwind-processor", "active");
-
-    // Only append if not already attached
-    if (!this.targetDocument.getElementById("generated-tailwindcss")) {
+    if (!this.targetDocument.head.contains(this.sheet)) {
       this.targetDocument.head.append(this.sheet);
     }
   }
 
   /**
-   * Public accessor to get the compiled CSS string.
-   * Useful for saving/publishing.
+   * Returns the compiled CSS string from the style sheet.
    */
   getCss(): string {
     return this.sheet.textContent || "";
   }
 
   /**
-   * Get all classes currently detected and compiled
+   * Returns the list of all unique class names currently being tracked.
    */
   getAllClasses(): string[] {
     return Array.from(this.classes);
   }
 
   /**
-   * Manually trigger a refresh (useful before publishing)
+   * Manually generate classes from a string or array of strings.
+   * Useful for classes not present in the DOM (e.g. CVA variants).
    */
-  async refresh(): Promise<void> {
-    await this.triggerRebuild("full");
+  async generate(input: string | string[]): Promise<void> {
+    const list = typeof input === "string" ? [input] : input;
+    let hasNew = false;
+
+    for (const item of list) {
+      const parts = item.split(/\s+/);
+      for (const c of parts) {
+        if (c && !this.classes.has(c)) {
+          this.classes.add(c);
+          hasNew = true;
+        }
+      }
+    }
+
+    if (hasNew) {
+      await this.rebuild("incremental");
+    }
   }
 
-  /**
-   * Clean up observers and remove style tag
-   */
   destroy(): void {
-    if (this.rebuildTimer) clearTimeout(this.rebuildTimer);
     this.styleObserver.disconnect();
     this.documentObserver?.disconnect();
     if (this.sheet.parentNode) {
@@ -122,206 +155,218 @@ export class TailwindProcessor {
     }
   }
 
-  // --- Internal Logic ---
-
   /**
-   * Debounced rebuild trigger.
-   * Coalesces multiple rapid DOM changes into a single build.
+   * Create the Tailwind CSS compiler
+   *
+   * This handles loading imports, plugins, configs, etc…
+   *
+   * This does **not** imply that the CSS is actually built. That happens in the
+   * `build` function and is a separate scheduled task.
    */
-  private async triggerRebuild(kind: "full" | "incremental"): Promise<void> {
-    // Upgrade to full if requested
-    if (kind === "full") {
-      this.pendingRebuildKind = "full";
-    } else if (this.pendingRebuildKind !== "full") {
-      this.pendingRebuildKind = "incremental";
-    }
-
-    // Clear existing timer to debounce
-    if (this.rebuildTimer) {
-      clearTimeout(this.rebuildTimer);
-    }
-
-    return new Promise<void>((resolve) => {
-      this.rebuildTimer = setTimeout(() => {
-        const finalKind = this.pendingRebuildKind || "incremental";
-        this.pendingRebuildKind = null;
-        this.rebuildTimer = null;
-
-        this.processBuildQueue(finalKind).then(resolve);
-      }, 15); // 15ms debounce window (approx 1 frame)
-    });
-  }
-
-  private async processBuildQueue(kind: "full" | "incremental"): Promise<void> {
-    const run = async () => {
-      // If we need an incremental build but have no compiler, force full
-      if (!this.compiler && kind !== "full") {
-        kind = "full";
-      }
-
-      let buildId = this.nextBuildId++;
-      // this.I.start(`Build #${buildId} (${kind})`);
-
-      if (kind === "full") {
-        await this.createCompiler();
-      }
-
-      await this.buildClasses(kind);
-
-      // this.I.end(`Build #${buildId} (${kind})`);
-    };
-
-    this.buildQueue = this.buildQueue
-      .then(run)
-      .catch((err) => this.I.error(err));
-
-    return this.buildQueue;
-  }
-
   private async createCompiler(): Promise<void> {
     this.I.start(`Create compiler`);
+    this.I.start("Reading Stylesheets");
 
-    // 1. Gather Styles
+    // The stylesheets may have changed causing a full rebuild so we'll need to
+    // gather the latest list of stylesheets.
     const stylesheets = Array.from(
       this.targetDocument.querySelectorAll(`style[type="${STYLE_TYPE}"]`)
     ) as HTMLStyleElement[];
 
     let css = "";
-    stylesheets.forEach((sheet) => {
+    for (let sheet of stylesheets) {
       this.observeSheet(sheet);
       css += sheet.textContent + "\n";
+    }
+
+    // The user might have no stylesheets, or a some stylesheets without `@import`
+    // because they want to customize their theme so we'll inject the main import
+    // for them. However, if they start using `@import` we'll let them control
+    // the build completely.
+    if (!css.includes("@import")) {
+      css = `@import "theme"; @import "utilities"; ${css}`;
+    }
+
+    this.I.end("Reading Stylesheets", {
+      size: css.length,
+      changed: this.lastCss !== css,
     });
 
-    // Ensure standard import exists
-    if (!css.includes("@import")) {
-      css = `@import "tailwindcss";${css}`;
-    }
+    // The input CSS did not change so the compiler does not need to be recreated
+    if (this.lastCss === css && this.compiler) return;
 
-    // Optimization: Skip if CSS hasn't changed
-    if (this.lastCss === css && this.compiler) {
-      this.I.end(`Create compiler`, { cached: true });
-      return;
-    }
     this.lastCss = css;
 
-    // 2. Create the Compiler
+    this.I.start("Compile CSS");
     try {
-      const isStandardConfig = css.trim() === `@import "tailwindcss";`;
-
-      if (isStandardConfig) {
-        // FAST PATH: Reuse the global shared compiler instance.
-        // This avoids re-parsing the heavy Tailwind config for every new iframe/document
-        // that just uses the defaults.
-        this.compiler = await getCompilerForBase("/");
-      } else {
-        // SLOW PATH: Custom CSS requires a specific compiler instance.
-        // We still call getCompilerForBase first to ensure the shared internal 
-        // module cache is warmed up.
-        await getCompilerForBase("/");
-
-        this.compiler = await tailwindcss.compile(css, {
-          base: "/",
-          loadStylesheet: this.loadStylesheet.bind(this),
-          loadModule: this.loadModule.bind(this),
-        });
-      }
+      this.compiler = await tailwindcss.compile(css, {
+        base: "/",
+        loadStylesheet: this.loadStylesheet.bind(this),
+        loadModule: this.loadModule.bind(this),
+      });
     } finally {
+      this.I.end("Compile CSS");
       this.I.end(`Create compiler`);
     }
 
-    // Reset classes on a full rebuild so we re-validate everything
-    this.classes.clear();
+    // We do not clear classes here to preserve manually generated classes
   }
-
-  private async buildClasses(kind: "full" | "incremental"): Promise<void> {
-    if (!this.compiler) return;
-
-    let newClasses = new Set<string>();
-
-    // this.I.start(`Collect classes`);
-
-    Array.from(this.targetDocument.querySelectorAll("[class]")).forEach(
-      (element) => {
-        Array.from(element.classList).forEach((c) => {
-          if (!c) return; // Safety check for empty strings
-          if (this.classes.has(c)) return;
-
-          this.classes.add(c);
-          newClasses.add(c);
-        });
-      }
-    );
-
-    // this.I.end(`Collect classes`, { count: newClasses.size });
-
-    if (newClasses.size === 0 && kind === "incremental") return;
-
-    // this.I.start(`Generate CSS`);
-    // Pass all discovered classes to build (Tailwind is smart enough to handle dupes internally)
-    this.sheet.textContent = this.compiler.build(Array.from(newClasses));
-    // this.I.end(`Generate CSS`);
-  }
-
-  // --- Loading Helpers ---
 
   private async loadStylesheet(id: string, base: string) {
-    // Simple virtual router for Tailwind assets
-    if (id === "tailwindcss") {
-      return { path: "virtual:index.css", base, content: assets.css.index };
+    if (id === "theme") {
+      return { path: "virtual:theme", base, content: assets.css.theme };
     }
-    // Stub out other imports to prevent errors
-    return { path: `virtual:${id}`, base, content: "" };
+    if (id === "utilities") {
+      return { path: "virtual:utilities", base, content: assets.css.utilities };
+    }
+
+    if (id === "tailwindcss") {
+      return {
+        path: "virtual:tailwindcss/index.css",
+        base,
+        content: assets.css.index,
+      };
+    } else if (
+      id === "tailwindcss/theme" ||
+      id === "tailwindcss/theme.css" ||
+      id === "./theme.css"
+    ) {
+      return {
+        path: "virtual:tailwindcss/theme.css",
+        base,
+        content: assets.css.theme,
+      };
+    } else if (
+      id === "tailwindcss/utilities" ||
+      id === "tailwindcss/utilities.css" ||
+      id === "./utilities.css"
+    ) {
+      return {
+        path: "virtual:tailwindcss/utilities.css",
+        base,
+        content: assets.css.utilities,
+      };
+    } else if (
+      id === "tailwindcss/preflight" ||
+      id === "tailwindcss/preflight.css" ||
+      id === "./preflight.css"
+    ) {
+      return {
+        path: "virtual:tailwindcss/preflight.css",
+        base,
+        content: "", // Preflight intentionally empty
+      };
+    }
+
+    throw new Error(`The browser build does not support @import for "${id}"`);
   }
 
   private async loadModule(): Promise<never> {
-    throw new Error(`Browser build does not support plugins.`);
+    throw new Error(
+      `The browser build does not support plugins or config files.`
+    );
   }
 
-  // --- Observers ---
+  private async build(kind: "full" | "incremental") {
+    if (!this.compiler) return;
 
-  private observeSheet(sheet: HTMLStyleElement): void {
+    // 1. Refresh the known list of classes
+    let newClasses = new Set<string>();
+
+    this.I.start(`Collect classes`);
+
+    for (let element of Array.from(
+      this.targetDocument.querySelectorAll("[class]")
+    )) {
+      for (let c of Array.from(element.classList)) {
+        if (this.classes.has(c)) continue;
+
+        this.classes.add(c);
+        newClasses.add(c);
+      }
+    }
+
+    this.I.end(`Collect classes`, {
+      count: newClasses.size,
+    });
+
+    // 2. Compile the CSS
+    this.I.start(`Build utilities`);
+
+    this.sheet.textContent = this.compiler.build(Array.from(this.classes));
+
+    this.I.end(`Build utilities`);
+  }
+
+  private rebuild(kind: "full" | "incremental") {
+    const run = async () => {
+      if (!this.compiler && kind !== "full") {
+        return;
+      }
+
+      let buildId = this.nextBuildId++;
+
+      this.I.start(`Build #${buildId} (${kind})`);
+
+      if (kind === "full") {
+        await this.createCompiler();
+      }
+
+      this.I.start(`Build`);
+      await this.build(kind);
+      this.I.end(`Build`);
+
+      this.I.end(`Build #${buildId} (${kind})`);
+    };
+
+    this.buildQueue = this.buildQueue
+      .then(run)
+      .catch((err) => this.I.error(err));
+  }
+
+  private observeSheet(sheet: HTMLStyleElement) {
     this.styleObserver.observe(sheet, {
+      attributes: true,
+      attributeFilter: ["type"],
       characterData: true,
       subtree: true,
       childList: true,
     });
   }
 
-  private setupDocumentObserver(): void {
+  private setupDocumentObserver() {
     this.documentObserver = new MutationObserver((records) => {
-      let full = false;
-      let incremental = false;
+      let full = 0;
+      let incremental = 0;
 
-      for (const record of records) {
-        // Check added nodes
-        for (const node of Array.from(record.addedNodes)) {
+      for (let record of records) {
+        // New stylesheets == tracking + full rebuild
+        for (let node of Array.from(record.addedNodes)) {
           if (node.nodeType !== Node.ELEMENT_NODE) continue;
-          const el = node as Element;
+          const el = node as HTMLElement;
 
-          // If a style tag changed, we need a full rebuild
-          if (el.tagName === "STYLE" && el.getAttribute("type") === STYLE_TYPE) {
+          if (
+            el.tagName === "STYLE" &&
+            el.getAttribute("type") === STYLE_TYPE
+          ) {
             this.observeSheet(el as HTMLStyleElement);
-            full = true;
-            break; // Full rebuild takes precedence
-          }
-
-          // If normal elements added, checks for classes
-          if (el.tagName !== "STYLE") {
-            incremental = true;
+            full++;
+          } else if (el.tagName !== "STYLE" && el !== this.sheet) {
+            // New elements
+            incremental++;
           }
         }
-        if (full) break;
 
-        // Check attribute changes (class updates)
+        // Changes to class attributes require an incremental rebuild
         if (record.type === "attributes") {
-          incremental = true;
+          incremental++;
         }
       }
 
-      if (full) {
-        this.triggerRebuild("full");
-      } else if (incremental) {
-        this.triggerRebuild("incremental");
+      if (full > 0) {
+        return this.rebuild("full");
+      } else if (incremental > 0) {
+        return this.rebuild("incremental");
       }
     });
 
@@ -334,95 +379,16 @@ export class TailwindProcessor {
   }
 }
 
-// --- Public API Exports ---
-
-export function createTailwindProcessor(targetDocument: Document = document): TailwindProcessor {
+export function createTailwindProcessor(
+  targetDocument: Document = document
+): TailwindProcessor {
   return new TailwindProcessor(targetDocument);
 }
 
-export async function initTailwind(targetDocument: Document = document): Promise<TailwindProcessor> {
+export async function initTailwind(
+  targetDocument: Document = document
+): Promise<TailwindProcessor> {
   const processor = new TailwindProcessor(targetDocument);
   await processor.init();
   return processor;
-}
-
-/**
- * Generate CSS for a list of classes manually.
- * Uses the cached global compiler for max speed.
- */
-export async function generateCssFromClasses(
-  input: string | string[],
-  base: string = "/"
-): Promise<string> {
-  const classes = new Set<string>();
-
-  const list = typeof input === "string" ? [input] : input;
-  for (const item of list) {
-    if (!item) continue;
-    for (const c of item.split(/\s+/)) {
-      if (c) classes.add(c);
-    }
-  }
-
-  const compiler = await getCompilerForBase(base);
-  return compiler.build(Array.from(classes));
-}
-
-/**
- * GLOBAL COMPILER CACHE
- * Stores the Promise of the initialized compiler.
- * This prevents re-parsing standard Tailwind config on every reload/iframe.
- */
-export async function getCompilerForBase(base: string = "/") {
-  if (!(globalThis as any).__NETLISIAN_TAILWIND__) {
-    (globalThis as any).__NETLISIAN_TAILWIND__ = { compilerPromises: {} };
-  }
-
-  const store = (globalThis as any).__NETLISIAN_TAILWIND__;
-  if (!store.compilerPromises) store.compilerPromises = {};
-
-  // If cache exists, return it
-  if (store.compilerPromises[base]) {
-    return store.compilerPromises[base];
-  }
-
-  // Initialize and Cache
-  store.compilerPromises[base] = (async () => {
-    const css = `@import "tailwindcss";`;
-
-    // This is the "heavy" call (~200ms execution time usually)
-    // We do it once per window session per base path.
-    const compiler = await tailwindcss.compile(css, {
-      base,
-      loadStylesheet: async (id: string, basePath: string) => {
-        if (id === "tailwindcss") {
-          return {
-            path: "virtual:tailwindcss/index.css",
-            base: basePath,
-            content: assets.css.index,
-          };
-        }
-        // Stub sub-imports to avoid crashes
-        return { path: `virtual:${id}`, base: basePath, content: "" };
-      },
-      loadModule: async () => {
-        throw new Error(`Browser build does not support plugins.`);
-      },
-    });
-
-    return compiler;
-  })();
-
-  return store.compilerPromises[base];
-}
-
-export function clearTailwindCompilerCache(base?: string) {
-  const store = (globalThis as any).__NETLISIAN_TAILWIND__;
-  if (!store || !store.compilerPromises) return;
-
-  if (base) {
-    delete store.compilerPromises[base];
-  } else {
-    store.compilerPromises = {};
-  }
 }

@@ -1,5 +1,23 @@
 # @netlisian/tailwind
 
+## 0.1.6
+
+### Patch Changes
+
+- hotfix
+
+## 0.1.5
+
+### Patch Changes
+
+- Removed caching
+
+## 0.1.4
+
+### Patch Changes
+
+- Patched generation fixes + ignored utility files
+
 ## 0.1.3
 
 ### Patch Changes
