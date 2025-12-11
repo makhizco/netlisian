@@ -1,6 +1,8 @@
 import { ComponentData } from "@measured/puck";
 import { SoftSubComponent } from "../../types/SoftComponent";
 import { generateId } from "../generate-id";
+import { getFieldSettingsByPath } from "../get-settings-by-path";
+import { setPropertyByPath } from "../set-prop-by-path";
 
 export const subComponentDecomposer = (
   componentRootData: ComponentData,
@@ -10,10 +12,24 @@ export const subComponentDecomposer = (
     ...softSubComponent.fixedProps,
   };
 
-  softSubComponent.map.forEach((mapItem) => {
-    const value = (componentRootData.props as any)?.[mapItem.from || ""];
-    if (value !== undefined) {
-      resolvedProps[mapItem.to] = value;
+  softSubComponent.map?.forEach((mapItem) => {
+    const { from, to, transform } = mapItem || {};
+    const fromPaths = Array.isArray(from) ? from : from ? [from] : [];
+    const toPaths = Array.isArray(to) ? to : to ? [to] : [];
+
+    const inputs = fromPaths.map((path) =>
+      getFieldSettingsByPath(componentRootData.props || {}, path)
+    );
+
+    const runner = transform;
+    const result = runner ? runner(inputs, componentRootData.props) : inputs[0];
+
+    if (Array.isArray(result)) {
+      result.forEach((val, idx) => {
+        if (toPaths[idx]) setPropertyByPath(resolvedProps, toPaths[idx], val);
+      });
+    } else if (toPaths[0]) {
+      setPropertyByPath(resolvedProps, toPaths[0], result);
     }
   });
 

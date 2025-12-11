@@ -80,50 +80,60 @@ export const builderConfig = (
 
             if (!fields._map) {
               const rootProps = getRootProps(params.appState);
+              const fromOptions = generateDynamicFieldOptions(
+                rootProps?._fields || [],
+                rootProps?._fieldSettings || {}
+              );
+              const toOptions = generateFieldOptions(defaultFields, []);
 
               fields._map = overrides.map
                 ? {
-                    type: "custom",
-                    render: ({ value, onChange, id }) => {
-                      return overrides.map!({
-                        rootProps,
-                        value,
-                        onChange,
-                        id,
-                        props: data.props || {},
-                        fromOptions: generateDynamicFieldOptions(
-                          rootProps?._fields || [],
-                          rootProps?._fieldSettings || {}
-                        ),
-                        toOptions: generateFieldOptions(defaultFields, []),
-                      });
-                    },
-                  }
+                  type: "custom",
+                  render: ({ value, onChange, id }) => {
+                    // Need to update the to options whenever params change for map to pick up new possible props.
+
+                    const toOptions = generateFieldOptions(defaultFields, []);
+                    const rootProps = getRootProps(params.appState);
+
+                    return overrides.map!({
+                      rootProps,
+                      value,
+                      onChange,
+                      id,
+                      props: data.props || {},
+                      fromOptions,
+                      toOptions,
+                    });
+                  },
+                }
                 : {
-                    type: "array",
-                    label: "Dynamic Field Map",
-                    arrayFields: {
-                      from: {
-                        type: "select",
-                        label: "From",
-                        options: [
-                          { label: "Select a field", value: "" },
-                          ...generateDynamicFieldOptions(
-                            rootProps?._fields || [],
-                            rootProps?._fieldSettings || {}
-                          ),
-                        ],
-                      },
-                      to: {
-                        type: "select",
-                        label: "To",
-                        options: [
-                          { label: "Select a field", value: "" },
-                          ...generateFieldOptions(defaultFields, []),
-                        ],
-                      },
-                    } as any,
-                  };
+                  type: "array",
+                  label: "Dynamic Field Map",
+                  arrayFields: {
+                    from: {
+                      type: "select",
+                      label: "From",
+                      options: [
+                        { label: "Select a field", value: "" },
+                        ...fromOptions.map(({ label, value }) => ({
+                          label,
+                          value,
+                        })),
+                      ],
+                    },
+                    to: {
+                      type: "select",
+                      label: "To",
+                      options: [
+                        { label: "Select a field", value: "" },
+                        ...toOptions.map(({ label, value }) => ({
+                          label,
+                          value,
+                        })),
+                      ],
+                    },
+                  } as any,
+                };
             }
 
             fields = {
@@ -142,7 +152,7 @@ export const builderConfig = (
               return {
                 props,
                 readOnly: readOnlyFields.reduce(
-                  (acc, field) => ({ ...acc, [field]: true }),
+                  (acc, field) => ({ ...acc, [field!]: true }),
                   {}
                 ) as any,
               };

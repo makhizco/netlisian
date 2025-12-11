@@ -1,82 +1,71 @@
 # Puck Soft Config
 
-Enhanced configuration and UI components for Puck with soft component support and CSS modules.
+Enhanced configuration and UI utilities for Puck that add “soft components” (composable, versioned, and remodelable components) plus ready-to-use UI chrome.
 
-## Installation
+## Packages & Exports
+
+- `@netlisian/softconfig` → bundled CJS/ESM + types (`./dist/index.{js,mjs,d.ts}`)
+- `@netlisian/softconfig/puck` → Puck-focused entry (`./dist/puck/index.*`)
+- Styles: `@netlisian/softconfig/styles.css` (alias `./dist/index.css`) and `@netlisian/softconfig/puck/index.css`
+
+Peer dependencies: `react@^18`, `@measured/puck@0.20.x`.
+
+## Install
 
 ```bash
-pnpm add @netlisian/pucksoftconfig
+pnpm add @netlisian/softconfig @measured/puck react
 ```
 
-## Usage
-
-### Basic Setup
+## Quick Start
 
 ```tsx
-import { SoftConfigProvider } from '@netlisian/pucksoftconfig';
-import '@netlisian/pucksoftconfig/styles.css'; // Import the styles
+import { SoftConfigProvider } from "@netlisian/softconfig/puck";
+import "@netlisian/softconfig/styles.css";
 
-function App() {
+const hardConfig = { components: {/* your hard Puck components */} };
+const softComponents = {/* optional persisted soft components */};
+const overrides = {/* optional UI overrides like map/action bar/etc. */};
+
+export default function App({ children }: { children: React.ReactNode }) {
   return (
-    <SoftConfigProvider>
-      {/* Your app content */}
+    <SoftConfigProvider
+      hardConfig={hardConfig}
+      softComponents={softComponents}
+      overrides={overrides}
+    >
+      {(softConfig, softComponentsRegistry) => (
+        /* render Puck with the soft-config-driven config */
+        <YourPuckHost config={softConfig} softComponents={softComponentsRegistry} />
+      )}
     </SoftConfigProvider>
   );
 }
 ```
 
-### Importing Styles
+`SoftConfigProvider` accepts an optional `value` prop if you want to bring your own Zustand store (see `src/puck/context/storeProvider.tsx`). Children are rendered via a render-prop to give you the hydrated `softConfig` and `softComponents` to pass directly to Puck.
 
-The package includes compiled CSS that follows SUIT CSS naming convention. You can import it in two ways:
+## Field Mapping & Transforms
 
-```tsx
-// Using the named export
-import '@netlisian/pucksoftconfig/styles.css';
+- Soft components support `_map` entries with optional transforms or CVA-like configs. Because functions are not persisted, the library regenerates missing transforms at runtime (including during remodel/decompose) using the stored CVA config.
+- Field defaults are read from `_fieldSettings` when resolving mappings, so mapped props fall back to configured defaults when source data is absent.
 
-// Or using the full path
-import '@netlisian/pucksoftconfig/dist/index.css';
+## Styles
+
+Import once in your app root:
+
+```ts
+import "@netlisian/softconfig/styles.css";
 ```
 
-### Custom Overrides
+## Overrides
 
-You can use the provided custom components:
+You can supply custom overrides (action bar, headers, map UI, etc.) through the `overrides` prop. See `src/puck/types/Overrides.ts` for the full surface.
 
-```tsx
-import {
-  CustomActionBar,
-  CustomComponentItem,
-  CustomHeader,
-} from '@netlisian/pucksoftconfig';
+## Development
 
-const config = {
-  // ... your config
-  overrides: {
-    actionBar: CustomActionBar,
-    componentItem: CustomComponentItem,
-    header: CustomHeader,
-  },
-};
-```
-
-## Features
-
-- ✅ Type-safe CSS modules with SUIT CSS naming
-- ✅ Soft component management (build, remodel, decompose, demolish)
-- ✅ Version management for soft components
-- ✅ Error boundaries for component rendering
-- ✅ Custom action bars and component items
-- ✅ Zustand-based state management
-
-## Architecture
-
-This package follows the CSS modules pattern from `@measured/puck`:
-
-- **SUIT CSS naming convention**: `.ComponentName-descendant`
-- **Type-safe class names**: Full TypeScript support
-- **Scoped styles**: Prevents CSS conflicts
-- **Optimized builds**: All CSS bundled into a single file
-
-See [CSS_MODULES_MIGRATION.md](./CSS_MODULES_MIGRATION.md) for detailed implementation notes.
+- Build: `pnpm --filter @netlisian/softconfig build`
+- Dev (watch): `pnpm --filter @netlisian/softconfig dev`
+- Lint: `pnpm --filter @netlisian/softconfig lint`
 
 ## License
 

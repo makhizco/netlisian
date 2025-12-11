@@ -172,7 +172,6 @@ export const builderRootConfig = (
                   );
 
                   // Apply transform if provided, otherwise use first input value
-                  console.log(inputValues);
                   let value = transform
                     ? transform(
                         inputValues.map((v) => v?.defaultValue),

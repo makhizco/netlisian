@@ -1,6 +1,7 @@
 import { AppState, Field, Config, Fields } from "@measured/puck";
 import { SoftComponent, SoftSubComponent } from "../types/SoftComponent";
 import { BuilderRootConfig } from "../types/BuilderConfig";
+import { stripIdFromProps } from "./strip-id";
 
 const getSubComponents = (
   content: AppState["data"]["content"],
@@ -44,9 +45,15 @@ const getSubComponents = (
     (componentProps.props._slot || []).forEach(
       (s: { slot: string; name: string }) => {
         if (s.slot)
+        {
+          const slotComponentProps = componentProps.props[s.slot] ||
+          componentConfig?.defaultProps?.[s.slot]
+          
           slots[s.name || `${componentProps.props.id}-${s.slot}`] =
-            componentProps.props[s.slot] ||
-            componentConfig?.defaultProps?.[s.slot];
+            stripIdFromProps(slotComponentProps,
+              Object.keys(componentConfigs)
+            );
+        }
       }
     );
 
@@ -163,6 +170,7 @@ export const softComponentFromAppState = (
           return acc;
         }, {} as Fields),
       },
+      fieldSettings: field_settings,
       defaultProps,
       components,
       slots,

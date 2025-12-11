@@ -14,6 +14,7 @@ export type SoftSubComponent = {
 
 export type SoftComponent = {
   fields: Fields;
+  fieldSettings?: Record<string, any>;
   defaultProps: DefaultComponentProps;
   components: SoftSubComponent;
   slots: {
@@ -26,6 +27,7 @@ export type VersionedSoftComponent = {
   versions: {
     [version: string]: {
       fields: Fields;
+      fieldSettings?: Record<string, any>;
       defaultProps: DefaultComponentProps;
       components: SoftSubComponent;
       slots: {

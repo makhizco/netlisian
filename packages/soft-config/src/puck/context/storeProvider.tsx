@@ -4,21 +4,25 @@ import { Config } from "@measured/puck";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { appStoreContext } from "./useStore";
 import { createSoftConfigStore } from "../store";
+import type { AppStore } from "../store";
 import type { SoftComponents } from "../types/SoftComponent";
-import type { Overrides } from "../types/Overrides"
+import type { Overrides } from "../types/Overrides";
+import type { StoreApi } from "zustand";
 
 export const SoftConfigProvider = ({
   children,
   hardConfig,
   softComponents,
-  overrides
+  overrides,
+  value,
 }: {
   children: (softConfig: Config, softComponents: SoftComponents) => ReactNode;
   hardConfig: Config;
   softComponents: SoftComponents;
   overrides: Overrides;
+  value?: StoreApi<AppStore>;
 }) => {
-  const store = useMemo(
+  const store = value ?? useMemo(
     () => createSoftConfigStore(hardConfig, softComponents, overrides),
     [hardConfig, softComponents, overrides]
   );

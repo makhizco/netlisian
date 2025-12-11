@@ -55,6 +55,7 @@ export const createVersionedComponentConfig = (
       return (
         <SoftRender
           softComponentFields={versionedComponent.fields}
+          softComponentFieldSettings={versionedComponent.fieldSettings}
           softSubComponent={versionedComponent.components}
           configComponents={softConfig.components}
           props={props}

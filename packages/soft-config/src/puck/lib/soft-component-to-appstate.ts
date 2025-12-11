@@ -1,6 +1,9 @@
-import { AppState, ComponentData, Config, Field, Fields } from "@measured/puck";
+import { AppState, ComponentData, ComponentDataOptionalId, Config, Field, Fields } from "@measured/puck";
 import { SoftComponent, SoftSubComponent } from "../types/SoftComponent";
+import { generateId } from "./generate-id";
 import { BuilderRootConfig } from "../types/BuilderConfig";
+import { getFieldSettingsByPath } from "./get-settings-by-path";
+import { setPropertyByPath } from "./set-prop-by-path";
 
 /**
  * Convert Puck fields back to soft field definitions
@@ -97,17 +100,35 @@ const reconstructComponents = (
   softComponentProps: Record<string, any>
 ): ComponentData[] => {
   return subComponents.map((subComponent) => {
-    const componentConfig = componentConfigs[subComponent.type];
-
     // Start with fixed props
     const props: Record<string, any> = {
       ...subComponent.fixedProps,
     };
 
     // Map soft component props to component props using the mapping
-    subComponent.map.forEach(({ from, to }) => {
-      if (softComponentProps[from] !== undefined) {
-        props[to] = softComponentProps[from];
+    subComponent.map?.forEach((mapItem, i) => {
+      const { from, to, transform } = mapItem || {};
+      const fromPaths = Array.isArray(from) ? from : from ? [from] : [];
+      const toPaths = Array.isArray(to) ? to : to ? [to] : [];
+
+      const inputs = fromPaths.map((path) =>
+        getFieldSettingsByPath(softComponentProps || {}, path)
+      );
+
+      const runner = transform
+      const result = runner ? runner(inputs, softComponentProps) : inputs[0];
+
+      if (Array.isArray(result)) {
+        result.forEach((val, idx) => {
+          if (toPaths[idx]) setPropertyByPath(props, toPaths[idx], val);
+        });
+      } else {
+        toPaths.forEach((toPath) =>
+          setPropertyByPath(props, toPath, result));
+      }
+
+      if (transform && props._map?.[i]) {
+        props._map[i].transform = transform;
       }
     });
 
@@ -140,7 +161,7 @@ const reconstructComponents = (
     const componentData: ComponentData = {
       type: subComponent.type,
       props: {
-        id: props.id || "",
+        id: props.id || generateId(subComponent.type),
         ...props,
       },
     };

@@ -11,7 +11,10 @@ import type {
 import { BuildersSlice, createBuildersSlice } from "./slices/builder";
 import { SoftComponent, SoftComponents } from "../types/SoftComponent";
 import { createVersionedComponentConfig } from "../lib/create-versioned-component-config";
-import { buildInitialSoftComponents } from "../lib/build-initial-soft-components";
+import {
+  buildInitialSoftComponents,
+  hydrateSoftComponentsTransforms,
+} from "../lib/build-initial-soft-components";
 import { Overrides } from "../types/Overrides";
 
 type Status = "building" | "remodeling" | "ready" | "inspecting";
@@ -19,6 +22,7 @@ type Status = "building" | "remodeling" | "ready" | "inspecting";
 export type AppStore = {
   softConfig: Config;
   softComponents: SoftComponents;
+  hydratedSoftComponents?: SoftComponents;
   state: Status;
   originalHistory: History[];
   storedConfig?: Config;
@@ -71,8 +75,16 @@ export const createSoftConfigStore = (
   },
   softComponents: SoftComponents = {},
   overrides: Overrides = {}
-) =>
-  create<AppStore>()(
+) => {
+  const hydratedSoftComponents =
+    overrides?.hydrateMapTransform
+      ? hydrateSoftComponentsTransforms(
+        softComponents,
+        overrides.hydrateMapTransform
+      )
+      : softComponents;
+
+  return create<AppStore>()(
     subscribeWithSelector(
       devtools((set, get) => ({
         state: "ready",
@@ -84,14 +96,17 @@ export const createSoftConfigStore = (
         setItemSelector: (selector) => set({ itemSelector: selector }),
         originalItem: null,
         setOriginalItem: (item) => set({ originalItem: item }),
-        softComponents: {
-          ...softComponents,
-        },
+        hydratedSoftComponents,
+        softComponents: hydratedSoftComponents,
         softConfig: {
           ...hardConfig,
           components: {
             ...hardConfig.components,
-            ...buildInitialSoftComponents(hardConfig, softComponents),
+            ...buildInitialSoftComponents(
+              hardConfig,
+              hydratedSoftComponents,
+              overrides
+            ),
           },
         },
         setSoftComponent: (
@@ -206,16 +221,16 @@ export const createSoftConfigStore = (
               categories:
                 category && state.softConfig.categories
                   ? {
-                      ...state.softConfig.categories,
-                      [category]: {
-                        ...state.softConfig.categories[category],
-                        components: [
-                          ...(state.softConfig.categories[category]
-                            ?.components || []),
-                          key,
-                        ],
-                      },
-                    }
+                    ...state.softConfig.categories,
+                    [category]: {
+                      ...state.softConfig.categories[category],
+                      components: [
+                        ...(state.softConfig.categories[category]
+                          ?.components || []),
+                        key,
+                      ],
+                    },
+                  }
                   : state.softConfig.categories,
             },
           }));
@@ -262,3 +277,4 @@ export const createSoftConfigStore = (
       }))
     )
   );
+};

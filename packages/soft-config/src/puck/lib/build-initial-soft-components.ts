@@ -1,6 +1,78 @@
 import { Config, ComponentConfig } from "@measured/puck";
-import { SoftComponents } from "../types/SoftComponent";
+import { SoftComponents, SoftSubComponent, VersionedSoftComponent } from "../types/SoftComponent";
+import { Overrides } from "../types/Overrides";
 import { createVersionedComponentConfig } from "./create-versioned-component-config";
+
+type Hydrator = NonNullable<Overrides["hydrateMapTransform"]>;
+
+function hydrateSubComponentsTransforms(
+  subComponents: SoftSubComponent,
+  hydrator: Hydrator,
+  context: {
+    componentName: string;
+    version: string;
+    subComponentPath: string[];
+    softComponent: VersionedSoftComponent["versions"][string];
+  }
+): SoftSubComponent {
+  return subComponents.map((subComponent, idx) => {
+    const path = [...context.subComponentPath, `${subComponent.type}:${idx}`];
+
+    const mapped = subComponent.map?.map((mapItem) => {
+      if (mapItem?.transform) return mapItem;
+      const transform = hydrator(mapItem as any, {
+        ...context,
+        subComponentPath: path,
+      });
+      return transform ? { ...mapItem, transform } : mapItem;
+    });
+
+    const nestedComponents = Object.fromEntries(
+      Object.entries(subComponent.components || {}).map(([slotKey, children]) => [
+        slotKey,
+        hydrateSubComponentsTransforms(children, hydrator, {
+          ...context,
+          subComponentPath: [...path, slotKey],
+        }),
+      ])
+    );
+
+    return {
+      ...subComponent,
+      map: mapped,
+      components: nestedComponents,
+    };
+  });
+}
+
+export function hydrateSoftComponentsTransforms(
+  softComponents: SoftComponents,
+  hydrator: Hydrator
+): SoftComponents {
+  const hydrated: SoftComponents = {};
+
+  Object.entries(softComponents || {}).forEach(([name, comp]) => {
+    const versions: VersionedSoftComponent["versions"] = {};
+    Object.entries(comp.versions || {}).forEach(([version, softComponent]) => {
+      versions[version] = {
+        ...softComponent,
+        components: hydrateSubComponentsTransforms(softComponent.components, hydrator, {
+          componentName: name,
+          version,
+          subComponentPath: [],
+          softComponent,
+        }),
+      };
+    });
+
+    hydrated[name] = {
+      defaultVersion: comp.defaultVersion,
+      versions,
+    };
+  });
+
+  return hydrated;
+}
 
 /**
  * Extracts all component dependencies from a SoftComponent's structure
@@ -133,11 +205,16 @@ function topologicalSort(
  */
 export function buildInitialSoftComponents(
   hardConfig: Config,
-  softComponents: SoftComponents
+  softComponents: SoftComponents,
+  overrides?: Overrides
 ): Record<string, ComponentConfig> {
   if (!softComponents || Object.keys(softComponents).length === 0) {
     return {};
   }
+
+  const hydratedSoftComponents = overrides?.hydrateMapTransform
+    ? hydrateSoftComponentsTransforms(softComponents, overrides.hydrateMapTransform)
+    : softComponents;
 
   // Get set of hard component names
   const hardComponentNames = new Set(Object.keys(hardConfig.components || {}));
@@ -145,7 +222,7 @@ export function buildInitialSoftComponents(
   try {
     // Sort components by dependencies
     const sortedComponentNames = topologicalSort(
-      softComponents,
+      hydratedSoftComponents,
       hardComponentNames
     );
 
@@ -159,7 +236,7 @@ export function buildInitialSoftComponents(
 
     // Build components in dependency order
     for (const name of sortedComponentNames) {
-      const comp = softComponents[name];
+      const comp = hydratedSoftComponents[name];
       const defaultVersion =
         comp.defaultVersion || Object.keys(comp.versions || {}).pop();
       const versionedComponent = comp.versions?.[defaultVersion || ""];
@@ -178,7 +255,7 @@ export function buildInitialSoftComponents(
         defaultVersion || "1.0.0",
         allVersions,
         buildingConfig, // Pass the accumulating config
-        softComponents,
+        hydratedSoftComponents,
         versionedComponent.defaultProps
       );
 
@@ -197,7 +274,7 @@ export function buildInitialSoftComponents(
     
     const componentConfigs: Record<string, ComponentConfig> = {};
     
-    for (const [name, comp] of Object.entries(softComponents)) {
+    for (const [name, comp] of Object.entries(hydratedSoftComponents)) {
       const defaultVersion =
         comp.defaultVersion || Object.keys(comp.versions || {}).pop();
       const versionedComponent = comp.versions?.[defaultVersion || ""];
@@ -215,7 +292,7 @@ export function buildInitialSoftComponents(
         defaultVersion || "1.0.0",
         allVersions,
         hardConfig,
-        softComponents,
+        hydratedSoftComponents,
         versionedComponent.defaultProps
       );
 

@@ -18,13 +18,10 @@ export type BuilderComponentConfig = {
     slot: string;
   }[];
   _map?: {
-    from: string | string[];
     to: string | string[];
-    transform?: (inputs: any, props: DefaultComponentProps) => any;
-    graphState?: {
-      nodes: any[];
-      edges: any[];
-    };
+    from: string | string[];
+    transform?: (inputs: any[], props: DefaultComponentProps) => any;
+    [key: string]: any; // Props such as conditions, depends on custom function
   }[];
   [key: string]: any;
 };

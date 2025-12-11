@@ -8,12 +8,14 @@ import { ErrorBoundary } from "../error-boundary";
 
 export function SoftRender({
   softComponentFields,
+  softComponentFieldSettings,
   softSubComponent,
   configComponents,
   props,
   depth = 0,
 }: {
   softComponentFields: SoftComponent["fields"];
+  softComponentFieldSettings?: Record<string, any>;
   softSubComponent: SoftSubComponent;
   configComponents: Config["components"];
   props: WithId<
@@ -74,20 +76,34 @@ export function SoftRender({
 
           // Apply property mappings with cache
           if (subComponent.map?.length) {
-            subComponent.map.forEach(({ from, to, transform }) => {
+            subComponent.map.forEach((mapItem) => {
+              const { from, to, transform } = mapItem || {};
               const fromPaths = Array.isArray(from) ? from : from ? [from] : [];
               const toPaths = Array.isArray(to) ? to : to ? [to] : [];
 
-              const inputValues = fromPaths.map((f) =>
-                getFieldSettingsByPath(props || {}, f)
-              );
+              const inputValues = fromPaths.map((f) => {
+                const propValue = getFieldSettingsByPath(props || {}, f);
+                if (propValue !== undefined) return propValue;
+
+                const setting = getFieldSettingsByPath(
+                  softComponentFieldSettings || {},
+                  f
+                );
+                if (
+                  setting &&
+                  Object.prototype.hasOwnProperty.call(setting, "defaultValue")
+                ) {
+                  return setting.defaultValue;
+                }
+
+                return propValue;
+              });
               const cacheKey = JSON.stringify(inputValues);
 
               let result = mapCacheRef.current.get(cacheKey);
               if (!result) {
-                result = transform
-                  ? transform(inputValues, props)
-                  : inputValues[0];
+                const runner = transform;
+                result = runner ? runner(inputValues, props) : inputValues[0];
                 mapCacheRef.current.set(cacheKey, result);
               }
 
@@ -112,9 +128,11 @@ export function SoftRender({
                 );
 
                 if (enabledSlot) {
+
                   const slotName =
                     enabledSlot.name ||
                     `${subComponent.fixedProps?.id}-${slotKey}`;
+                  
                   resolvedProps[slotKey] = useMemo(
                     () => rest[slotName] || (() => null),
                     [slotName]

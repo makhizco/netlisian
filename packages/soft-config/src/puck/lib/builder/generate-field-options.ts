@@ -1,12 +1,6 @@
 // Utility to generate field options recursively for select fields
 // Used for both "to" and "from" field mapping
-
-export interface Field {
-  type: string;
-  label?: string;
-  objectFields?: Record<string, Field>;
-  arrayFields?: Record<string, Field>;
-}
+import type { Field } from "@measured/puck";
 
 /**
  * Recursively generates options for select fields from a nested field structure.
@@ -18,8 +12,8 @@ export function generateFieldOptions(
   fields: Record<string, Field>,
   selectedFields: string[],
   prefix = ""
-): Array<{ label: string; value: string }> {
-  const opts: Array<{ label: string; value: string }> = [];
+): Array<{ label: string; value: string; type: Field["type"] | "reference" }> {
+  const opts: Array<{ label: string; value: string; type: Field["type"] | "reference" }> = [];
   function recurse(current: Record<string, Field>, prefix: string) {
     Object.entries(current).forEach(([key, fld]) => {
       if (fld.type === "slot") return;
@@ -29,7 +23,7 @@ export function generateFieldOptions(
       if (selectedFields.includes(path)) {
         return;
       }
-      opts.push({ label: path, value: path });
+      opts.push({ label: path, value: path, type: fld.type });
       if (fld.type === "object" && fld.objectFields) {
         recurse(fld.objectFields, path);
       }
@@ -66,8 +60,8 @@ export function generateDynamicFieldOptions(
     }
   >,
   prefix: string = ""
-): Array<{ label: string; value: string }> {
-  const opts: Array<{ label: string; value: string }> = [];
+): Array<{ label: string; value: string; type: Field["type"] | "reference" }> {
+  const opts: Array<{ label: string; value: string; type: Field["type"] | "reference" }> = [];
 
   if (!_fields || !_fieldSettings) return opts;
   function recurse(
@@ -82,7 +76,7 @@ export function generateDynamicFieldOptions(
         ? `${currentPrefix}.${field.name}`
         : field.name;
 
-      opts.push({ label: path, value: path });
+      opts.push({ label: path, value: path, type: field.type });
 
       // Handle subfields if they exist
       if (settings?.subFields?.length) {
