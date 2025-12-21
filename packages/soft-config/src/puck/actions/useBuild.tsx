@@ -1,6 +1,7 @@
 import { createUsePuck } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
+import { useActionEvent } from "../hooks/useActionEvent";
 
 const useCustomPuck = createUsePuck();
 
@@ -11,6 +12,7 @@ export const useBuild = () => {
   const itemSelector = useCustomPuck((s) => s.appState.ui.itemSelector);
   const dispatch = useCustomPuck((s) => s.dispatch);
   const status = useSoftConfig((s) => s.state);
+  const { triggerAction } = useActionEvent();
 
   const handleBuild = () => {
     if (status !== "ready") {
@@ -20,6 +22,15 @@ export const useBuild = () => {
 
     try {
       build(history, selectedItem, itemSelector, dispatch);
+      
+      if (selectedItem?.type) {
+        triggerAction({
+          type: "build",
+          payload: {
+            id: selectedItem.type,
+          },
+        });
+      }
     } catch (error) {
       console.error("Failed to build:", error);
       notify.error(

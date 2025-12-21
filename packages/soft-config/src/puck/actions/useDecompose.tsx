@@ -1,6 +1,7 @@
 import { ComponentData, createUsePuck, walkTree } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
+import { useActionEvent } from "../hooks/useActionEvent";
 
 const useCustomPuck = createUsePuck();
 
@@ -12,6 +13,7 @@ export const useDecompose = () => {
   const status = useSoftConfig((s) => s.state);
   const softComponents = useSoftConfig((s) => s.softComponents);
   const config = useSoftConfig((s) => s.softConfig);
+  const { triggerAction } = useActionEvent();
 
   const handleDecompose = (componentData?: ComponentData) => {
     if (status !== "ready") {
@@ -53,6 +55,13 @@ export const useDecompose = () => {
       dispatch({
         type: "setData",
         data: newData,
+      });
+      
+      triggerAction({
+        type: "decompose",
+        payload: {
+          id: componentName,
+        },
       });
     } catch (error) {
       console.error("Failed to decompose:", error);

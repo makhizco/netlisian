@@ -2,6 +2,7 @@ import { ReactElement, ReactNode } from "react";
 import { BuilderComponentConfig, BuilderRootConfig } from "./BuilderConfig";
 import { DefaultComponentProps, Field } from "@measured/puck";
 import { VersionedSoftComponent } from "./SoftComponent";
+import { OnActionsCallback } from "./ActionEvents";
 
 type RenderFunc<
   Props extends { [key: string]: any } = { children: ReactNode },
@@ -34,4 +35,5 @@ export type Overrides = {
       softComponent: VersionedSoftComponent["versions"][string];
     }
   ) => ((inputs: any[], props: DefaultComponentProps) => any) | undefined;
+  onActions?: OnActionsCallback;
 };

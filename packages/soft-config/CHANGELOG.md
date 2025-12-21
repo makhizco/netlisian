@@ -1,5 +1,11 @@
 # @netlisian/softconfig
 
+## 0.0.6
+
+### Patch Changes
+
+- fix: Strip id from the slots enabled children to avoid linking and added support for soft-components transformation via hydration
+
 ## 0.0.5
 
 ### Patch Changes

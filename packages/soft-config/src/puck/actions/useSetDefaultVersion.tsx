@@ -1,4 +1,5 @@
 import { useSoftConfig } from "../context/useStore";
+import { useActionEvent } from "../hooks/useActionEvent";
 
 export const useSetDefaultVersion = () => {
   const setSoftComponentDefaultVersion = useSoftConfig(
@@ -6,6 +7,7 @@ export const useSetDefaultVersion = () => {
   );
   const softComponents = useSoftConfig((s) => s.softComponents);
   const status = useSoftConfig((s) => s.state);
+  const { triggerAction } = useActionEvent();
 
   const handleSetDefaultVersion = (componentName: string, version: string) => {
     if (status !== "ready") {
@@ -22,6 +24,14 @@ export const useSetDefaultVersion = () => {
     }
 
     setSoftComponentDefaultVersion(componentName, version);
+    
+    triggerAction({
+      type: "setDefaultVersion",
+      payload: {
+        id: componentName,
+        version,
+      },
+    });
   };
 
   const canSetDefaultVersion = (componentName: string, version: string) => {

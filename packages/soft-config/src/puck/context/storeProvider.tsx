@@ -7,6 +7,7 @@ import { createSoftConfigStore } from "../store";
 import type { AppStore } from "../store";
 import type { SoftComponents } from "../types/SoftComponent";
 import type { Overrides } from "../types/Overrides";
+import type { OnActionsCallback } from "../types/ActionEvents";
 import type { StoreApi } from "zustand";
 
 export const SoftConfigProvider = ({
@@ -15,16 +16,18 @@ export const SoftConfigProvider = ({
   softComponents,
   overrides,
   value,
+  onActions,
 }: {
   children: (softConfig: Config, softComponents: SoftComponents) => ReactNode;
   hardConfig: Config;
   softComponents: SoftComponents;
   overrides: Overrides;
   value?: StoreApi<AppStore>;
+  onActions?: OnActionsCallback;
 }) => {
   const store = value ?? useMemo(
-    () => createSoftConfigStore(hardConfig, softComponents, overrides),
-    [hardConfig, softComponents, overrides]
+    () => createSoftConfigStore(hardConfig, softComponents, overrides, onActions),
+    [hardConfig, softComponents, overrides, onActions]
   );
   const [softConfig, setSoftConfig] = useState(
     () => store.getState().softConfig

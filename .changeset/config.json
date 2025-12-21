@@ -7,5 +7,5 @@
   "linked": [],
   "access": "public",
   "updateInternalDependencies": "patch",
-  "ignore": ["@netlisian/docs"]
+  "ignore": ["@netlisian/demo", "@netlisian/dynamic-functions"]
 }

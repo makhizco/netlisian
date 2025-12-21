@@ -1,4 +1,4 @@
 module.exports = {
   reactStrictMode: true,
-  transpilePackages: ["@netlisian/softconfig"],
+  transpilePackages: ["@netlisian/softconfig", "@netlisian/dynamic-functions"],
 };

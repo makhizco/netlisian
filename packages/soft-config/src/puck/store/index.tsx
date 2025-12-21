@@ -16,6 +16,7 @@ import {
   hydrateSoftComponentsTransforms,
 } from "../lib/build-initial-soft-components";
 import { Overrides } from "../types/Overrides";
+import { OnActionsCallback } from "../types/ActionEvents";
 
 type Status = "building" | "remodeling" | "ready" | "inspecting";
 
@@ -27,6 +28,7 @@ export type AppStore = {
   originalHistory: History[];
   storedConfig?: Config;
   overrides: Overrides;
+  onActions?: OnActionsCallback;
   itemSelector: {
     index: number;
     zone: string;
@@ -74,7 +76,8 @@ export const createSoftConfigStore = (
     components: {},
   },
   softComponents: SoftComponents = {},
-  overrides: Overrides = {}
+  overrides: Overrides = {},
+  onActions?: OnActionsCallback
 ) => {
   const hydratedSoftComponents =
     overrides?.hydrateMapTransform
@@ -90,6 +93,7 @@ export const createSoftConfigStore = (
         state: "ready",
         originalHistory: [],
         overrides,
+        onActions,
         storeHistory: (history: History[]) => set({ originalHistory: history }),
         removeHistory: () => set({ originalHistory: [] }),
         itemSelector: null,

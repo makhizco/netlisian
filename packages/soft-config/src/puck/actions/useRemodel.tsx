@@ -1,6 +1,7 @@
 import { createUsePuck } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
+import { useActionEvent } from "../hooks/useActionEvent";
 
 const useCustomPuck = createUsePuck();
 
@@ -12,6 +13,7 @@ export const useRemodel = () => {
   const dispatch = useCustomPuck((s) => s.dispatch);
   const status = useSoftConfig((s) => s.state);
   const softComponents = useSoftConfig((s) => s.softComponents);
+  const { triggerAction } = useActionEvent();
 
   const handleRemodel = (componentName?: string) => {
     if (status !== "ready") {
@@ -27,6 +29,13 @@ export const useRemodel = () => {
 
     try {
       remodel(history, selectedItem, itemSelector, dispatch);
+      
+      triggerAction({
+        type: "remodel",
+        payload: {
+          id: name,
+        },
+      });
     } catch (error) {
       console.error("Failed to remodel:", error);
       notify.error(

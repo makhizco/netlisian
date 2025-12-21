@@ -6,9 +6,12 @@
     "lint": "turbo run lint",
     "clean": "turbo run clean && rm -rf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "size": "turbo run size --filter=@netlisian/dynamic-functions --filter=@netlisian/softconfig",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build --filter=@netlisian/docs^... && changeset publish"
+    "release": "turbo run build --filter=@netlisian/demo^... && changeset publish",
+    "release:softconfig": "turbo run build --filter=@netlisian/softconfig^... && changeset publish --filter=@netlisian/softconfig",
+    "release:tailwind": "turbo run build --filter=@netlisian/tailwind^... && changeset && changeset version && changeset publish --filter=@netlisian/tailwind"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7",

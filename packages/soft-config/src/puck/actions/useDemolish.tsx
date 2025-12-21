@@ -2,6 +2,7 @@ import { createUsePuck } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { createSoftConfigStore } from "../store";
+import { useActionEvent } from "../hooks/useActionEvent";
 
 const useCustomPuck = createUsePuck();
 
@@ -11,6 +12,7 @@ export const useDemolish = () => {
   const data = useCustomPuck((s) => s.appState.data);
   const status = useSoftConfig((s) => s.state);
   const softComponents = useSoftConfig((s) => s.softComponents);
+  const { triggerAction } = useActionEvent();
 
   const handleDemolish = (componentName: string) => {
     if (status !== "ready") {
@@ -25,6 +27,13 @@ export const useDemolish = () => {
 
     try {
       demolish(componentName, data, dispatch);
+      
+      triggerAction({
+        type: "demolish",
+        payload: {
+          id: componentName,
+        },
+      });
     } catch (error) {
       console.error("Failed to demolish:", error);
       notify.error(
