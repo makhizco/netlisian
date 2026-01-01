@@ -25,7 +25,7 @@ export const useSetDefaultVersion = () => {
 
     setSoftComponentDefaultVersion(componentName, version);
     
-    triggerAction({
+    void triggerAction({
       type: "setDefaultVersion",
       payload: {
         id: componentName,

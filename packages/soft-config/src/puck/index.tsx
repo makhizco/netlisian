@@ -6,9 +6,10 @@ export { SoftConfigProvider } from "./context/storeProvider";
 export { useSoftConfig, createUseSoftConfig } from "./context/useStore";
 
 // export types
-export type { SoftComponent, SoftComponents } from "./types/SoftComponent";
+export type { SoftComponent, SoftComponents, VersionedSoftComponent } from "./types/SoftComponent";
 export type { Overrides } from "./types/Overrides";
 export type { BuilderConfig, BuilderComponentConfig, BuilderRootConfig } from "./types/BuilderConfig";
+export type { ActionEventPayload, OnActionsCallback } from "./types/ActionEvents";
 
 // export actions
 export * from "./actions";

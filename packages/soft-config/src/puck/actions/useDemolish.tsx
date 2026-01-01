@@ -28,7 +28,7 @@ export const useDemolish = () => {
     try {
       demolish(componentName, data, dispatch);
       
-      triggerAction({
+      void triggerAction({
         type: "demolish",
         payload: {
           id: componentName,

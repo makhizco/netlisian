@@ -29,8 +29,8 @@ export const useRemodel = () => {
 
     try {
       remodel(history, selectedItem, itemSelector, dispatch);
-      
-      triggerAction({
+
+      void triggerAction({
         type: "remodel",
         payload: {
           id: name,

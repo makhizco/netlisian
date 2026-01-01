@@ -24,7 +24,7 @@ export const useBuild = () => {
       build(history, selectedItem, itemSelector, dispatch);
       
       if (selectedItem?.type) {
-        triggerAction({
+        void triggerAction({
           type: "build",
           payload: {
             id: selectedItem.type,

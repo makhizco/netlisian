@@ -30,7 +30,7 @@ export const useComplete = () => {
       const softComponent = softComponents[componentName]?.versions[softComponents[componentName]?.defaultVersion];
       
       if (softComponent && componentData) {
-        triggerAction({
+        void triggerAction({
           type: "complete",
           payload: {
             id: componentName,

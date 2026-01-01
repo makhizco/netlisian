@@ -1,4 +1,4 @@
-import { Config, DefaultComponentProps, Field, WithId, WithPuckProps } from "@measured/puck";
+import { Slot, Config, DefaultComponentProps, Field, WithId, WithPuckProps } from "@measured/puck";
 
 export type BuilderRootConfig = {
   _name: string;

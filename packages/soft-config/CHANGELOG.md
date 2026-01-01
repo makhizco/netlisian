@@ -1,5 +1,23 @@
 # @netlisian/softconfig
 
+## 0.0.9
+
+### Patch Changes
+
+- fix: Added types for Actions
+
+## 0.0.8
+
+### Patch Changes
+
+- fix: Typescript issues
+
+## 0.0.7
+
+### Patch Changes
+
+- feat: Added onActions callback.
+
 ## 0.0.6
 
 ### Patch Changes

@@ -31,7 +31,7 @@ export const usePublish = () => {
     const rootVersion = components[rootComponentType]?.defaultVersion;
     
     if (rootComponentType && rootVersion) {
-      triggerAction({
+      void triggerAction({
         type: "publish",
         payload: {
           id: rootComponentType,

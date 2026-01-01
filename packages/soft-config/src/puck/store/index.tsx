@@ -65,6 +65,8 @@ export type AppStore = {
     version: string,
     component: SoftComponent
   ) => void;
+  setSoftComponents: (components: SoftComponents) => void;
+  hydrateTransforms: () => void;
   setSoftComponentDefaultVersion: (key: string, version: string) => void;
   removeSoftComponent: (key: string) => void;
 };
@@ -130,6 +132,81 @@ export const createSoftConfigStore = (
               },
             },
           }));
+        },
+        setSoftComponents: (incomingComponents: SoftComponents) => {
+          const state = get();
+          const nextSoftComponents = { ...state.softComponents };
+          const nextConfigComponents = { ...state.softConfig.components };
+
+          Object.entries(incomingComponents).forEach(([name, data]) => {
+            const existing = nextSoftComponents[name];
+
+            const finalComponentData = existing ? {
+              ...existing,
+              ...data,
+              versions: { ...existing.versions, ...data.versions },
+            } : data;
+
+            nextSoftComponents[name] = finalComponentData;
+
+            const activeVersion = finalComponentData.defaultVersion;
+            const activeVersionData = finalComponentData.versions[activeVersion];
+
+            if (activeVersionData) {
+              nextConfigComponents[name] = createVersionedComponentConfig(
+                name,
+                activeVersion,
+                Object.keys(finalComponentData.versions),
+                state.softConfig,
+                nextSoftComponents,
+                activeVersionData.defaultProps
+              );
+            }
+          });
+
+          set({
+            softComponents: nextSoftComponents,
+            softConfig: {
+              ...state.softConfig,
+              components: nextConfigComponents,
+            },
+          });
+        },
+
+        hydrateTransforms: () => {
+          const { overrides, softComponents, softConfig } = get();
+          if (!overrides?.hydrateMapTransform) return;
+
+          const hydratedComponents = hydrateSoftComponentsTransforms(
+            softComponents,
+            overrides.hydrateMapTransform
+          );
+
+          const nextConfigComponents = { ...softConfig.components };
+
+          Object.entries(hydratedComponents).forEach(([name, componentData]) => {
+            const activeVersion = componentData.defaultVersion;
+            const activeVersionData = componentData.versions[activeVersion];
+
+            if (activeVersionData) {
+              nextConfigComponents[name] = createVersionedComponentConfig(
+                name,
+                activeVersion,
+                Object.keys(componentData.versions),
+                softConfig,
+                hydratedComponents,
+                activeVersionData.defaultProps
+              );
+            }
+          });
+
+          set({
+            softComponents: hydratedComponents,
+            softConfig: {
+              ...softConfig,
+              components: nextConfigComponents
+            }
+          });
         },
         setSoftComponentDefaultVersion: (name: string, version: string) => {
           const softComponent = get().softComponents[name]?.versions?.[version];

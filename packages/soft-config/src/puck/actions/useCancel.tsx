@@ -20,7 +20,7 @@ export const useCancel = () => {
     try {
       cancel(setHistories);
       
-      triggerAction({
+      void triggerAction({
         type: "cancel",
         payload: {},
       });

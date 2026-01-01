@@ -21,8 +21,8 @@ export const useInspect = (componentName: string | null) => {
 
     try {
       inspect(componentName, dispatch);
-      
-      triggerAction({
+
+      void triggerAction({
         type: "inspect",
         payload: {
           id: componentName,

@@ -56,8 +56,8 @@ export const useDecompose = () => {
         type: "setData",
         data: newData,
       });
-      
-      triggerAction({
+
+      void triggerAction({
         type: "decompose",
         payload: {
           id: componentName,
