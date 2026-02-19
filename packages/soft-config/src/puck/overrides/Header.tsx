@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Data } from "@measured/puck";
+import { Button, Data, createUsePuck } from "@measured/puck";
 import { useComplete } from "../actions/useComplete";
 import { useCancel } from "../actions/useCancel";
 import { useInspect } from "../actions/useInspect";
@@ -9,6 +9,7 @@ import { SoftComponents } from "../types/SoftComponent";
 import { usePublish } from "../actions/usePublish";
 
 const getClassName = getClassNameFactory("Header", styles);
+const usePuck = createUsePuck();
 
 export const Header = ({
   onPublish,
@@ -17,10 +18,11 @@ export const Header = ({
   onPublish?: (data: Data, softComponents: SoftComponents) => void;
   children: React.ReactNode;
 }) => {
-  const { handleComplete, canComplete, newComponent, setNewComponent } =
+  const { handleComplete, newComponent, setNewComponent } =
     useComplete();
   const { handleCancel, canCancel } = useCancel();
   const { handlePublish } = usePublish();
+  const puck = usePuck(s => s.config);
 
   useInspect(newComponent);
 

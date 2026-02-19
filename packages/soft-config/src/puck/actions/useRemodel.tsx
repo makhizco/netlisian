@@ -13,6 +13,7 @@ export const useRemodel = () => {
   const dispatch = useCustomPuck((s) => s.dispatch);
   const status = useSoftConfig((s) => s.state);
   const softComponents = useSoftConfig((s) => s.softComponents);
+  const refreshPermissions = useCustomPuck((s) => s.refreshPermissions);
   const { triggerAction } = useActionEvent();
 
   const handleRemodel = (componentName?: string) => {
@@ -28,7 +29,7 @@ export const useRemodel = () => {
     }
 
     try {
-      remodel(history, selectedItem, itemSelector, dispatch);
+      remodel(history, selectedItem, itemSelector, dispatch, refreshPermissions);
 
       void triggerAction({
         type: "remodel",

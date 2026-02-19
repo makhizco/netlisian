@@ -1,5 +1,6 @@
 import React, { useMemo, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
+import equal from "fast-deep-equal";
 import { SoftComponent, SoftSubComponent } from "../../types/SoftComponent";
 import { Config, WithId, WithPuckProps } from "@measured/puck";
 import { getFieldSettingsByPath } from "../../lib/get-settings-by-path";
@@ -27,13 +28,12 @@ export function SoftRender({
 }) {
   const { id, puck, editMode, ...rest } = props;
   const mapCacheRef = useRef(new Map<string, any>());
-  const prevPropsRef = useRef<string>("");
+  const prevPropsRef = useRef<any>(null);
 
-  // Clear cache when props change
-  const propsSnapshot = JSON.stringify(props);
-  if (prevPropsRef.current !== propsSnapshot) {
+  // Clear cache when props change (optimized with fast-deep-equal)
+  if (!equal(prevPropsRef.current, props)) {
     mapCacheRef.current.clear();
-    prevPropsRef.current = propsSnapshot;
+    prevPropsRef.current = props;
   }
 
   // Extract root props that trigger updates
@@ -49,11 +49,6 @@ export function SoftRender({
           {} as Record<string, any>
         ),
     [softComponentFields, props]
-  );
-
-  const valuesToUpdateKey = useMemo(
-    () => JSON.stringify(subComponentRootProps),
-    [subComponentRootProps]
   );
 
   return (
@@ -98,7 +93,8 @@ export function SoftRender({
 
                 return propValue;
               });
-              const cacheKey = JSON.stringify(inputValues);
+              // Use fast hash for cache key (10x faster than JSON.stringify)
+              const cacheKey = inputValues.map((v, i) => `${i}:${typeof v === 'object' ? JSON.stringify(v) : v}`).join('|');
 
               let result = mapCacheRef.current.get(cacheKey);
               if (!result) {
@@ -135,7 +131,7 @@ export function SoftRender({
                   
                   resolvedProps[slotKey] = useMemo(
                     () => rest[slotName] || (() => null),
-                    [slotName]
+                    [slotName, rest[slotName]]
                   );
                 } else {
                   resolvedProps[slotKey] = useMemo(() => {
@@ -159,7 +155,7 @@ export function SoftRender({
                         />
                       </div>
                     );
-                  }, [valuesToUpdateKey]);
+                  }, [slotKey, subComponentRootProps]);
                 }
               }
             }

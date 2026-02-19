@@ -1,5 +1,6 @@
 import { AppState, ComponentData, ComponentDataOptionalId, Config, Field, Fields } from "@measured/puck";
 import { SoftComponent, SoftSubComponent } from "../types/SoftComponent";
+import { VersionedSoftComponent } from "../types/SoftComponent";
 import { generateId } from "./generate-id";
 import { BuilderRootConfig } from "../types/BuilderConfig";
 import { getFieldSettingsByPath } from "./get-settings-by-path";
@@ -183,12 +184,14 @@ const reconstructComponents = (
  * @returns AppState data object with root props and content
  */
 export const softComponentToAppState = (
-  softComponent: SoftComponent,
+  softComponent: VersionedSoftComponent["versions"][string],
   componentName: string,
   version: string,
   versions: string[],
   componentProps: Record<string, any>,
-  componentConfigs: Config["components"]
+  componentConfigs: Config["components"],
+  displayName?: string,
+  category?: string
 ): Pick<AppState["data"], "root" | "content"> => {
   // Convert soft fields back to builder format
   const slots = new Set(Object.keys(softComponent.slots));
@@ -206,7 +209,8 @@ export const softComponentToAppState = (
 
   // Build root props for the builder
   const rootProps: BuilderRootConfig = {
-    _name: componentName,
+    _name: displayName || componentName,
+    _category: category,
     _version: version,
     _versions: versions,
     _fields: fields,

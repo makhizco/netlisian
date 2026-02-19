@@ -8,7 +8,10 @@ export const appStoreContext = createContext<StoreApi<AppStore> | null>(null);
 // Create a hook factory similar to createUsePuck from @measured/puck
 export const createUseSoftConfig = () => {
   // eslint-disable-next-line no-unused-vars
-  return function useSoftConfig<T>(selector: (state: AppStore) => T) {
+  return function useSoftConfig<T>(
+    selector: (state: AppStore) => T,
+    equalityFn?: (a: T, b: T) => boolean
+  ): T {
     const context = useContext(appStoreContext);
     if (!context) {
       throw new Error(
@@ -16,6 +19,10 @@ export const createUseSoftConfig = () => {
       );
     }
 
+    // Use type assertion to work around zustand's strict typing
+    if (equalityFn) {
+      return (useStore as any)(context, selector, equalityFn);
+    }
     return useStore(context, selector);
   };
 };

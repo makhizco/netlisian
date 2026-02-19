@@ -1,6 +1,15 @@
 import { ReactElement, ReactNode } from "react";
 import { BuilderComponentConfig, BuilderRootConfig } from "./BuilderConfig";
-import { DefaultComponentProps, Field } from "@measured/puck";
+import {
+  AsFieldProps,
+  DefaultComponentProps,
+  Field,
+  Fields,
+  Metadata,
+  ResolveDataTrigger,
+  RootData,
+  WithChildren,
+} from "@measured/puck";
 import { VersionedSoftComponent } from "./SoftComponent";
 import { OnActionsCallback } from "./ActionEvents";
 
@@ -9,6 +18,13 @@ type RenderFunc<
 > = (props: Props) => ReactElement;
 
 export type Overrides = {
+  componentNameToKey?: (
+    displayName: string,
+    context: {
+      existingKeys: string[];
+      state: "building" | "remodeling" | "ready" | "inspecting";
+    }
+  ) => string;
   map?: RenderFunc<{
     rootProps: BuilderRootConfig;
     toOptions: {
@@ -33,7 +49,22 @@ export type Overrides = {
       version: string;
       subComponentPath: string[];
       softComponent: VersionedSoftComponent["versions"][string];
-    }
+    },
   ) => ((inputs: any[], props: DefaultComponentProps) => any) | undefined;
   onActions?: OnActionsCallback;
+  name?: Field<string>;
+  categories?: Field<string | undefined>;
+  onRootsDataChange?: (
+    data: RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>,
+    params: {
+      changed: Partial<
+        Record<keyof BuilderRootConfig, boolean> & {
+          id: string;
+        }
+      >;
+      lastData: RootData<AsFieldProps<WithChildren<BuilderRootConfig>>> | null;
+      metadata: Metadata;
+      trigger: ResolveDataTrigger;
+    },
+  ) => void;
 };

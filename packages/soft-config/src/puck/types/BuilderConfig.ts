@@ -2,6 +2,7 @@ import { Slot, Config, DefaultComponentProps, Field, WithId, WithPuckProps } fro
 
 export type BuilderRootConfig = {
   _name: string;
+  _category?: string;
   _version?: string;
   _versions?: string[];
   _fields?: {

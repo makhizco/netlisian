@@ -8,7 +8,6 @@ import {
   PuckApi,
   ComponentData,
   walkTree,
-  createUsePuck,
 } from "@measured/puck";
 import { AppStore } from "../";
 import { builderConfig } from "../../lib/builder/builder-config";
@@ -19,6 +18,7 @@ import { rootDroppableId } from "../../lib/root-droppable-id";
 import { createVersionedComponentConfig } from "../../lib/create-versioned-component-config";
 import { decomposeSoftComponent } from "../../lib/decompose-soft-component";
 import { demolishSoftComponent } from "../../lib/demolish-soft-component";
+import { createComponentKeyFromName } from "../../lib/component-key";
 
 export type BuildersSlice = {
   /**
@@ -37,7 +37,8 @@ export type BuildersSlice = {
     history: History<AppState>[],
     selectedItem: PuckApi["selectedItem"],
     itemSelector: { index: number; zone?: string } | null,
-    puckDispatch: PuckApi["dispatch"]
+    puckDispatch: PuckApi["dispatch"],
+    name?: string,
   ) => void | null;
 
   /**
@@ -57,7 +58,8 @@ export type BuildersSlice = {
     history: History<AppState>[],
     selectedItem: PuckApi["selectedItem"],
     itemSelector: { index: number; zone?: string } | null,
-    puckDispatch: PuckApi["dispatch"]
+    puckDispatch: PuckApi["dispatch"],
+    refreshPermission: () => void
   ) => void;
 
   /**
@@ -89,7 +91,8 @@ export type BuildersSlice = {
    */
   complete: (
     appState: AppState<any>,
-    setHistories: PuckApi["history"]["setHistories"]
+    setHistories: PuckApi["history"]["setHistories"],
+    getItemBySelector: PuckApi["getItemBySelector"]
   ) => string;
 
   demolish: (
@@ -116,7 +119,10 @@ export type BuildersSlice = {
    */
   compose: (
     appState: AppState,
-    componentName: string
+    componentName: string,
+    editedItem: ComponentData,
+    displayName: string,
+    category?: string
   ) => [ComponentConfig, string] | undefined;
 
   /** Break down a composed component into its parts.
@@ -138,7 +144,7 @@ export const createBuildersSlice = (
   get: () => AppStore,
   initialConfig: Config
 ): BuildersSlice => ({
-  build: (history, selectedItem, itemSelector, puckDispatch) => {
+  build: (history, selectedItem, itemSelector, puckDispatch, name) => {
     if (!selectedItem || !itemSelector) {
       throw new Error("No item selected to build from.");
     }
@@ -154,17 +160,36 @@ export const createBuildersSlice = (
           ...previous.data,
           root: {
             props: {
-              _name: "New Soft Component",
+              _name: name || "New Soft Component",
             },
           } as Data["root"],
-          content: [{ ...selectedItem }],
+          // content: [{ ...selectedItem }],
         },
       }),
     });
 
     const config = { ...get().softConfig };
     const overrides = get().overrides;
-    const buildConfig = builderConfig(config, overrides);
+    const buildConfig = builderConfig(config, overrides, undefined, get().showVersionFields);
+
+    // Building editable ids
+    const editableIds = new Set<string>([selectedItem.props.id]);
+    const initialContent = [{ ...selectedItem }];
+
+    walkTree(
+      {
+        root: {
+
+        }, content: initialContent
+      },
+      { components: config.components },
+      (components) => {
+        components.forEach((comp) => {
+          editableIds.add(comp.props.id);
+        });
+        return components;
+      }
+    );
 
     set((s) => ({
       ...s,
@@ -175,6 +200,8 @@ export const createBuildersSlice = (
         index: itemSelector.index,
         zone: itemSelector.zone || rootDroppableId,
       },
+      editingComponentId: selectedItem.props.id,
+      editableComponentIds: editableIds,
       state: "building",
     }));
 
@@ -185,7 +212,7 @@ export const createBuildersSlice = (
           type: "replaceRoot",
           root: {
             title: "Soft Component Builder",
-            _name: "New Soft Component",
+            _name: name || "New Soft Component",
           },
         } as any),
       100
@@ -196,20 +223,19 @@ export const createBuildersSlice = (
       throw new Error("No item selected to build from.");
     }
 
-    // Get the component name
     const softComponentName = selectedItem.type;
 
     if (!softComponentName) {
       throw new Error("Selected item must have a valid component type.");
     }
 
-    // Get version from props or default to "1.0.0"
     const softComponentVersion =
       (selectedItem.props as DefaultComponentProps)?.version || "1.0.0";
 
     // Get soft component from store
     const softComponent =
       get().softComponents[softComponentName]?.versions[softComponentVersion];
+    const softComponentMeta = get().softComponents[softComponentName];
 
     const versions = Object.keys(
       get().softComponents[softComponentName].versions || {}
@@ -229,28 +255,94 @@ export const createBuildersSlice = (
       }),
     });
 
-    // Convert soft component back to AppState format for remodeling
+    // Convert soft component back to AppState format for remodeling (decomposition)
     const { root, content } = softComponentToAppState(
       softComponent,
       softComponentName,
       softComponentVersion,
       versions,
       selectedItem.props,
-      get().softConfig.components
+      get().softConfig.components,
+      softComponentMeta?.name || softComponentName,
+      softComponentMeta?.category
     );
-
-    puckDispatch({
-      type: "setData",
-      data: (previous) => ({
-        ...previous,
-        root: { ...root, _versions: versions },
-        content: content || [],
-      }),
-    });
 
     const config = { ...get().softConfig };
     const overrides = get().overrides;
-    const buildConfig = builderConfig(config, overrides, softComponentName);
+    // const getStore = () => get();
+    // const getEditableIds = () => getStore().editableComponentIds;
+
+    // Get dependent components from the reverse dependency graph
+    const dependents = get().dependencyGraph.get(softComponentName) || new Set<string>();
+
+    const buildConfig = builderConfig(config, overrides, softComponentName, get().showVersionFields, dependents);
+
+    // Collect all descendant IDs in edit scope using walkTree
+    const editableIds = new Set<string>([]);
+    const decomposedComponents = get().builder.decompose(selectedItem);
+
+    // These will become stale when component is decomposed we need the decomposed ids rather than soft component id
+    walkTree(
+      { root: {}, content: decomposedComponents || [] },
+      { components: config.components },
+      (components) => {
+        components.forEach((comp) => {
+          editableIds.add(comp.props.id);
+        });
+        return components;
+      }
+    );
+
+    // Remove the component at current position
+    // puckDispatch({
+    //   type: "remove",
+    //   index: itemSelector.index,
+    //   zone: itemSelector.zone || rootDroppableId,
+    // });
+
+    // Insert decomposed content at the same position
+    // content.forEach((componentData, index) => {
+    //   puckDispatch({
+    //     type: "insert",
+    //     componentType: componentData.type,
+    //     destinationIndex: itemSelector.index + index,
+    //     destinationZone: itemSelector.zone || rootDroppableId,
+    //     id: componentData.props.id,
+    //   });
+    // });
+
+    // refreshPermissions()
+
+
+    puckDispatch({
+      type: "setData",
+      data: (prevData) => ({
+        root: { ...root, _versions: versions } as any,
+        content: walkTree({ ...prevData }, { ...config }, (components) => {
+          const next = components.map((component) => ({
+            ...component,
+            props: { ...component.props },
+          }));
+
+          const index = next.findIndex(
+            (component) => component.props.id === selectedItem.props.id
+          );
+
+          if (index !== -1) {
+            next.splice(
+              index,
+              1,
+              ...decomposedComponents.map((component) => ({
+                ...component,
+                props: { ...component.props },
+              }))
+            );
+          }
+
+          return next;
+        }).content
+      })
+    });
 
     set((s) => ({
       ...s,
@@ -261,6 +353,8 @@ export const createBuildersSlice = (
         index: itemSelector.index,
         zone: itemSelector.zone || rootDroppableId,
       },
+      editingComponentId: selectedItem.props.id,
+      editableComponentIds: editableIds,
       state: "remodeling",
     }));
 
@@ -269,31 +363,71 @@ export const createBuildersSlice = (
         puckDispatch({
           type: "replaceRoot",
           root: {
-            title: "Soft Component Builder",
-            _name: "New Soft Component",
+            title: (root.props as any).title,
+            _name: (root.props as any)._name,
+            _category: (root.props as any)._category,
           },
         } as any),
       100
     );
   },
-  complete: (appState, setHistories) => {
+  complete: (appState, setHistories, getItemBySelector) => {
     if (get().state === "ready") {
       throw new Error("Not building or remodeling a component.");
     }
 
-    const componentName = (
+    const displayName = (
       appState.data.root?.props as {
         _name?: string;
       }
-    )?._name;
+    )?._name?.trim();
+
 
     // Handle existing name for remodelling
-    if (!componentName) {
+    if (!displayName) {
       throw new Error("Root component must have a name to compose.");
     }
 
+    const itemSelector = get().itemSelector;
+
+    if (!itemSelector) {
+      throw new Error("No item selector found for completed component.");
+    }
+
+    // Get item selector
+    // Get the item being edited
+    const selectedItem = getItemBySelector(
+      itemSelector
+    )
+
+    if (!selectedItem) {
+      throw new Error("Cannot find item being edited")
+    }
+
+    const rootCategory = (
+      appState.data.root?.props as {
+        _category?: string;
+      }
+    )?._category;
+
+    const componentName =
+      createComponentKeyFromName(displayName, get().overrides, {
+        existingKeys: Object.keys(get().softComponents),
+        state: get().state,
+      });
+
+    if (!componentName) {
+      throw new Error("Failed to generate component key from name.");
+    }
+
     const [newSoftComponentConfig, version] =
-      get().builder.compose(appState, componentName) || [];
+      get().builder.compose(
+        appState,
+        componentName,
+        selectedItem,
+        displayName,
+        rootCategory
+      ) || [];
 
     if (!newSoftComponentConfig) {
       throw new Error("Failed to compose new soft component config.");
@@ -304,38 +438,67 @@ export const createBuildersSlice = (
 
     const config = { ...(get().softConfig || initialConfig) };
 
-    set((s) => ({
-      ...s,
-      softConfig: {
-        ...config,
-        root: {
-          ...initialConfig.root, // TODO: Add support for dynamic root props in future maybe
+    set((s) => {
+      const nextComponents = {
+        ...Object.entries(config.components).reduce(
+          (acc, [name, component]) => {
+            let tempComponent: ComponentConfig | undefined =
+              config.components?.[name];
+            if (tempComponent) {
+              acc[name] = tempComponent;
+              acc[name].render = tempComponent.render;
+            } else {
+              tempComponent = { ...component };
+              delete tempComponent?.resolvePermissions;
+              delete tempComponent?.resolveData;
+              acc[name] = tempComponent;
+            }
+            return acc;
+          },
+          {} as Config["components"]
+        ),
+        [componentName]: { ...newSoftComponentConfig },
+      };
+
+      const categories = get().softConfig.categories || {};
+
+      const nextCategories = rootCategory
+        ? {
+          ...categories,
+          [rootCategory]: {
+            ...(categories[rootCategory] || {}),
+            title:
+              categories[rootCategory]?.title || rootCategory,
+            components: Array.from(
+              new Set([
+                ...(categories[rootCategory]?.components || []),
+                componentName,
+              ])
+            ),
+          },
+        }
+        : categories;
+
+      return {
+        ...s,
+        softConfig: {
+          ...config,
+          root: {
+            ...initialConfig.root,
+          },
+          components: nextComponents,
+          categories: nextCategories,
         },
-        components: {
-          ...Object.entries(config.components).reduce(
-            (acc, [name, component]) => {
-              let tempComponent: ComponentConfig | undefined =
-                config.components?.[name];
-              if (tempComponent) {
-                acc[name] = tempComponent;
-                acc[name].render = tempComponent.render;
-              } else {
-                tempComponent = { ...component };
-                delete tempComponent?.resolvePermissions;
-                delete tempComponent?.resolveData;
-                acc[name] = tempComponent;
-              }
-              return acc;
-            },
-            {} as Config["components"]
-          ),
-          [componentName]: { ...newSoftComponentConfig },
-        },
-      },
-      storedConfig: undefined,
-      state: "inspecting",
-      originalHistory: [],
-    }));
+        storedConfig: undefined,
+        state: "inspecting",
+        originalHistory: [],
+        editingComponentId: null,
+        editableComponentIds: new Set(),
+      };
+    });
+
+    // Rebuild all dependent components after successfully completing the component
+    get().rebuildDependents(componentName, version!);
 
     return componentName;
   },
@@ -369,6 +532,8 @@ export const createBuildersSlice = (
       state: "ready",
       setItemSelector: undefined,
       setOriginalItem: undefined,
+      editingComponentId: null,
+      editableComponentIds: new Set(),
     }));
   },
   cancel: (setHistories) => {
@@ -383,9 +548,11 @@ export const createBuildersSlice = (
       itemSelector: null,
       originalItem: null,
       state: "ready",
+      editingComponentId: null,
+      editableComponentIds: new Set(),
     }));
   },
-  compose: (appState, componentName) => {
+  compose: (appState, componentName, editedItem, displayName, category) => {
     if (!componentName) {
       throw new Error("Root component must have a name to compose.");
     }
@@ -402,7 +569,15 @@ export const createBuildersSlice = (
     }
 
     const [softComponent, version]: [SoftComponent, string] =
-      softComponentFromAppState(appState, componentConfigs);
+      softComponentFromAppState(
+        appState,
+        componentConfigs,
+        editedItem,
+        {
+          name: displayName,
+          category,
+        }
+      );
 
     // Get all versions and the default version of this component
     const existingComponent = get().softComponents[componentName];
@@ -411,10 +586,12 @@ export const createBuildersSlice = (
 
     const newSoftComponentConfig = createVersionedComponentConfig(
       componentName,
+      displayName,
       version,
       isNewVersion ? [...allVersions, version] : allVersions,
       get().softConfig,
-      {...get().softComponents,
+      {
+        ...get().softComponents,
         [componentName]: {
           ...existingComponent,
           versions: {
@@ -423,7 +600,8 @@ export const createBuildersSlice = (
           },
         },
       },
-      softComponent.defaultProps
+      softComponent.defaultProps,
+      get().showVersionFields
     );
 
     get().setSoftComponent(componentName, version, softComponent);
@@ -468,6 +646,7 @@ export const createBuildersSlice = (
 
     const softComponent =
       get().softComponents[componentName]?.versions[newVersion];
+    const softComponentMeta = get().softComponents[componentName];
 
     if (!softComponent) {
       throw new Error(
@@ -486,7 +665,9 @@ export const createBuildersSlice = (
       newVersion,
       versions,
       currentProps,
-      get().softConfig.components
+      get().softConfig.components,
+      softComponentMeta?.name || componentName,
+      softComponentMeta?.category
     );
 
     // Update puck data with new version

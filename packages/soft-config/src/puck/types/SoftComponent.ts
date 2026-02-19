@@ -13,6 +13,8 @@ export type SoftSubComponent = {
 }[];
 
 export type SoftComponent = {
+  name: string;
+  category?: string;
   fields: Fields;
   fieldSettings?: Record<string, any>;
   defaultProps: DefaultComponentProps;
@@ -24,6 +26,8 @@ export type SoftComponent = {
 
 export type VersionedSoftComponent = {
   defaultVersion: string;
+  name: string;
+  category?: string;
   versions: {
     [version: string]: {
       fields: Fields;
@@ -34,6 +38,13 @@ export type VersionedSoftComponent = {
         [slot: string]: DefaultComponentProps;
       };
     };
+  };
+  /**
+   * Dependencies map: version -> Set of component names this component depends on
+   * Automatically inferred from component structure but can be overridden
+   */
+  dependencies?: {
+    [version: string]: Set<string>;
   };
 };
 

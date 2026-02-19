@@ -10,6 +10,7 @@ export const useComplete = () => {
   const complete = useSoftConfig((s) => s.builder.complete);
   const appState = useCustomPuck((s) => s.appState);
   const setHistories = useCustomPuck((s) => s.history.setHistories);
+  const getItemBySelector = useCustomPuck((s) => s.getItemBySelector);
   const status = useSoftConfig((s) => s.state);
   const softComponents = useSoftConfig((s) => s.softComponents);
   const [newComponent, setNewComponent] = useState<string | null>(null);
@@ -22,7 +23,7 @@ export const useComplete = () => {
     }
 
     try {
-      const componentName = complete(appState, setHistories);
+      const componentName = complete(appState, setHistories, getItemBySelector);
       setNewComponent(componentName);
       
       // Get the component data and soft component info
@@ -49,7 +50,7 @@ export const useComplete = () => {
       );
       return null;
     }
-  }, [complete, appState, setHistories, status, softComponents, triggerAction]);
+  }, [complete, appState, setHistories, status, softComponents, triggerAction, getItemBySelector]);
 
   const canComplete = status === "building" || status === "remodeling";
 

@@ -1,4 +1,4 @@
-import { AppState, Field, Config, Fields } from "@measured/puck";
+import { AppState, Field, Config, Fields, ComponentData } from "@measured/puck";
 import { SoftComponent, SoftSubComponent } from "../types/SoftComponent";
 import { BuilderRootConfig } from "../types/BuilderConfig";
 import { stripIdFromProps } from "./strip-id";
@@ -133,7 +133,12 @@ const softFieldsToPuckFields = (
 
 export const softComponentFromAppState = (
   appState: AppState<any>,
-  configComponents: Config["components"]
+  configComponents: Config["components"],
+  editedItem: ComponentData,
+  metadata: {
+    name: string;
+    category?: string;
+  }
 ): [SoftComponent, string] => {
   const rootProps = appState.data.root?.props || {};
 
@@ -144,7 +149,7 @@ export const softComponentFromAppState = (
   const slots: SoftComponent["slots"] = {};
 
   const components = getSubComponents(
-    appState.data.content || [],
+    [editedItem],
     configComponents,
     field_settings,
     slots
@@ -163,6 +168,8 @@ export const softComponentFromAppState = (
 
   return [
     {
+      name: metadata.name,
+      category: metadata.category,
       fields: {
         ...softFieldsToPuckFields(fields, field_settings),
         ...Object.keys(slots).reduce((acc, slot) => {

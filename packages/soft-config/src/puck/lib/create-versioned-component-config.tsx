@@ -1,18 +1,21 @@
 import { SoftRender } from "../components/soft-render";
 import { useEffect } from "react";
 import { SoftComponent, SoftComponents } from "../types/SoftComponent";
-import { ComponentConfig, Config, DefaultComponentProps } from "@measured/puck";
+import { ComponentConfig, Config, DefaultComponentProps, Field } from "@measured/puck";
 
 export const createVersionedComponentConfig = (
   componentName: string,
+  displayName: string,
   version: string,
   allVersions: string[],
   config: Config,
   softComponents: SoftComponents,
-  defaultProps: DefaultComponentProps
+  defaultProps: DefaultComponentProps,
+  showVersioning = true
 ): ComponentConfig => {
   const softConfig = config;
   return {
+    label: displayName,
     fields: Object.fromEntries(
       (
         Object.entries(
@@ -32,20 +35,24 @@ export const createVersionedComponentConfig = (
       const versionedComponent =
         softComponents[componentName]?.versions[selectedVersion];
 
-      const fieldsWithoutSlots = Object.fromEntries(
-        Object.entries(versionedComponent?.fields || {})
-          .filter(([, field]) => field.type !== "slot")
-          .map(([key, field]) => [key, { ...field }])
-      );
+      let fields: Record<string, Field> = {};
 
-      return {
-        version: {
+      if (showVersioning) {
+        fields.version = {
           label: "Version",
           type: "select",
           options: allVersions.map((v) => ({ label: v, value: v })),
-        },
-        ...fieldsWithoutSlots,
-      };
+        }
+      }
+
+      Object.entries(versionedComponent?.fields || {})
+        .filter(([, field]) => field.type !== "slot")
+        .forEach(([key, field]) => {
+          fields[key] = field;
+        })
+
+
+      return fields;
     },
     render: (props) => {
       const selectedVersion = (props as any).version || version;

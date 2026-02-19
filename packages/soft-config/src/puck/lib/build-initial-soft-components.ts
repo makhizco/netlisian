@@ -66,6 +66,8 @@ export function hydrateSoftComponentsTransforms(
     });
 
     hydrated[name] = {
+      ...comp,
+      name: comp.name || name,
       defaultVersion: comp.defaultVersion,
       versions,
     };
@@ -115,6 +117,47 @@ function extractDependencies(
   processSubComponents(component.components);
 
   return dependencies;
+}
+
+/**
+ * Builds a reverse dependency graph showing which components depend on each component
+ * Also enriches softComponents with stored dependencies for backward compatibility
+ *
+ * @param softComponents - All soft components
+ * @returns Map of componentName -> Set of components that depend on it
+ */
+export function buildReverseDependencyGraph(
+  softComponents: SoftComponents
+): Map<string, Set<string>> {
+  const reverseDeps = new Map<string, Set<string>>();
+
+  for (const [componentName, component] of Object.entries(softComponents)) {
+    const defaultVersion =
+      component.defaultVersion || Object.keys(component.versions || {}).pop();
+
+    if (!defaultVersion) continue;
+
+    // Get all versions for this component
+    Object.entries(component.versions || {}).forEach(([version, versionedComp]) => {
+      const dependencies = extractDependencies(softComponents, componentName, version);
+
+      // Store dependencies in the component for persistence
+      if (!component.dependencies) {
+        component.dependencies = {};
+      }
+      component.dependencies[version] = dependencies;
+
+      // Build reverse graph: for each dependency, add this component as dependent
+      for (const dep of dependencies) {
+        if (!reverseDeps.has(dep)) {
+          reverseDeps.set(dep, new Set());
+        }
+        reverseDeps.get(dep)!.add(componentName);
+      }
+    });
+  }
+
+  return reverseDeps;
 }
 
 /**
@@ -206,7 +249,8 @@ function topologicalSort(
 export function buildInitialSoftComponents(
   hardConfig: Config,
   softComponents: SoftComponents,
-  overrides?: Overrides
+  overrides?: Overrides,
+  showVersioning = false
 ): Record<string, ComponentConfig> {
   if (!softComponents || Object.keys(softComponents).length === 0) {
     return {};
@@ -252,11 +296,13 @@ export function buildInitialSoftComponents(
       // Create the component config with access to all previously built components
       const newSoftComponentConfig = createVersionedComponentConfig(
         name,
+        comp.name || name,
         defaultVersion || "1.0.0",
         allVersions,
         buildingConfig, // Pass the accumulating config
         hydratedSoftComponents,
-        versionedComponent.defaultProps
+        versionedComponent.defaultProps,
+        showVersioning,
       );
 
       componentConfigs[name] = newSoftComponentConfig;
@@ -289,11 +335,13 @@ export function buildInitialSoftComponents(
 
       const newSoftComponentConfig = createVersionedComponentConfig(
         name,
+        comp.name || name,
         defaultVersion || "1.0.0",
         allVersions,
         hardConfig,
         hydratedSoftComponents,
-        versionedComponent.defaultProps
+        versionedComponent.defaultProps,
+        showVersioning,
       );
 
       componentConfigs[name] = newSoftComponentConfig;

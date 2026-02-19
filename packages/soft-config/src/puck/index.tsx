@@ -23,6 +23,9 @@ export { setNotificationHandler, notify } from "./lib/notify";
 // export confirmation handler
 export { setConfirmHandler, confirm } from "./lib/confirm";
 
+// export action callback
+export { createActionCallback } from "./lib/action-callback";
+
 export { resolveSoftConfig } from "./lib/resolve-soft-config";
 
 // Export modal

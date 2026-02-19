@@ -1,5 +1,4 @@
-import { DefaultComponentProps } from "@measured/puck";
-import { SoftComponent } from "./SoftComponent";
+import { VersionedSoftComponent } from "./SoftComponent";
 
 export type ActionEventPayload =
   | {
@@ -18,8 +17,8 @@ export type ActionEventPayload =
       type: "complete";
       payload: {
         id: string;
-        componentData: DefaultComponentProps;
-        softComponent: SoftComponent;
+        componentData: Record<string, any>;
+        softComponent: VersionedSoftComponent["versions"][string];
       };
     }
   | {

@@ -11,6 +11,13 @@
   display: flex;
 }
 
+.ComponentItem--insertDisabled {
+  cursor: not-allowed;
+  color: var(--puck-color-grey-5);
+  background: var(--puck-color-grey-11);
+  pointer-events: none; /* Optional: prevents all interactions including settings */
+}
+
 .ComponentItem-content {
   flex: 1;
   display: flex;
@@ -22,7 +29,7 @@
 }
 
 .ComponentItem-name {
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .ComponentItem-version {
