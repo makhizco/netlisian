@@ -1,0 +1,65 @@
+.Drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.Drawer-category {
+  max-width: 100%;
+}
+
+.Drawer-category + .Drawer-category {
+  margin-top: 4px;
+}
+
+.Drawer-category--isExpanded + .Drawer-category {
+  margin-top: 12px;
+}
+
+.Drawer-categoryContent {
+  display: none;
+}
+
+.Drawer-category--isExpanded > .Drawer-categoryContent {
+  display: block;
+}
+
+.Drawer-categoryTitle {
+  background-color: transparent;
+  border: 0;
+  color: var(--puck-color-grey-05);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: var(--puck-font-size-xxxs);
+  list-style: none;
+  margin-bottom: 6px;
+  padding: 8px;
+  text-transform: uppercase;
+  transition: background-color 50ms ease-in, color 50ms ease-in;
+  gap: 4px;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.Drawer-categoryTitle:focus-visible {
+  outline: 2px solid var(--puck-color-azure-05);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .Drawer-categoryTitle:hover {
+    background-color: var(--puck-color-azure-11);
+    color: var(--puck-color-azure-04);
+    transition: none;
+  }
+}
+
+.Drawer-categoryTitle:active {
+  background-color: var(--puck-color-azure-10);
+  transition: none;
+}
+
+.Drawer-categoryTitleIcon {
+  margin-inline-start: auto;
+}

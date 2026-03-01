@@ -5,7 +5,9 @@ import { useActionEvent } from "../hooks/useActionEvent";
 
 const useCustomPuck = createUsePuck();
 
-export const useBuild = () => {
+export const useBuild = (
+  name?: string
+) => {
   const build = useSoftConfig((s) => s.builder.build);
   const history = useCustomPuck((s) => s.history.histories);
   const selectedItem = useCustomPuck((s) => s.selectedItem);
@@ -21,7 +23,7 @@ export const useBuild = () => {
     }
 
     try {
-      build(history, selectedItem, itemSelector, dispatch);
+      build(history, selectedItem, itemSelector, dispatch, name);
       
       if (selectedItem?.type) {
         void triggerAction({

@@ -1,4 +1,4 @@
-.ComponentItem {
+.DrawerItem {
   background: var(--puck-color-white);
   cursor: grab;
   border: 1px solid var(--puck-color-grey-09);
@@ -11,14 +11,14 @@
   display: flex;
 }
 
-.ComponentItem--insertDisabled {
+.DrawerItem--insertDisabled {
   cursor: not-allowed;
   color: var(--puck-color-grey-5);
   background: var(--puck-color-grey-11);
   pointer-events: none; /* Optional: prevents all interactions including settings */
 }
 
-.ComponentItem-content {
+.DrawerItem-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -28,64 +28,64 @@
   overflow-x: hidden;
 }
 
-.ComponentItem-name {
+.DrawerItem-name {
   font-weight: 400;
 }
 
-.ComponentItem-version {
+.DrawerItem-version {
   font-size: 10px;
   color: var(--puck-color-grey-05);
 }
 
-.ComponentItem-actions {
+.DrawerItem-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.ComponentItem-settingsButton {
+.DrawerItem-settingsButton {
   opacity: 0;
   transition: opacity 120ms ease;
   color: var(--puck-color-grey-05);
 }
 
-.ComponentItem:hover .ComponentItem-settingsButton {
+.DrawerItem:hover .DrawerItem-settingsButton {
   opacity: 1;
 }
 
-.ComponentItem-grip {
+.DrawerItem-grip {
   color: var(--puck-color-grey-05);
   display: flex;
   align-items: center;
 }
 
 /* Modal styles */
-.ComponentItem-modal {
+.DrawerItem-modal {
   background: var(--puck-color-white);
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-.ComponentItem-modalHeader {
+.DrawerItem-modalHeader {
   padding: 24px 32px;
   border-bottom: 1px solid var(--puck-color-grey-09);
 }
 
-.ComponentItem-modalTitle {
+.DrawerItem-modalTitle {
   margin: 0 0 4px 0;
   font-size: 24px;
   font-weight: 600;
   color: var(--puck-color-black);
 }
 
-.ComponentItem-modalSubtitle {
+.DrawerItem-modalSubtitle {
   margin: 0;
   font-size: 14px;
   color: var(--puck-color-grey-04);
 }
 
-.ComponentItem-modalBody {
+.DrawerItem-modalBody {
   flex: 1;
   padding: 32px;
   overflow-y: auto;
@@ -94,32 +94,32 @@
   gap: 32px;
 }
 
-.ComponentItem-section {
+.DrawerItem-section {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.ComponentItem-sectionTitle {
+.DrawerItem-sectionTitle {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--puck-color-black);
 }
 
-.ComponentItem-sectionDescription {
+.DrawerItem-sectionDescription {
   margin: 0;
   font-size: 14px;
   color: var(--puck-color-grey-04);
 }
 
-.ComponentItem-versionList {
+.DrawerItem-versionList {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.ComponentItem-versionRow {
+.DrawerItem-versionRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -130,30 +130,30 @@
   transition: all 150ms ease;
 }
 
-.ComponentItem-versionRow--isDefault {
+.DrawerItem-versionRow--isDefault {
   border-color: var(--puck-color-azure-07);
   background: var(--puck-color-azure-10);
 }
 
-.ComponentItem-versionRow--isMarkedForDeletion {
+.DrawerItem-versionRow--isMarkedForDeletion {
   opacity: 0.6;
   background: var(--puck-color-grey-11);
 }
 
-.ComponentItem-versionInfo {
+.DrawerItem-versionInfo {
   display: flex;
   align-items: center;
   gap: 12px;
   flex: 1;
 }
 
-.ComponentItem-versionNumber {
+.DrawerItem-versionNumber {
   font-size: 14px;
   font-weight: 500;
   color: var(--puck-color-black);
 }
 
-.ComponentItem-defaultBadge {
+.DrawerItem-defaultBadge {
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 4px;
@@ -164,7 +164,7 @@
   letter-spacing: 0.5px;
 }
 
-.ComponentItem-deleteBadge {
+.DrawerItem-deleteBadge {
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 4px;
@@ -175,17 +175,17 @@
   letter-spacing: 0.5px;
 }
 
-.ComponentItem-versionActions {
+.DrawerItem-versionActions {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
-.ComponentItem-migrationOptions {
+.DrawerItem-migrationOptions {
   width: 100%;
 }
 
-.ComponentItem-select {
+.DrawerItem-select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--puck-color-grey-09);
@@ -197,16 +197,16 @@
   transition: border-color 150ms ease;
 }
 
-.ComponentItem-select:hover {
+.DrawerItem-select:hover {
   border-color: var(--puck-color-grey-07);
 }
 
-.ComponentItem-select:focus {
+.DrawerItem-select:focus {
   outline: none;
   border-color: var(--puck-color-azure-07);
 }
 
-.ComponentItem-modalFooter {
+.DrawerItem-modalFooter {
   padding: 20px 32px;
   border-top: 1px solid var(--puck-color-grey-09);
   display: flex;
@@ -215,12 +215,12 @@
   background: var(--puck-color-grey-11);
 }
 
-.ComponentItem-footerLeft {
+.DrawerItem-footerLeft {
   display: flex;
   gap: 12px;
 }
 
-.ComponentItem-footerRight {
+.DrawerItem-footerRight {
   display: flex;
   gap: 12px;
 }

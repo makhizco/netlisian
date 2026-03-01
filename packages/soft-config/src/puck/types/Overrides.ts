@@ -4,7 +4,6 @@ import {
   AsFieldProps,
   DefaultComponentProps,
   Field,
-  Fields,
   Metadata,
   ResolveDataTrigger,
   RootData,

@@ -159,7 +159,9 @@ export const createBuildersSlice = (
         data: {
           ...previous.data,
           root: {
+            ...previous.data.root,
             props: {
+              ...previous.data.root?.props,
               _name: name || "New Soft Component",
             },
           } as Data["root"],

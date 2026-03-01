@@ -1,5 +1,27 @@
 # @netlisian/softconfig
 
+## 0.1.1
+
+### Patch Changes
+
+- feat: Updated the flow to generate camelCase key from name. Provided overrides to use custom componentKeyGenerator. Setup categories.
+
+## 0.1.0
+
+### Minor Changes
+
+- feat: Modified the flow to build and remodel in place rather than replacing the whole data at the root.
+
+  feat: Added a new flag `showVersionFields` to control the visibility of version-related fields in the editor UI.
+
+  feat: Optimized the soft-renderer to use fast-deep-equal for prop comparison, improving performance during remodeling.
+
+## 0.0.11
+
+### Patch Changes
+
+- feat: Added support for hydrating functions after puck has been rendered
+
 ## 0.0.9
 
 ### Patch Changes

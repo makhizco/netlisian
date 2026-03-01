@@ -18,7 +18,7 @@ export const ActionBarOverride = (props: {
   parentAction?: React.ReactNode;
   children?: React.ReactNode;
 }) => {
-  const { handleBuild } = useBuild();
+  const { handleBuild } = useBuild("Custom Name");
   const { handleRemodel } = useRemodel();
   const { handleDecompose } = useDecompose();
   const overrides = useSoftConfig((s) => s.overrides);
