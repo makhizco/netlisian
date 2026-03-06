@@ -3,6 +3,7 @@ import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { useState, useCallback } from "react";
 import { useActionEvent } from "../hooks/useActionEvent";
+import type { CompletedComponentResult } from "../store/slices/builder";
 
 const useCustomPuck = createUsePuck();
 
@@ -12,8 +13,7 @@ export const useComplete = () => {
   const setHistories = useCustomPuck((s) => s.history.setHistories);
   const getItemBySelector = useCustomPuck((s) => s.getItemBySelector);
   const status = useSoftConfig((s) => s.state);
-  const softComponents = useSoftConfig((s) => s.softComponents);
-  const [newComponent, setNewComponent] = useState<string | null>(null);
+  const [newComponent, setNewComponent] = useState<CompletedComponentResult | null>(null);
   const { triggerAction } = useActionEvent();
 
   const handleComplete = useCallback(() => {
@@ -23,25 +23,25 @@ export const useComplete = () => {
     }
 
     try {
-      const componentName = complete(appState, setHistories, getItemBySelector);
-      setNewComponent(componentName);
+      const completedComponent = complete(appState, setHistories, getItemBySelector);
+      setNewComponent(completedComponent);
       
       // Get the component data and soft component info
       const componentData = appState.data.root;
-      const softComponent = softComponents[componentName]?.versions[softComponents[componentName]?.defaultVersion];
       
-      if (softComponent && componentData) {
+      if (componentData) {
         void triggerAction({
           type: "complete",
           payload: {
-            id: componentName,
+            id: completedComponent.id,
+            version: completedComponent.version,
             componentData,
-            softComponent,
+            softComponent: completedComponent.softComponent,
           },
         });
       }
       
-      return componentName;
+      return completedComponent;
     } catch (error) {
       console.error("Failed to complete:", error);
       notify.error(
@@ -50,7 +50,7 @@ export const useComplete = () => {
       );
       return null;
     }
-  }, [complete, appState, setHistories, status, softComponents, triggerAction, getItemBySelector]);
+  }, [complete, appState, setHistories, status, triggerAction, getItemBySelector]);
 
   const canComplete = status === "building" || status === "remodeling";
 

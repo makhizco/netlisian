@@ -9,6 +9,7 @@ import getClassNameFactory from "../lib/get-class-name-factory";
 import styles from "./DrawerItem.module.css";
 import { Modal } from "../components/modal";
 import { shallow } from "zustand/shallow";
+import { useActionEvent } from "../hooks/useActionEvent";
 
 const getClassName = getClassNameFactory("DrawerItem", styles);
 const usePuck = createUsePuck();
@@ -34,6 +35,7 @@ export const DrawerItem = (props: {
   const { handleDemolish } = useDemolish();
   const { handleSetDefaultVersion, getVersions, getDefaultVersion } =
     useSetDefaultVersion();
+  const { triggerAction } = useActionEvent();
 
   const [isEditing, setIsEditing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -41,9 +43,7 @@ export const DrawerItem = (props: {
   const [versionsToDelete, setVersionsToDelete] = useState<Set<string>>(
     new Set()
   );
-  const [migrateVersionMap, setMigrateVersionMap] = useState<
-    Record<string, string>
-  >({});
+  const [migrationTarget, setMigrationTarget] = useState<string>("decompose");
   const useVersioning = useSoftConfig((s) => s.showVersionFields);
 
   const versions = getVersions(props.name);
@@ -67,6 +67,14 @@ export const DrawerItem = (props: {
           break;
         } else {
           removeSoftComponentVersion(props.name, version);
+          void triggerAction({
+            type: "deleteVersion",
+            payload: {
+              id: props.name,
+              version,
+              migrateToVersion: migrationTarget,
+            },
+          });
         }
       }
     }
@@ -74,14 +82,14 @@ export const DrawerItem = (props: {
     setIsEditing(false);
     setSelectedVersion("");
     setVersionsToDelete(new Set());
-    setMigrateVersionMap({});
+    setMigrationTarget("decompose");
   };
 
   const handleCancel = () => {
     setIsEditing(false);
     setSelectedVersion("");
     setVersionsToDelete(new Set());
-    setMigrateVersionMap({});
+    setMigrationTarget("decompose");
   };
 
   const toggleVersionForDeletion = (version: string) => {
@@ -106,6 +114,13 @@ export const DrawerItem = (props: {
 
   if (softComponents.has(props.name)) {
     const availableVersions = versions.filter((v) => !versionsToDelete.has(v));
+    const migrationTargets = [
+      { value: "decompose", label: "Decompose to basic elements" },
+      ...availableVersions.map((version) => ({
+        value: version,
+        label: `Migrate to Version ${version}`,
+      })),
+    ];
 
     return (
       <>
@@ -191,26 +206,43 @@ export const DrawerItem = (props: {
                     </div>
                   </div>
 
-                  {versionsToDelete.size > 0 && availableVersions.length > 0 && (
+                  {versionsToDelete.size > 0 && (
                     <div className={getClassName("section")}>
                       <h3 className={getClassName("sectionTitle")}>Migration Settings</h3>
                       <div className={getClassName("migrationOptions")}>
-                        <select
-                          title="Select migration version"
-                          className={getClassName("select")}
-                          value={migrateVersionMap[Array.from(versionsToDelete)[0]] || "decompose"}
-                          onChange={(e) => {
-                            const newMap = { ...migrateVersionMap };
-                            versionsToDelete.forEach((v) => { newMap[v] = e.target.value; });
-                            setMigrateVersionMap(newMap);
-                          }}
+                        <div
+                          className={getClassName("migrationList")}
+                          role="radiogroup"
+                          aria-label="Migration target"
                         >
-                          <option value="decompose">Decompose to basic elements</option>
-                          {availableVersions.map((v) => (
-                            <option key={v} value={v}>Migrate to Version {v}</option>
-                          ))}
-                        </select>
+                          {migrationTargets.map((target) => {
+                            const isSelected = migrationTarget === target.value;
+
+                            return (
+                              <button
+                                key={target.value}
+                                type="button"
+                                role="radio"
+                                aria-checked={isSelected}
+                                className={`${getClassName("migrationOption")} ${
+                                  isSelected
+                                    ? getClassName("migrationOption--isSelected")
+                                    : ""
+                                }`}
+                                onClick={() => setMigrationTarget(target.value)}
+                              >
+                                <span className={getClassName("migrationOptionLabel")}>
+                                  {target.label}
+                                </span>
+                                {isSelected && <Check size={14} />}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
+                      <p className={getClassName("helpText")}>
+                        Choose where to move existing instances of the deleted versions.
+                      </p>
                     </div>
                   )}
                 </>

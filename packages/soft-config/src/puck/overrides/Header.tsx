@@ -34,9 +34,9 @@ export const Header = ({
           <Button
             variant="primary"
             onClick={() => {
-              const name = handleComplete();
-              if (name) {
-                setNewComponent(name);
+              const completedComponent = handleComplete();
+              if (completedComponent) {
+                setNewComponent(completedComponent);
               }
             }}
           >

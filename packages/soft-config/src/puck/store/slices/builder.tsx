@@ -19,6 +19,13 @@ import { createVersionedComponentConfig } from "../../lib/create-versioned-compo
 import { decomposeSoftComponent } from "../../lib/decompose-soft-component";
 import { demolishSoftComponent } from "../../lib/demolish-soft-component";
 import { createComponentKeyFromName } from "../../lib/component-key";
+import { VersionedSoftComponent } from "../../types/SoftComponent";
+
+export type CompletedComponentResult = {
+  id: string;
+  version: string;
+  softComponent: VersionedSoftComponent["versions"][string];
+};
 
 export type BuildersSlice = {
   /**
@@ -93,7 +100,7 @@ export type BuildersSlice = {
     appState: AppState<any>,
     setHistories: PuckApi["history"]["setHistories"],
     getItemBySelector: PuckApi["getItemBySelector"]
-  ) => string;
+  ) => CompletedComponentResult;
 
   demolish: (
     componentName: string,
@@ -499,10 +506,26 @@ export const createBuildersSlice = (
       };
     });
 
-    // Rebuild all dependent components after successfully completing the component
-    get().rebuildDependents(componentName, version!);
+    if (!version) {
+      throw new Error("Failed to resolve completed component version.");
+    }
 
-    return componentName;
+    const completedSoftComponent = get().softComponents[componentName]?.versions[version];
+
+    if (!completedSoftComponent) {
+      throw new Error(
+        `Completed soft component \"${componentName}\" version \"${version}\" not found.`
+      );
+    }
+
+    // Rebuild all dependent components after successfully completing the component
+    get().rebuildDependents(componentName, version);
+
+    return {
+      id: componentName,
+      version,
+      softComponent: completedSoftComponent,
+    };
   },
   inspect: (componentName, puckDispatch) => {
     if (get().state !== "inspecting") {

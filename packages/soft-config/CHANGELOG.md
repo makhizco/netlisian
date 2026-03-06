@@ -1,5 +1,19 @@
 # @netlisian/softconfig
 
+## 0.1.3
+
+### Patch Changes
+
+- fix: useComplete action call back with proper props of new component passing
+  feat: setup action for delete version
+  fix: Added scroll to top on open drawer for better UX when many components are present
+
+## 0.1.2
+
+### Patch Changes
+
+- feat: fixed issue to properly use name and created custom drawer to support category changes.
+
 ## 0.1.1
 
 ### Patch Changes

@@ -1,7 +1,9 @@
 import { createUsePuck } from "@measured/puck";
+import type { DefaultComponentProps } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { useActionEvent } from "../hooks/useActionEvent";
+import type { VersionedSoftComponent } from "../types/SoftComponent";
 
 const useCustomPuck = createUsePuck();
 
@@ -19,14 +21,23 @@ export const useRemodel = () => {
   const handleRemodel = (componentName?: string) => {
     if (status !== "ready") {
       notify.error("Can only remodel when in ready state.");
-      return;
+      return null;
     }
 
     const name = componentName || selectedItem?.type;
     if (!name || !Object.keys(softComponents).includes(name)) {
       notify.error("Selected component is not a soft component.");
-      return;
+      return null;
     }
+
+    const selectedVersion =
+      ((selectedItem?.props as DefaultComponentProps | undefined)?.version as string | undefined) ||
+      softComponents[name]?.defaultVersion;
+
+    const selectedSoftComponent =
+      selectedVersion
+        ? softComponents[name]?.versions[selectedVersion]
+        : undefined;
 
     try {
       remodel(history, selectedItem, itemSelector, dispatch, refreshPermissions);
@@ -35,14 +46,27 @@ export const useRemodel = () => {
         type: "remodel",
         payload: {
           id: name,
+          version: selectedVersion,
+          softComponent: selectedSoftComponent as VersionedSoftComponent["versions"][string] | undefined,
         },
       });
+
+      if (selectedVersion && selectedSoftComponent) {
+        return {
+          id: name,
+          version: selectedVersion,
+          softComponent: selectedSoftComponent,
+        };
+      }
+
+      return { id: name, version: selectedVersion };
     } catch (error) {
       console.error("Failed to remodel:", error);
       notify.error(
         "Failed to remodel: " +
           (error instanceof Error ? error.message : String(error))
       );
+      return null;
     }
   };
 

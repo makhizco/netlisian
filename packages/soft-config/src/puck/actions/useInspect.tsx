@@ -3,10 +3,11 @@ import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { useEffect } from "react";
 import { useActionEvent } from "../hooks/useActionEvent";
+import type { CompletedComponentResult } from "../store/slices/builder";
 
 const useCustomPuck = createUsePuck();
 
-export const useInspect = (componentName: string | null) => {
+export const useInspect = (component: CompletedComponentResult | null) => {
   const inspect = useSoftConfig((s) => s.builder.inspect);
   const dispatch = useCustomPuck((s) => s.dispatch);
   const status = useSoftConfig((s) => s.state);
@@ -14,18 +15,20 @@ export const useInspect = (componentName: string | null) => {
 
   useEffect(() => {
     if (status !== "inspecting") return;
-    if (!componentName) {
+    if (!component) {
       notify.error("No component to inspect.");
       return;
     }
 
     try {
-      inspect(componentName, dispatch);
+      inspect(component.id, dispatch);
 
       void triggerAction({
         type: "inspect",
         payload: {
-          id: componentName,
+          id: component.id,
+          version: component.version,
+          softComponent: component.softComponent,
         },
       });
     } catch (error) {
@@ -35,5 +38,5 @@ export const useInspect = (componentName: string | null) => {
           (error instanceof Error ? error.message : String(error))
       );
     }
-  }, [status, componentName, inspect, dispatch, triggerAction]);
+  }, [status, component, inspect, dispatch, triggerAction]);
 };

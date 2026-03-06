@@ -20,14 +20,38 @@ export const Modal = ({
     setRootEl(document.getElementById("puck-portal-root"));
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen, onClose]);
+
   if (!rootEl) {
     return <div />;
   }
 
   return createPortal(
-    <div className={getClassName({ isOpen })} onClick={onClose}>
+    <div
+      className={getClassName({ isOpen })}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div
         className={getClassName("inner")}
+        role="dialog"
+        aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
         {children}

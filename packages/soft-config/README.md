@@ -61,6 +61,56 @@ import "@netlisian/softconfig/styles.css";
 
 You can supply custom overrides (action bar, headers, map UI, etc.) through the `overrides` prop. See `src/puck/types/Overrides.ts` for the full surface.
 
+## Action Lifecycle Events
+
+`SoftConfigProvider` supports `onActions` for lifecycle callbacks:
+
+- `build` → when build mode starts
+- `remodel` → when remodel mode starts
+- `complete` → when a build/remodel is finalized
+- `inspect` → when inspect is requested
+- `demolish` → when a soft component is deleted
+- `setDefaultVersion`, `decompose`, `cancel`, `publish`
+
+Version-aware payloads are included for build finalization and inspection flows:
+
+```ts
+type ActionEventPayload =
+  | {
+      type: "remodel";
+      payload: {
+        id: string;
+        version?: string;
+        softComponent?: VersionedSoftComponent["versions"][string];
+      };
+    }
+  | {
+      type: "complete";
+      payload: {
+        id: string;
+        version: string;
+        componentData: Record<string, any>;
+        softComponent: VersionedSoftComponent["versions"][string];
+      };
+    }
+  | {
+      type: "inspect";
+      payload: {
+        id: string;
+        version?: string;
+        softComponent?: VersionedSoftComponent["versions"][string];
+      };
+    }
+  | {
+      type: "demolish";
+      payload: {
+        id: string;
+      };
+    };
+```
+
+This contract allows downstream consumers (for example, save/sync bridges) to persist using exact version metadata without relying on inferred/default versions.
+
 ## Development
 
 - Build: `pnpm --filter @netlisian/softconfig build`

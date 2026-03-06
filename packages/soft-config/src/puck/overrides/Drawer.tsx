@@ -124,11 +124,6 @@ export const Drawer = (_props: { children?: React.ReactNode }) => {
     );
   }
 
-  console.log(
-    getClassName(),
-    getCategoryClassName(),
-    getCategoryClassName({ isExpanded: true }),
-  )
   return (
     <div className={getClassName()}>
       {categoryEntries.map(([id, cat]) => (

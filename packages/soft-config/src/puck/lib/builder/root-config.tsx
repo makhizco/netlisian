@@ -113,12 +113,7 @@ export const builderRootConfig = (
         };
       else delete fields._fieldSettings;
 
-
-    if (
-      showVersionFields &&
-      data?._versions?.length &&
-      (!data?._version || changed._version || changed._fieldSettings)
-    ) {
+    if (showVersionFields && data?._versions?.length) {
       const latestVersion =
         data._versions[data._versions.length - 1] || "1.0.0";
 

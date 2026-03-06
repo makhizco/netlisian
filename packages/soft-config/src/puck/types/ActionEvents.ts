@@ -11,12 +11,15 @@ export type ActionEventPayload =
       type: "remodel";
       payload: {
         id: string;
+        version?: string;
+        softComponent?: VersionedSoftComponent["versions"][string];
       };
     }
   | {
       type: "complete";
       payload: {
         id: string;
+        version: string;
         componentData: Record<string, any>;
         softComponent: VersionedSoftComponent["versions"][string];
       };
@@ -39,9 +42,19 @@ export type ActionEventPayload =
       };
     }
   | {
+      type: "deleteVersion";
+      payload: {
+        id: string;
+        version: string;
+        migrateToVersion?: string;
+      };
+    }
+  | {
       type: "inspect";
       payload: {
         id: string;
+        version?: string;
+        softComponent?: VersionedSoftComponent["versions"][string];
       };
     }
   | {
