@@ -52,7 +52,7 @@ export const SoftConfigProvider = ({
   const validateAction = useMemo(
     () => (action: PuckAction): boolean => {
       const currentState = store.getState();
-      
+
       // Only validate actions when NOT in "ready" state
       if (currentState.state === "ready") {
         return true;
@@ -63,19 +63,24 @@ export const SoftConfigProvider = ({
 
       // replace is most frequent check it first
       if (action.type === "replace") {
-        if (action.data.props.id && editableIds.has(action.data.props.id)) {
+        const parentId = action.destinationZone?.split(":")[0];
+        if (action.data.props.id && (editableIds.has(action.data.props.id))) {
+          return true;
+        } else if (parentId && editableIds.has(parentId)) {
+          // Add editable id of the new component
+          currentState.addEditableComponentId(action.data.props.id);
           return true;
         }
-        
+
         return false;
       }
 
       // Insert and Duplicate: validate parent zone
       if (action.type === "insert" || action.type === "duplicate") {
-        const zone = action.type === "insert" 
+        const zone = action.type === "insert"
           ? action.destinationZone
           : action.sourceZone;
-        
+
         const parentId = zone?.split(":")[0];
         if (parentId && !editableIds.has(parentId)) {
           return false;
@@ -90,7 +95,7 @@ export const SoftConfigProvider = ({
         }
         return true;
       }
-      
+
 
       // Remove, Move, Reorder, Replace: validate component being edited
       if (

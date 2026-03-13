@@ -26,6 +26,7 @@ export const ActionBarOverride = (props: {
   const editableIds = useSoftConfig((s) => s.editableComponentIds);
   const selectedItem = usePuck((s) => s.selectedItem);
   const status = useSoftConfig((s) => s.state);
+  const itemSelector = usePuck((s) => s.appState.ui.itemSelector);
   const softKeys = Object.keys(softComponents);
 
   const key = useMemo(() => createComponentKeyFromName(props.label || "", overrides, {
@@ -40,7 +41,8 @@ export const ActionBarOverride = (props: {
 
   const isSoftComponent = softKeys.includes(key!);
   const selectedId = selectedItem?.props?.id;
-  const isEditable = Boolean(selectedId && editableIds.has(selectedId));
+  const parentId = itemSelector?.zone?.split(":")[0];
+  const isEditable = Boolean(selectedId && (editableIds.has(selectedId) || (parentId && editableIds.has(parentId))));
 
   return (
     <div className={getClassName()}>
