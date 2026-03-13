@@ -1,4 +1,4 @@
-import { Slot, Config, DefaultComponentProps, Field, WithId, WithPuckProps } from "@measured/puck";
+import { Config, DefaultComponentProps, Field } from "@measured/puck";
 
 export type BuilderRootConfig = {
   _name: string;
@@ -12,6 +12,7 @@ export type BuilderRootConfig = {
   _fieldSettings?: {
     [key: string]: any;
   };
+  [key: string]: any;
 };
 
 export type BuilderComponentConfig = {

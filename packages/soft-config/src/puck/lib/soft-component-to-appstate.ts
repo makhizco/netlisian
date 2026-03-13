@@ -1,10 +1,12 @@
-import { AppState, ComponentData, ComponentDataOptionalId, Config, Field, Fields } from "@measured/puck";
-import { SoftComponent, SoftSubComponent } from "../types/SoftComponent";
+import { AppState, ComponentData, ComponentDataOptionalId, Config, Fields } from "@measured/puck";
+import { SoftSubComponent } from "../types/SoftComponent";
 import { VersionedSoftComponent } from "../types/SoftComponent";
 import { generateId } from "./generate-id";
 import { BuilderRootConfig } from "../types/BuilderConfig";
 import { getFieldSettingsByPath } from "./get-settings-by-path";
 import { setPropertyByPath } from "./set-prop-by-path";
+import { getComponentNameFromKey } from "./component-key";
+import { Overrides } from "../types/Overrides";
 
 /**
  * Convert Puck fields back to soft field definitions
@@ -190,6 +192,7 @@ export const softComponentToAppState = (
   versions: string[],
   componentProps: Record<string, any>,
   componentConfigs: Config["components"],
+  overrides: Overrides,
   displayName?: string,
   category?: string
 ): Pick<AppState["data"], "root" | "content"> => {
@@ -208,14 +211,22 @@ export const softComponentToAppState = (
   });
 
   // Build root props for the builder
-  const rootProps: BuilderRootConfig = {
-    _name: displayName || componentName,
+  let rootProps: BuilderRootConfig = {
+    _name: displayName || getComponentNameFromKey(componentName, overrides),
     _category: category,
     _version: version,
     _versions: versions,
     _fields: fields,
     _fieldSettings: fieldSettings,
+    ...(softComponent.rootProps || {}),
   };
+
+  if (overrides.onRemodel) {
+    rootProps = {
+      ...rootProps,
+      ...overrides.onRemodel(componentName),
+    };
+  }
 
   // Reconstruct component tree from soft components
   const content = reconstructComponents(

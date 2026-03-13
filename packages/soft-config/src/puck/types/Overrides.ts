@@ -19,11 +19,14 @@ type RenderFunc<
 export type Overrides = {
   componentNameToKey?: (
     displayName: string,
-    context: {
+    context: Partial<BuilderRootConfig> & {
       existingKeys: string[];
       state: "building" | "remodeling" | "ready" | "inspecting";
     }
   ) => string;
+  componentKeyToName?: (key: string) => string;
+  onRemodel?: (key: string) => Record<string, any>;
+  additionalRootFields?: Record<string, Field>;
   map?: RenderFunc<{
     rootProps: BuilderRootConfig;
     toOptions: {
@@ -53,8 +56,8 @@ export type Overrides = {
   onActions?: OnActionsCallback;
   name?: Field<string>;
   categories?: Field<string | undefined>;
-  onRootsDataChange?: (
-    data: RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>,
+  resolveRootData?: (
+    props: RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>,
     params: {
       changed: Partial<
         Record<keyof BuilderRootConfig, boolean> & {
@@ -65,5 +68,13 @@ export type Overrides = {
       metadata: Metadata;
       trigger: ResolveDataTrigger;
     },
-  ) => void;
+    context: {
+      editingComponent?: string;
+    }
+  ) => {
+    props:
+      | RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>
+      | Promise<RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>>;
+    readOnly: Readonly<Record<string, boolean>> | undefined;
+  };
 };

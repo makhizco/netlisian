@@ -1,6 +1,5 @@
 import { SoftRender } from "../components/soft-render";
-import { useEffect } from "react";
-import { SoftComponent, SoftComponents } from "../types/SoftComponent";
+import { SoftComponents } from "../types/SoftComponent";
 import { ComponentConfig, Config, DefaultComponentProps, Field } from "@measured/puck";
 
 export const createVersionedComponentConfig = (

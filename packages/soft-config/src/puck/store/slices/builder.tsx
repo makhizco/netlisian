@@ -11,6 +11,7 @@ import {
 } from "@measured/puck";
 import { AppStore } from "../";
 import { builderConfig } from "../../lib/builder/builder-config";
+import { BuilderRootConfig } from "../../types/BuilderConfig";
 import { SoftComponent } from "../../types/SoftComponent";
 import { softComponentFromAppState } from "../../lib/soft-component-from-appstate";
 import { softComponentToAppState } from "../../lib/soft-component-to-appstate";
@@ -272,6 +273,7 @@ export const createBuildersSlice = (
       versions,
       selectedItem.props,
       get().softConfig.components,
+      get().overrides,
       softComponentMeta?.name || softComponentName,
       softComponentMeta?.category
     );
@@ -363,6 +365,7 @@ export const createBuildersSlice = (
         zone: itemSelector.zone || rootDroppableId,
       },
       editingComponentId: selectedItem.props.id,
+      editingComponent: softComponentName,
       editableComponentIds: editableIds,
       state: "remodeling",
     }));
@@ -419,8 +422,11 @@ export const createBuildersSlice = (
       }
     )?._category;
 
+    const rootProps = appState.data.root?.props as BuilderRootConfig;
+
     const componentName =
       createComponentKeyFromName(displayName, get().overrides, {
+        ...(rootProps || {}),
         existingKeys: Object.keys(get().softComponents),
         state: get().state,
       });
@@ -501,6 +507,7 @@ export const createBuildersSlice = (
         storedConfig: undefined,
         state: "inspecting",
         originalHistory: [],
+        editingComponent: null,
         editingComponentId: null,
         editableComponentIds: new Set(),
       };
@@ -573,6 +580,7 @@ export const createBuildersSlice = (
       itemSelector: null,
       originalItem: null,
       state: "ready",
+      editingComponent: null,
       editingComponentId: null,
       editableComponentIds: new Set(),
     }));
@@ -691,6 +699,7 @@ export const createBuildersSlice = (
       versions,
       currentProps,
       get().softConfig.components,
+      get().overrides,
       softComponentMeta?.name || componentName,
       softComponentMeta?.category
     );

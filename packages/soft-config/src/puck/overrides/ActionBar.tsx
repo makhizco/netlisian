@@ -25,18 +25,30 @@ export const ActionBarOverride = (props: {
   const softComponents = useSoftConfig((s) => s.softComponents, shallow);
   const editableIds = useSoftConfig((s) => s.editableComponentIds);
   const selectedItem = usePuck((s) => s.selectedItem);
+  const rootProps = usePuck((s) => s.appState.data.root.props);
   const status = useSoftConfig((s) => s.state);
   const itemSelector = usePuck((s) => s.appState.ui.itemSelector);
   const softKeys = Object.keys(softComponents);
 
-  const key = useMemo(() => createComponentKeyFromName(props.label || "", overrides, {
-    existingKeys: softKeys,
-    state: status
-  }), [
+  const key = useMemo(() => {
+    // Prefer the selected component type when available to avoid label->key drift.
+    const selectedType = selectedItem?.type;
+    if (selectedType && softKeys.includes(selectedType)) {
+      return selectedType;
+    }
+
+    return createComponentKeyFromName(props.label || "", overrides, {
+      ...(rootProps || {}),
+      existingKeys: softKeys,
+      state: status,
+    });
+  }, [
     props.label,
     overrides,
+    selectedItem?.type,
     softKeys,
-    status
+    status,
+    rootProps,
   ]);
 
   const isSoftComponent = softKeys.includes(key!);

@@ -146,6 +146,26 @@ export const softComponentFromAppState = (
   const field_settings =
     (rootProps._fieldSettings as BuilderRootConfig["_fieldSettings"]) || {};
 
+  // Extract all custom root fields (all starting with _ but not built-in)
+  const builtInRootProps = new Set([
+    "_name",
+    "_category",
+    "_version",
+    "_versions",
+    "_fields",
+    "_fieldSettings",
+  ]);
+
+  const customRootProps = Object.keys(rootProps)
+    .filter((key) => key.startsWith("_") && !builtInRootProps.has(key))
+    .reduce(
+      (acc, key) => {
+        acc[key] = rootProps[key];
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+
   const slots: SoftComponent["slots"] = {};
 
   const components = getSubComponents(
@@ -179,6 +199,7 @@ export const softComponentFromAppState = (
       },
       fieldSettings: field_settings,
       defaultProps,
+      rootProps: customRootProps,
       components,
       slots,
     },

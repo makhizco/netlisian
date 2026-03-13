@@ -1,21 +1,22 @@
 import {
-  AutoField,
+  AsFieldProps,
   Config,
   createUsePuck,
   Field,
-  Label,
   RootConfig,
+  RootData,
   walkTree,
+  WithChildren,
 } from "@measured/puck";
 import { BuilderRootConfig } from "../../types/BuilderConfig";
 import getFieldSettings from "../get-field-settings";
 import { getFieldSettingsByPath } from "../get-settings-by-path";
 import { setPropertyByPath } from "../set-prop-by-path";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useSoftConfig } from "../../context/useStore";
-import { confirm } from "../confirm";
 import { AppStore } from "../../store";
 import { useDebounce } from "use-debounce";
+
 
 const useCustomPuck = createUsePuck();
 
@@ -49,25 +50,26 @@ export const builderRootConfig = (
   showVersionFields: boolean = true
 ): RootConfig<BuilderRootConfig> => ({
   fields: {
-    _name: overrides.name || {
+    _name: (overrides.name || {
       type: "text",
       label: "Soft Component Name",
-    },
-    _category: overrides.categories || {
+    }) as Field,
+    _category: (overrides.categories || {
       type: "select",
       label: "Category",
       options: [
-
         ...(Object.keys(config.categories || {}).map((cat) => ({
           label: config.categories?.[cat].title || cat,
           value: cat,
         })) || []),
         {
-          label: (Object.keys(config.categories || {}).length ? "Other" : "Uncategorized"),
+          label: Object.keys(config.categories || {}).length
+            ? "Other"
+            : "Uncategorized",
           value: undefined,
         },
       ],
-    },
+    }) as Field,
     _fields: {
       type: "array",
       label: "Fields",
@@ -98,7 +100,8 @@ export const builderRootConfig = (
           ],
         },
       },
-    },
+    } as Field,
+    ...(overrides.additionalRootFields || {}),
   },
   resolveFields({ props: data }, { fields, changed }) {
     if (!data?._fields || changed._fields || changed._fieldSettings)
@@ -122,7 +125,7 @@ export const builderRootConfig = (
         type: "select",
         label: "Version",
         options: [
-          ...data._versions.map((v) => ({ label: v, value: v })),
+          ...data._versions.map((v: string) => ({ label: v, value: v })),
           {
             label: `${updateVersion(latestVersion, "patch")} (Patch)`,
             value: updateVersion(latestVersion, "patch"),
@@ -136,7 +139,7 @@ export const builderRootConfig = (
             value: updateVersion(latestVersion, "major"),
           },
         ],
-      } as Field<string | undefined>;
+      } as Field;
     } else {
       delete fields._version;
     }
@@ -144,17 +147,19 @@ export const builderRootConfig = (
     return fields;
   },
   resolveData: (props, params) => {
-    if (overrides.onRootsDataChange)
-      overrides.onRootsDataChange(props, params)
+    if (overrides.resolveRootData) {
+      return overrides.resolveRootData(props, params, { editingComponent });
+    }
 
-    return {
+    let result: {
+      props: RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>;
+      readOnly: Readonly<Record<string, boolean>> | undefined;
+    } = {
       props,
-      readOnly: Boolean(editingComponent)
-        ? {
-          _name: true,
-        }
-        : undefined,
+      readOnly: undefined,
     };
+
+    return result;
   },
   render: (props) => {
     const fieldSettings = props?._fieldSettings;

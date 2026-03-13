@@ -71,6 +71,7 @@ export type AppStore = {
   hydrateTransforms: () => void;
   setSoftComponentDefaultVersion: (key: string, version: string) => void;
   removeSoftComponent: (key: string) => void;
+  editingComponent: string | null;
   editingComponentId: string | null;
   editableComponentIds: Set<string>;
   setEditableComponentIds: (ids: Set<string>) => void;
@@ -163,6 +164,7 @@ export const createSoftConfigStore = (
         onActions,
         iframeDocRef,
         showVersionFields: showVersionFields,
+        editingComponent: null,
         setShowVersionFields: (show: boolean) => set({ showVersionFields: show }),
         getIframeDoc: () => iframeDocRef.current,
         setIframeDoc: (doc: Document | null) => {

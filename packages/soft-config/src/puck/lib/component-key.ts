@@ -1,4 +1,5 @@
 import { Overrides } from "../types/Overrides";
+import { BuilderRootConfig } from "../types/BuilderConfig";
 
 const defaultToCamelCase = (value: string): string => {
   const tokens = value
@@ -18,7 +19,7 @@ const defaultToCamelCase = (value: string): string => {
 export const createComponentKeyFromName = (
   displayName: string,
   overrides: Overrides,
-  context: {
+  context: Partial<BuilderRootConfig> & {
     existingKeys: string[];
     state: "building" | "remodeling" | "ready" | "inspecting";
   }
@@ -28,4 +29,14 @@ export const createComponentKeyFromName = (
     : defaultToCamelCase(displayName);
 
   return key.trim();
+};
+
+export const getComponentNameFromKey = (
+  key: string,
+  overrides: Overrides
+): string => {
+  if (overrides.componentKeyToName) {
+    return overrides.componentKeyToName(key);
+  }
+  return key;
 };
