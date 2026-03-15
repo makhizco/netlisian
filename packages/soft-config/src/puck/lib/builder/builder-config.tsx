@@ -89,7 +89,14 @@ export const builderConfig = (
               rootProps?._fields || [],
               rootProps?._fieldSettings || {}
             );
-            const toOptions = generateFieldOptions(defaultFields, []);
+            const toOptionsFields = component.resolveFields && data.props?._map
+              ? await component.resolveFields(
+                { ...data, props: { ...data.props, _map: undefined } },
+                params
+              )
+              : defaultFields;
+
+            const toOptions = generateFieldOptions(toOptionsFields, [], "");
 
             fields._map = overrides.map
               ? {
