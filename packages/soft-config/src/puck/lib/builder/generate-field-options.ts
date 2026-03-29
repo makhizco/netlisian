@@ -1,6 +1,41 @@
-// Utility to generate field options recursively for select fields
-// Used for both "to" and "from" field mapping
 import type { Field } from "@measured/puck";
+import type { MappingOption } from "../../types/Mapping";
+import type { SoftFieldDefinition, SoftFieldSettings } from "../../types/SoftFields";
+
+const hasArrayMappingPath = (value: string) => value.includes("[]");
+
+const isBareArrayPath = (value: string) =>
+  !hasArrayMappingPath(value) && !value.includes(".");
+
+/**
+ * Filters toOptions based on the selected fromPath.
+ * - If fromPath contains an array segment, only return array-path to-options.
+ * - If fromPath is a bare array, only return bare array to-options.
+ * - Otherwise, hide array-path to-options (prevent array-to-scalar mismatches).
+ */
+export function filterToOptionsForFrom(
+  fromPath: string | undefined,
+  toOptions: MappingOption[],
+): MappingOption[] {
+  if (!fromPath) return toOptions;
+
+  const fromHasArrayMapping = hasArrayMappingPath(fromPath);
+  const fromIsBareArray = isBareArrayPath(fromPath);
+
+  return toOptions.filter((option) => {
+    const optionHasArrayMapping = hasArrayMappingPath(option.value);
+
+    if (fromHasArrayMapping) {
+      return optionHasArrayMapping;
+    }
+
+    if (fromIsBareArray) {
+      return isBareArrayPath(option.value);
+    }
+
+    return !optionHasArrayMapping;
+  });
+}
 
 /**
  * Recursively generates options for select fields from a nested field structure.
@@ -10,25 +45,24 @@ import type { Field } from "@measured/puck";
  */
 export function generateFieldOptions(
   fields: Record<string, Field>,
-  selectedFields: string[],
-  prefix = ""
-): Array<{ label: string; value: string; type: Field["type"] | "reference" }> {
-  const opts: Array<{ label: string; value: string; type: Field["type"] | "reference" }> = [];
+  prefix = "",
+): MappingOption[] {
+  const opts: MappingOption[] = [];
   function recurse(current: Record<string, Field>, prefix: string) {
     Object.entries(current).forEach(([key, fld]) => {
       if (fld.type === "slot") return;
       if (key === "_map") return;
       if (key === "_slotEnabled") return;
+      
       const path = prefix ? `${prefix}.${key}` : key;
-      if (selectedFields.includes(path)) {
-        return;
-      }
-      opts.push({ label: path, value: path, type: fld.type });
       if (fld.type === "object" && fld.objectFields) {
         recurse(fld.objectFields, path);
-      }
-      if (fld.type === "array" && fld.arrayFields) {
-        recurse(fld.arrayFields, path);
+      } else if (fld.type === "array" && fld.arrayFields) {
+        recurse(fld.arrayFields, 
+          path + "[]"
+        );
+      } else {
+        opts.push({ label: path, value: path, type: fld.type });
       }
     });
   }
@@ -37,37 +71,17 @@ export function generateFieldOptions(
 }
 
 export function generateDynamicFieldOptions(
-  _fields?: {
-    name: string;
-    type: Field["type"] | "reference";
-  }[],
-  _fieldSettings?: Record<
-    string,
-    {
-      label: string;
-      defaultValue?: any;
-      options?: { label: string; value: string }[];
-      subFields?: { name: string; type: Field["type"] | "reference" }[];
-      subFieldSettings?: Record<
-        string,
-        {
-          label: string;
-          defaultValue?: any;
-          options?: { label: string; value: string }[];
-          subFields?: { name: string; type: Field["type"] | "reference" }[];
-        }
-      >;
-    }
-  >,
-  prefix: string = ""
-): Array<{ label: string; value: string; type: Field["type"] | "reference" }> {
-  const opts: Array<{ label: string; value: string; type: Field["type"] | "reference" }> = [];
+  _fields: SoftFieldDefinition[] | undefined,
+  _fieldSettings: SoftFieldSettings | undefined,
+  prefix = "",
+): MappingOption[] {
+  const opts: MappingOption[] = [];
 
   if (!_fields || !_fieldSettings) return opts;
   function recurse(
-    fields: NonNullable<typeof _fields>,
-    fieldSettings: NonNullable<typeof _fieldSettings>,
-    currentPrefix: string
+    fields: SoftFieldDefinition[],
+    fieldSettings: SoftFieldSettings,
+    currentPrefix: string,
   ) {
     fields.forEach((field) => {
       const settings = fieldSettings[field.name];
@@ -76,15 +90,17 @@ export function generateDynamicFieldOptions(
         ? `${currentPrefix}.${field.name}`
         : field.name;
 
-      opts.push({ label: path, value: path, type: field.type });
-
       // Handle subfields if they exist
       if (settings?.subFields?.length) {
-        recurse(settings.subFields, settings.subFieldSettings || {}, path);
+
+        recurse(settings.subFields, settings.subFieldSettings || {}, path + (field.type === "array" ? "[]" : ""));
+      } else if (field.type !== "array" && field.type !== "object") {
+        opts.push({ label: path, value: path, type: field.type });
       }
     });
   }
 
   recurse(_fields, _fieldSettings, prefix);
+
   return opts;
 }

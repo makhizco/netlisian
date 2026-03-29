@@ -1,3 +1,5 @@
+import React, { useEffect } from "react";
+import equal from "react-fast-compare";
 import {
   AsFieldProps,
   Config,
@@ -7,16 +9,14 @@ import {
   RootData,
   walkTree,
   WithChildren,
+  WithId,
 } from "@measured/puck";
 import { BuilderRootConfig } from "../../types/BuilderConfig";
 import getFieldSettings from "../get-field-settings";
-import { getFieldSettingsByPath } from "../get-settings-by-path";
-import { setPropertyByPath } from "../set-prop-by-path";
-import { useEffect } from "react";
 import { useSoftConfig } from "../../context/useStore";
 import { AppStore } from "../../store";
-import { useDebounce } from "use-debounce";
-
+import { applyMapping } from "../apply-mapping";
+import type { MapEntry } from "../../types/Mapping";
 
 const useCustomPuck = createUsePuck();
 
@@ -41,6 +41,32 @@ const updateVersion = (
     patch += 1;
   }
   return `${major}.${minor}.${patch}`;
+};
+
+const getSerializableProps = (props: WithId<Record<string, any>>) => {
+  const cleanProps: WithId<{
+    [x: string]: any;
+  }> = {
+    id: props.id, 
+  };
+
+  for (const key in props) {
+    const value = props[key];
+
+    // 1. Drop known Puck injected keys (but KEEP 'id', Puck needs it)
+    if (["children", "puck", "editMode"].includes(key)) continue;
+
+    // 2. Drop React Elements. React nodes are objects that contain a $$typeof symbol.
+    if (value && typeof value === "object" && value.$$typeof) continue;
+
+    // 3. Drop any injected functions or callbacks
+    if (typeof value === "function") continue;
+
+    // If it passed the checks, it's safe serializable data
+    cleanProps[key] = value;
+  }
+
+  return cleanProps;
 };
 
 export const builderRootConfig = (
@@ -104,9 +130,11 @@ export const builderRootConfig = (
     ...(overrides.additionalRootFields || {}),
   },
   resolveFields({ props: data }, { fields, changed }) {
-    if (!data?._fields || changed._fields || changed._fieldSettings)
-      if (data?._fields?.length)
-        fields._fieldSettings = {
+    const newFields = { ...fields };
+
+    if (changed._fields || changed._fieldSettings) {
+      if (data?._fields?.length) {
+        newFields._fieldSettings = {
           type: "object",
           label: "Field Settings",
           objectFields: getFieldSettings(
@@ -114,53 +142,54 @@ export const builderRootConfig = (
             data!._fieldSettings || {}
           ),
         };
-      else delete fields._fieldSettings;
-
-    if (showVersionFields && data?._versions?.length) {
-      const latestVersion =
-        data._versions[data._versions.length - 1] || "1.0.0";
-
-      delete fields._version;
-      fields._version = {
-        type: "select",
-        label: "Version",
-        options: [
-          ...data._versions.map((v: string) => ({ label: v, value: v })),
-          {
-            label: `${updateVersion(latestVersion, "patch")} (Patch)`,
-            value: updateVersion(latestVersion, "patch"),
-          },
-          {
-            label: `${updateVersion(latestVersion, "minor")} (Minor)`,
-            value: updateVersion(latestVersion, "minor"),
-          },
-          {
-            label: `${updateVersion(latestVersion, "major")} (Major)`,
-            value: updateVersion(latestVersion, "major"),
-          },
-        ],
-      } as Field;
-    } else {
-      delete fields._version;
+      } else {
+        delete newFields._fieldSettings;
+      }
     }
 
-    return fields;
-  },
-  resolveData: (props, params) => {
-    if (overrides.resolveRootData) {
-      return overrides.resolveRootData(props, params, { editingComponent });
-    }
+    // if (showVersionFields && data?._versions?.length) {
+    //   const latestVersion = data._versions[data._versions.length - 1] || "1.0.0";
 
-    let result: {
-      props: RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>;
-      readOnly: Readonly<Record<string, boolean>> | undefined;
-    } = {
-      props,
-      readOnly: undefined,
-    };
+    //   newFields._version = {
+    //     type: "select",
+    //     label: "Version",
+    //     options: [
+    //       ...data._versions.map((v: string) => ({ label: v, value: v })),
+    //       {
+    //         label: `${updateVersion(latestVersion, "patch")} (Patch)`,
+    //         value: updateVersion(latestVersion, "patch"),
+    //       },
+    //       {
+    //         label: `${updateVersion(latestVersion, "minor")} (Minor)`,
+    //         value: updateVersion(latestVersion, "minor"),
+    //       },
+    //       {
+    //         label: `${updateVersion(latestVersion, "major")} (Major)`,
+    //         value: updateVersion(latestVersion, "major"),
+    //       },
+    //     ],
+    //   } as Field;
+    // } else {
+    //   delete newFields._version;
+    // }
 
-    return result;
+    return newFields; // Return the new object
   },
+  // resolveData: (props, params) => {
+  //   if (overrides.resolveRootData) {
+  //     return overrides.resolveRootData(props, params, { editingComponent });
+  //   }
+
+  //   const result: {
+  //     props: RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>;
+  //     readOnly: Readonly<Record<string, boolean>> | undefined;
+  //   } = {
+  //     props,
+  //     readOnly: undefined,
+  //   };
+
+  //   return result;
+  // },
   render: (props) => {
     const fieldSettings = props?._fieldSettings;
     const data = useCustomPuck((s) => s.appState.data);
@@ -169,118 +198,68 @@ export const builderRootConfig = (
     const setVersion = useSoftConfig((s) => s.builder.setVersion);
     const state = useSoftConfig((s) => s.state);
 
-    // Debounce field settings to reduce expensive tree walks (500ms for better batching)
-    const [debouncedFieldSettings] = useDebounce(fieldSettings, 500);
-
     useEffect(() => {
-      if (!debouncedFieldSettings || Object.keys(debouncedFieldSettings).length === 0) return;
+      if (!fieldSettings || Object.keys(fieldSettings).length === 0) return;
+
+      const replacements: Array<{
+        id: string;
+        data: any;
+      }> = [];
 
       walkTree(
-        data,
+        {
+          content: data?.content || [],
+          root: data?.root || {},
+        },
         {
           components: config.components,
         },
         (content) =>
           content.map((child) => {
-            const map: {
-              from?: string | string[];
-              to?: string | string[];
-              transform?: (values: any[], props: any) => any;
-            }[] = child.props?._map || [];
-            if (map.length) {
-              map.forEach(({ from, to, transform }) => {
-                if (!from || !to) return;
+            const map = (child.props?._map || []) as MapEntry[];
+            if (!map.length) return child;
 
-                const fromPaths = Array.isArray(from) ? from : [from];
-                const toPaths = Array.isArray(to) ? to : [to];
+            const cleanProps = getSerializableProps(child.props);
+            const { newProps, changed } = applyMapping(
+              cleanProps,
+              fieldSettings,
+              map,
+              "fieldSettings"
+            );
 
-                const inputValues = fromPaths.map((f) =>
-                  getFieldSettingsByPath(props._fieldSettings || {}, f)
-                );
+            // `applyMapping` can touch array bases in stages when several rows
+            // target the same base. Skip replace unless the fully composed
+            // serializable props actually changed; otherwise we can loop.
+            if (!changed || equal(cleanProps, newProps)) return child;
 
-                // Apply transform if provided, otherwise use first input value
-                let value = transform
-                  ? transform(
-                    inputValues.map((v) => v?.defaultValue),
-                    child.props
-                  )
-                  : inputValues[0];
+            replacements.push({
+              id: child.props.id,
+              data: { ...child, props: newProps as typeof child.props },
+            });
 
-                // Handle array result - map to multiple toPaths
-                if (Array.isArray(value)) {
-                  value.forEach((val, i) => {
-                    if (toPaths[i]) {
-                      const originalValue = getFieldSettingsByPath(
-                        child.props,
-                        toPaths[i]
-                      );
-                      if (originalValue !== val) {
-                        const itemSelector = getSelectorForId(child.props.id);
-                        if (!itemSelector) return;
-                        setPropertyByPath(child.props, toPaths[i], val);
-                        dispatch({
-                          type: "replace",
-                          data: child,
-                          destinationIndex: itemSelector?.index,
-                          destinationZone: itemSelector?.zone,
-                        });
-                      }
-                    }
-                  });
-                } else if (toPaths[0]) {
-                  // Handle single value - map to first toPath
-                  const setting = getFieldSettingsByPath(
-                    debouncedFieldSettings,
-                    fromPaths.length === 1
-                      ? fromPaths[0]
-                      : fromPaths.join(".")
-                  );
-                  const defaultValue = setting?.defaultValue;
-                  const originalValue = getFieldSettingsByPath(
-                    child.props,
-                    toPaths[0]
-                  );
-
-                  // Prefer transform result if transform was provided and produced a value,
-                  // otherwise fall back to configured defaultValue, otherwise use computed value
-                  const finalValue =
-                    transform !== undefined && value !== undefined
-                      ? value
-                      : defaultValue !== undefined
-                        ? defaultValue
-                        : value;
-
-                  if (originalValue !== finalValue) {
-                    const itemSelector = getSelectorForId(child.props.id);
-                    if (!itemSelector) return;
-                    setPropertyByPath(child.props, toPaths[0], finalValue);
-                    dispatch({
-                      type: "replace",
-                      data: child,
-                      destinationIndex: itemSelector?.index,
-                      destinationZone: itemSelector?.zone,
-                    });
-                  }
-                }
-              });
-            }
             return child;
           })
       );
-    }, [debouncedFieldSettings, data, dispatch, getSelectorForId, props._fieldSettings]);
+
+      if (!replacements.length) return;
+
+      replacements.forEach((replacement) => {
+        const itemSelector = getSelectorForId(replacement.id);
+        if (!itemSelector) return;
+
+        dispatch({
+          type: "replace",
+          data: replacement.data,
+          destinationIndex: itemSelector.index,
+          destinationZone: itemSelector.zone,
+        });
+      });
+    }, [fieldSettings, data, dispatch, getSelectorForId]);
 
     useEffect(() => {
-      if (state !== "remodeling") return;
-      if (!props?._version || !props?._name) return;
-
-      const currentVersion = props?._version;
-
-      // Check if this is switching to an existing version (not a version bump)
-      if (
-        props._versions?.includes(currentVersion) &&
-        props._versions.length > 1
-      ) {
-        // This is an existing version switch, update the component structure
+      if (state !== "remodeling" || !props?._version || !props?._name) return;
+      const currentVersion = props._version;
+      if (props._versions?.includes(currentVersion) && props._versions.length > 1) {
         setVersion(props._name, currentVersion, props, dispatch);
       }
     }, [props?._version]);
@@ -288,3 +267,4 @@ export const builderRootConfig = (
     return <>{props.children}</>;
   },
 });
+

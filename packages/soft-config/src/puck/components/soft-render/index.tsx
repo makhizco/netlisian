@@ -2,8 +2,7 @@ import React, { useMemo, memo } from "react";
 import equal from "react-fast-compare";
 import { SoftComponent, SoftSubComponent } from "../../types/SoftComponent";
 import { Config, WithId, WithPuckProps } from "@measured/puck";
-import { getFieldSettingsByPath } from "../../lib/get-settings-by-path";
-import { setPropertyByPath } from "../../lib/set-prop-by-path";
+import { applyMapping } from "../../lib/apply-mapping";
 import { ErrorBoundary } from "../error-boundary";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -117,38 +116,26 @@ const SubComponentRenderer = memo(
 
       const clonedProps = cloneData(subComponent.fixedProps || {});
 
-      // ── Field mappings ──────────────────────────────────────────────────────
+      // ── Field mappings (via applyMapping for proper array-mapping support) ──
+      // `from` paths reference the parent's props; `to` paths target the
+      // sub-component's own props.  applyMapping uses a single object for
+      // both resolution and assignment, so we merge them for the call.
       if (subComponent.map?.length) {
-        subComponent.map.forEach((mapItem: any) => {
-          const { from, to, transform } = mapItem || {};
-          const fromPaths = Array.isArray(from) ? from : from ? [from] : [];
-          const toPaths = Array.isArray(to) ? to : to ? [to] : [];
+        const mergedInput = { ...clonedProps, ...props };
+        const { newProps } = applyMapping(
+          mergedInput,
+          softComponentFieldSettings || {},
+          subComponent.map,
+          "propsFirst"
+        );
 
-          const inputValues = fromPaths.map((f: string) => {
-            const propValue = getFieldSettingsByPath(props, f);
-            if (propValue !== undefined) return propValue;
-
-            const setting = getFieldSettingsByPath(softComponentFieldSettings || {}, f);
-            if (
-              setting &&
-              Object.prototype.hasOwnProperty.call(setting, "defaultValue")
-            ) {
-              return setting.defaultValue;
-            }
-            return propValue;
-          });
-
-          const result = transform ? transform(inputValues, props) : inputValues[0];
-
-          if (Array.isArray(result)) {
-            result.forEach(
-              (val: any, i: number) =>
-                toPaths[i] && setPropertyByPath(clonedProps, toPaths[i], val)
-            );
-          } else if (toPaths[0]) {
-            setPropertyByPath(clonedProps, toPaths[0], result);
+        // Copy only the keys that belong to the sub-component back
+        const parentKeys = new Set(Object.keys(props));
+        for (const [key, value] of Object.entries(newProps)) {
+          if (!parentKeys.has(key) || key in clonedProps) {
+            clonedProps[key] = value;
           }
-        });
+        }
       }
 
       // ── Slot wiring ─────────────────────────────────────────────────────────

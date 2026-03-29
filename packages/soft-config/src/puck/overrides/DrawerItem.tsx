@@ -16,10 +16,11 @@ const usePuck = createUsePuck();
 
 export const DrawerItem = (props: {
   name: string;
+  label?: string;
   children: React.ReactNode;
 }): React.ReactElement => {
   const componentMeta = useSoftConfig((s) => s.softComponents[props.name]);
-  const displayName = componentMeta?.name || props.name;
+  const displayName =  props.label ||componentMeta?.name || props.name;
 
   const softComponents = new Set(
     Object.keys(useSoftConfig((s) => s.softComponents, shallow))
@@ -129,6 +130,7 @@ export const DrawerItem = (props: {
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
+          {props.label}
           <div className={getClassName("content")}>
             <div className={getClassName("name")}>{displayName}</div>
             {/* Only show version badge if versioning is enabled */}

@@ -33,9 +33,9 @@ export const createComponentKeyFromName = (
 
 export const getComponentNameFromKey = (
   key: string,
-  overrides: Overrides
+  overrides?: Overrides
 ): string => {
-  if (overrides.componentKeyToName) {
+  if (overrides?.componentKeyToName) {
     return overrides.componentKeyToName(key);
   }
   return key;

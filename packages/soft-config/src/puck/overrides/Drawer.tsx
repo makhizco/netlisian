@@ -90,6 +90,10 @@ export const Drawer = (_props: { children?: React.ReactNode }) => {
   );
 
   const allKeys = Object.keys(config.components);
+  const labels = Object.entries(config.components).reduce((acc, [key, comp]) => {
+    acc[key] = comp.label || key;
+    return acc;
+  }, {} as Record<string, string>);
   const otherKeys = allKeys.filter((k) => !categorised.has(k));
 
   const categoryEntries = Object.entries(categories).filter(
@@ -108,6 +112,7 @@ export const Drawer = (_props: { children?: React.ReactNode }) => {
   const toggle = (id: string) =>
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
+
   if (categoryEntries.length === 0) {
     return (
       <PuckDrawer>
@@ -115,6 +120,7 @@ export const Drawer = (_props: { children?: React.ReactNode }) => {
           <PuckDrawer.Item
             key={key}
             name={key}
+            label={labels[key]}
             isDragDisabled={!getPermissions({ type: key }).insert}
           >
             {DrawerItem}

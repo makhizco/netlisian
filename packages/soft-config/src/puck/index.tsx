@@ -30,3 +30,6 @@ export { resolveSoftConfig } from "./lib/resolve-soft-config";
 
 // Export modal
 export { Modal } from "./components/modal";
+
+// Export mapping utilities for overrides.map consumers
+export { filterToOptionsForFrom } from "./lib/builder/generate-field-options";

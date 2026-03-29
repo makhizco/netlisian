@@ -8,7 +8,7 @@ import { Combine, ComponentIcon, EditIcon } from "lucide-react";
 import getClassNameFactory from "../lib/get-class-name-factory";
 import styles from "./ActionBar.module.css";
 import { shallow } from "zustand/shallow";
-import { createComponentKeyFromName } from "../lib/component-key";
+import { createComponentKeyFromName, getComponentNameFromKey } from "../lib/component-key";
 
 const getClassName = getClassNameFactory("ActionBar", styles);
 const usePuck = createUsePuck();
@@ -18,7 +18,7 @@ export const ActionBarOverride = (props: {
   parentAction?: React.ReactNode;
   children?: React.ReactNode;
 }) => {
-  const { handleBuild } = useBuild("Custom Name");
+  const { handleBuild } = useBuild(props.label ? props.label + " Soft Component" : "New Soft Component");
   const { handleRemodel } = useRemodel();
   const { handleDecompose } = useDecompose();
   const overrides = useSoftConfig((s) => s.overrides);
@@ -56,12 +56,19 @@ export const ActionBarOverride = (props: {
   const parentId = itemSelector?.zone?.split(":")[0];
   const isEditable = Boolean(selectedId && (editableIds.has(selectedId) || (parentId && editableIds.has(parentId))));
 
+  const displayName = useMemo(() => {
+    if (isSoftComponent) {
+      return getComponentNameFromKey(key!, overrides) || softComponents[key!]?.name;
+    }
+    return props.label || "";
+  }, [isSoftComponent, key, props.label, overrides, softComponents]);
+
   return (
     <div className={getClassName()}>
       <ActionBar>
         <ActionBar.Group>
           {props.parentAction}
-          <ActionBar.Label label={props.label!} />
+          <ActionBar.Label label={displayName} />
         </ActionBar.Group>
 
 

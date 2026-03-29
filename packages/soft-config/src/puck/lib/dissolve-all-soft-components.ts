@@ -55,10 +55,6 @@ function reverseTopologicalSort(
   softComponents: SoftComponents,
   hardComponentNames: Set<string>
 ): string[] {
-  const sorted: string[] = [];
-  const visiting = new Set<string>();
-  const visited = new Set<string>();
-
   // Build dependency graph
   const dependencyGraph = new Map<string, Set<string>>();
   const dependents = new Map<string, Set<string>>(); // reverse graph
@@ -145,7 +141,8 @@ function dissolveComponentRecursively(
   componentData: ComponentData,
   softComponents: SoftComponents,
   hardComponentNames: Set<string>,
-  depth: number = 0
+  depth: number = 0,
+  fieldSettings?: Record<string, any>
 ): ComponentData[] {
   const MAX_DEPTH = 50; // Prevent infinite recursion
   
@@ -160,13 +157,13 @@ function dissolveComponentRecursively(
 
   // If this is a hard component, process its slots and return
   if (!isSoftComponent(componentType, softComponents)) {
-    return [dissolveComponentSlots(componentData, softComponents, hardComponentNames, depth)];
+    return [dissolveComponentSlots(componentData, softComponents, hardComponentNames, depth, fieldSettings)];
   }
 
   // This is a soft component - decompose it one level
   let decomposed: ComponentData[];
   try {
-    decomposed = decomposeSoftComponent(componentData, softComponents);
+    decomposed = decomposeSoftComponent(componentData, softComponents, fieldSettings);
   } catch (error) {
     console.warn(
       `Failed to decompose soft component "${componentType}":`,
@@ -183,7 +180,8 @@ function dissolveComponentRecursively(
       component,
       softComponents,
       hardComponentNames,
-      depth + 1
+      depth + 1,
+      fieldSettings
     );
     fullyDissolved.push(...dissolved);
   }
@@ -204,11 +202,14 @@ function dissolveComponentSlots(
   componentData: ComponentData,
   softComponents: SoftComponents,
   hardComponentNames: Set<string>,
-  depth: number
+  depth: number,
+  fieldSettings?: Record<string, any>
 ): ComponentData {
   const newProps = { ...componentData.props };
 
-  // Process each prop that might be a slot (array of components)
+  // Process each prop that might be a slot (array of components). This is the
+  // correct array-element dissolution path here: slot arrays contain component
+  // objects and should recurse, while mapped field arrays stay as field data.
   Object.entries(newProps).forEach(([key, value]) => {
     if (Array.isArray(value) && value.length > 0 && value[0]?.type) {
       // This is a slot - recursively dissolve each component
@@ -217,7 +218,8 @@ function dissolveComponentSlots(
           slotComponent,
           softComponents,
           hardComponentNames,
-          depth
+          depth,
+          fieldSettings
         )
       );
     }
@@ -267,10 +269,16 @@ export function dissolveAllSoftComponents(
   );
 
   // Get dissolution order (composite components first)
-  const dissolutionOrder = reverseTopologicalSort(
-    softComponents,
-    hardComponentNames
-  );
+  reverseTopologicalSort(softComponents, hardComponentNames);
+
+  // Extract root field settings for mapping resolution during dissolution.
+  // We prioritize root props (live values) and merge in _fieldSettings (schema/defaults)
+  // so that the resolver can find both current values and fallback defaults.
+  const rootParams = (data.root as any)?.props || {};
+  const fieldSettings = {
+    ...((rootParams._fieldSettings as Record<string, any>) || {}),
+    ...rootParams,
+  };
 
   // Recursively dissolve all components in content
   const dissolveComponents = (components: ComponentData[]): ComponentData[] => {
@@ -279,7 +287,8 @@ export function dissolveAllSoftComponents(
         componentData,
         softComponents,
         hardComponentNames,
-        0
+        0,
+        fieldSettings
       );
     });
   };

@@ -132,7 +132,6 @@ export const SoftConfigProvider = ({
 
   useEffect(() => {
     const unsubscribe = store.subscribe((state, prevState) => {
-      // FIX: Debounce visibility updates to prevent race conditions
       // Only update when state or editableComponentIds actually change
       if (
         prevState &&

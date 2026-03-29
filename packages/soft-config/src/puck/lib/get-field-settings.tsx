@@ -1,18 +1,76 @@
 import { AutoField, Field, Fields } from "@measured/puck";
+import {
+  buildArrayDefaultItemProps,
+  getArrayItemSummary,
+  isPrimitiveFieldType,
+} from "./array-field-utils";
+import type {
+  FieldSettings,
+  SoftFieldDefinition,
+  SoftFieldSettings,
+} from "../types/SoftFields";
 
-export type FieldSettings = Record<
-  string,
-  {
-    label: string;
-    defaultValue?: any;
-    min?: number;
-    max?: number;
-    step?: number;
-    options?: { label: string; value: string }[];
-    subFields?: { name: string; type: Field["type"] | "reference" }[];
-    subFieldSettings?: FieldSettings;
+const buildPuckField = (
+  field: SoftFieldDefinition,
+  fieldSettings?: SoftFieldSettings[string]
+): Field => {
+  switch (field.type) {
+    case "text":
+    case "textarea":
+      return { type: field.type, label: field.name };
+    case "number":
+      return {
+        type: field.type,
+        label: field.name,
+        min: fieldSettings?.min,
+        max: fieldSettings?.max,
+        step: fieldSettings?.step,
+      };
+    case "select":
+    case "radio":
+      return {
+        type: field.type,
+        label: field.name,
+        options: fieldSettings?.options || [],
+      };
+    case "array": {
+      const subFields = fieldSettings?.subFields || [];
+      const subFieldSettings = fieldSettings?.subFieldSettings || {};
+      return {
+        type: "array",
+        label: field.name,
+        min: fieldSettings?.min,
+        max: fieldSettings?.max,
+        arrayFields: buildDefaultEditorFields(subFields, subFieldSettings),
+        defaultItemProps: buildArrayDefaultItemProps(subFields, subFieldSettings),
+        getItemSummary(item, index) {
+          return getArrayItemSummary(item, index, fieldSettings);
+        },
+      };
+    }
+    case "object":
+      return {
+        type: "object",
+        label: field.name,
+        objectFields: buildDefaultEditorFields(
+          fieldSettings?.subFields || [],
+          fieldSettings?.subFieldSettings || {}
+        ),
+      };
+    default:
+      return { type: "text", label: field.name };
   }
->;
+};
+
+const buildDefaultEditorFields = (
+  fields: SoftFieldDefinition[] = [],
+  fieldSettings: SoftFieldSettings = {}
+): Fields => {
+  return fields.reduce((acc, field) => {
+    acc[field.name] = buildPuckField(field, fieldSettings[field.name]);
+    return acc;
+  }, {} as Fields);
+};
 
 const getFieldSettings = (
   _fields?: {
@@ -101,20 +159,6 @@ const getFieldSettings = (
         };
         break;
       case "array":
-        fieldSettings.summary = {
-          type: "select",
-          label: "Summary Field",
-          options: [
-            {
-              label: "Default Numbering",
-              value: "",
-            },
-            ...(currentFieldSettings?.subFields || []).map((f) => ({
-              label: f.name,
-              value: f.name,
-            })),
-          ],
-        };
       case "object":
         fieldSettings.subFields = {
           type: "array",
@@ -195,6 +239,77 @@ const getFieldSettings = (
                 )
               : {},
           };
+
+        if (field.type === "array") {
+          fieldSettings.defaultValue = {
+            type: "array",
+            label: "Default Items",
+            arrayFields: buildDefaultEditorFields(
+              currentFieldSettings?.subFields,
+              currentFieldSettings?.subFieldSettings
+            ),
+            defaultItemProps: buildArrayDefaultItemProps(
+              currentFieldSettings?.subFields,
+              currentFieldSettings?.subFieldSettings
+            ),
+            getItemSummary(item, index) {
+              return getArrayItemSummary(item, index, currentFieldSettings);
+            },
+          };
+
+          fieldSettings.min = {
+            type: "number",
+            label: "Minimum Items",
+          };
+          fieldSettings.max = {
+            type: "number",
+            label: "Maximum Items",
+          };
+          fieldSettings.summary = {
+            type: "select",
+            label: "Summary",
+            options: [
+              {
+                label: "Default Numbering / Count",
+                value: "count",
+              },
+              {
+                label: "Field",
+                value: "field",
+              },
+              {
+                label: "Expression",
+                value: "expression",
+              },
+            ],
+          };
+
+          if (currentFieldSettings?.summary === "field") {
+            fieldSettings.summaryField = {
+              type: "select",
+              label: "Summary Field",
+              options: [
+                {
+                  label: "Select a field",
+                  value: "",
+                },
+                ...(currentFieldSettings?.subFields || [])
+                  .filter((subField) => isPrimitiveFieldType(subField.type))
+                  .map((subField) => ({
+                    label: subField.name,
+                    value: subField.name,
+                  })),
+              ],
+            };
+          }
+
+          if (currentFieldSettings?.summary === "expression") {
+            fieldSettings.summaryExpression = {
+              type: "text",
+              label: "Summary Expression",
+            };
+          }
+        }
         break;
     }
 

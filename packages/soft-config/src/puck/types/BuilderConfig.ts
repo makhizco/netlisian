@@ -23,6 +23,7 @@ export type BuilderComponentConfig = {
     to: string | string[];
     from: string | string[];
     transform?: (inputs: any[], props: DefaultComponentProps) => any;
+    unmappedArrayItemDefaultValues?: Record<string, any>;
     [key: string]: any; // Props such as conditions, depends on custom function
   }[];
   [key: string]: any;

@@ -132,13 +132,15 @@ export const createSoftConfigStore = (
   showVersionFields = true
 ) => {
   const normalizedSoftComponents = Object.fromEntries(
-    Object.entries(softComponents || {}).map(([key, value]) => [
-      key,
-      {
-        ...value,
-        name: value.name || key,
-      },
-    ])
+    Object.entries(softComponents || {})
+      .filter(([key]) => !hardConfig.components || !hardConfig.components[key])
+      .map(([key, value]) => [
+        key,
+        {
+          ...value,
+          name: value.name || key,
+        },
+      ])
   ) as SoftComponents;
 
   const iframeDocRef = { current: null as Document | null };
@@ -222,6 +224,11 @@ export const createSoftConfigStore = (
           version: string,
           component: SoftComponent
         ) => {
+          if (hardConfig.components && hardConfig.components[name]) {
+            console.warn(`Cannot set soft component "${name}" because it conflicts with a base hardConfig component.`);
+            return;
+          }
+
           const existing = get().softComponents[name];
 
           set((state) => ({
@@ -246,6 +253,10 @@ export const createSoftConfigStore = (
           const nextConfigComponents = { ...state.softConfig.components };
 
           Object.entries(incomingComponents).forEach(([name, data]) => {
+            if (hardConfig.components && hardConfig.components[name]) {
+              return; // Skip base components completely
+            }
+
             const existing = nextSoftComponents[name];
 
             const finalComponentData = existing ? {

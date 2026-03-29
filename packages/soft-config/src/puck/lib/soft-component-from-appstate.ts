@@ -1,6 +1,14 @@
 import { AppState, Field, Config, Fields, ComponentData } from "@measured/puck";
 import { SoftComponent, SoftSubComponent } from "../types/SoftComponent";
 import { BuilderRootConfig } from "../types/BuilderConfig";
+import {
+  buildArrayDefaultItemProps,
+  buildArrayDefaultValue,
+  getArrayItemSummary,
+  getArrayBasePath,
+  isArrayMappingPath,
+} from "./array-field-utils";
+import { TECHNICAL_KEYS } from "./soft-component-constants";
 import { stripIdFromProps } from "./strip-id";
 
 const getSubComponents = (
@@ -37,10 +45,31 @@ const getSubComponents = (
           {} as { [slot: string]: SoftSubComponent }
         ) || {};
 
-    const fixedProps = {
+    const map = componentProps.props?._map || [];
+    const mappedPaths = new Set<string>();
+    map.forEach((item: any) => {
+      const to = Array.isArray(item.to) ? item.to : [item.to];
+      to.forEach((path: string) => {
+        if (path) {
+          if (isArrayMappingPath(path)) {
+            const basePath = getArrayBasePath(path);
+            if (basePath) mappedPaths.add(basePath);
+          } else {
+            mappedPaths.add(path);
+          }
+        }
+      });
+    });
+
+    const fixedProps = Object.entries({
       ...componentConfig?.defaultProps,
       ...componentProps.props,
-    };
+    } as Record<string, any>).reduce((acc, [key, value]) => {
+      if (!TECHNICAL_KEYS.has(key) && !mappedPaths.has(key)) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, any>);
 
     (componentProps.props._slot || []).forEach(
       (s: { slot: string; name: string }) => {
@@ -100,13 +129,23 @@ const softFieldsToPuckFields = (
             break;
           // TODO: Default item props
           case "array":
+            const currentArraySettings = fieldSettings?.[field.name] || {};
             acc[field.name] = {
               type: field.type,
               label: field.name,
+              min: currentArraySettings.min,
+              max: currentArraySettings.max,
               arrayFields: softFieldsToPuckFields(
-                fieldSettings?.[field.name]?.subFields || [],
-                fieldSettings?.[field.name]?.subFieldSettings || {}
+                currentArraySettings.subFields || [],
+                currentArraySettings.subFieldSettings || {}
               ),
+              defaultItemProps: buildArrayDefaultItemProps(
+                currentArraySettings.subFields,
+                currentArraySettings.subFieldSettings
+              ),
+              getItemSummary(item, index) {
+                return getArrayItemSummary(item, index, currentArraySettings);
+              },
             };
             break;
           // TODO: Needs testing to see if it works
@@ -178,6 +217,19 @@ export const softComponentFromAppState = (
   const defaultProps = {
     ...Object.keys(field_settings).reduce(
       (acc, field) => {
+        const fieldDefinition = (fields || []).find((item) => item.name === field);
+
+        if (fieldDefinition?.type === "array") {
+          acc[field] =
+            field_settings[field].defaultValue !== undefined
+              ? field_settings[field].defaultValue
+              : buildArrayDefaultValue(
+                  field_settings[field].subFields,
+                  field_settings[field].subFieldSettings
+                );
+          return acc;
+        }
+
         acc[field] = field_settings[field].defaultValue;
         return acc;
       },

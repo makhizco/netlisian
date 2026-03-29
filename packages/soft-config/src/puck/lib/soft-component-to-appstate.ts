@@ -7,6 +7,35 @@ import { getFieldSettingsByPath } from "./get-settings-by-path";
 import { setPropertyByPath } from "./set-prop-by-path";
 import { getComponentNameFromKey } from "./component-key";
 import { Overrides } from "../types/Overrides";
+import {
+  buildArrayDefaultValue,
+  getArrayBasePath,
+  isArrayMappingPath,
+} from "./array-field-utils";
+import { applyMapping } from "./apply-mapping";
+
+const mergeFieldSettings = (
+  generated: BuilderRootConfig["_fieldSettings"] = {},
+  persisted: BuilderRootConfig["_fieldSettings"] = {}
+): BuilderRootConfig["_fieldSettings"] => {
+  return Object.entries(persisted).reduce((acc, [fieldName, value]) => {
+    const current = acc[fieldName] || {};
+
+    acc[fieldName] = {
+      ...current,
+      ...value,
+      subFieldSettings:
+        current.subFieldSettings || value?.subFieldSettings
+          ? mergeFieldSettings(
+              current.subFieldSettings || {},
+              value?.subFieldSettings || {}
+            )
+          : undefined,
+    };
+
+    return acc;
+  }, { ...generated });
+};
 
 /**
  * Convert Puck fields back to soft field definitions
@@ -103,37 +132,51 @@ const reconstructComponents = (
   softComponentProps: Record<string, any>
 ): ComponentData[] => {
   return subComponents.map((subComponent) => {
-    // Start with fixed props
+    const componentConfig = componentConfigs[subComponent.type];
+
+    // Start with fixed props and technical metadata
     const props: Record<string, any> = {
       ...subComponent.fixedProps,
+      _map: subComponent.map,
     };
 
-    // Map soft component props to component props using the mapping
-    subComponent.map?.forEach((mapItem, i) => {
-      const { from, to, transform } = mapItem || {};
-      const fromPaths = Array.isArray(from) ? from : from ? [from] : [];
-      const toPaths = Array.isArray(to) ? to : to ? [to] : [];
+    const arrayDefaults = (subComponent.map || []).reduce(
+      (acc, mapEntry) => {
+        const toPaths = Array.isArray(mapEntry.to) ? mapEntry.to : [mapEntry.to];
+        toPaths.forEach((path) => {
+          if (typeof path !== "string" || !isArrayMappingPath(path)) return;
+          const arrayBase = getArrayBasePath(path);
+          if (!arrayBase || acc[arrayBase]) return;
 
-      const inputs = fromPaths.map((path) =>
-        getFieldSettingsByPath(softComponentProps || {}, path)
-      );
-
-      const runner = transform
-      const result = runner ? runner(inputs, softComponentProps) : inputs[0];
-
-      if (Array.isArray(result)) {
-        result.forEach((val, idx) => {
-          if (toPaths[idx]) setPropertyByPath(props, toPaths[idx], val);
+          const defaultValue = componentConfig?.defaultProps?.[arrayBase];
+          if (Array.isArray(defaultValue)) acc[arrayBase] = defaultValue;
         });
-      } else {
-        toPaths.forEach((toPath) =>
-          setPropertyByPath(props, toPath, result));
-      }
+        return acc;
+      },
+      {} as Record<string, any[]>
+    );
 
-      if (transform && props._map?.[i]) {
-        props._map[i].transform = transform;
+    const sourceProps = {
+      ...(componentConfig?.defaultProps || {}),
+      ...softComponentProps,
+      ...props,
+    };
+
+    // Use applyMapping to resolve and merge mapped values
+    // This handles array mappings, transforms, and unmappedArrayItemDefaultValues
+    const { newProps } = applyMapping(
+      props,
+      {}, // fieldSettings not needed for "propsFirst" mode as it resolves from propsFirst
+      subComponent.map || [],
+      "propsFirst",
+      {
+        sourceProps,
+        arrayDefaults,
       }
-    });
+    );
+
+    // Update props with mapped values
+    Object.assign(props, newProps);
 
     // Handle enabled slots
     if (subComponent.enabledSlots.length > 0) {
@@ -202,12 +245,30 @@ export const softComponentToAppState = (
     softComponent.fields,
     slots
   );
+  const mergedFieldSettings = mergeFieldSettings(
+    fieldSettings,
+    softComponent.fieldSettings || {}
+  ) || {};
 
   // Set default values from soft component
   Object.entries(softComponent.defaultProps).forEach(([key, value]) => {
-    if (fieldSettings && fieldSettings[key] && !slots.has(key)) {
-      fieldSettings[key].defaultValue = value;
+    if (mergedFieldSettings && mergedFieldSettings[key] && !slots.has(key)) {
+      mergedFieldSettings[key].defaultValue = value;
     }
+  });
+
+  (fields || []).forEach((field) => {
+    if (field.type !== "array" || slots.has(field.name)) return;
+
+    const settings = mergedFieldSettings[field.name] || {};
+    if (settings.defaultValue === undefined) {
+      settings.defaultValue = buildArrayDefaultValue(
+        settings.subFields,
+        settings.subFieldSettings
+      );
+    }
+
+    mergedFieldSettings[field.name] = settings;
   });
 
   // Build root props for the builder
@@ -217,7 +278,7 @@ export const softComponentToAppState = (
     _version: version,
     _versions: versions,
     _fields: fields,
-    _fieldSettings: fieldSettings,
+    _fieldSettings: mergedFieldSettings,
     ...(softComponent.rootProps || {}),
   };
 

@@ -1,4 +1,4 @@
-import { AutoField, ComponentConfig, Config, Fields } from "@measured/puck";
+import { AutoField, ComponentConfig, Config, Field, Fields } from "@measured/puck";
 import {
   BuilderConfig,
   BuilderComponentConfig,
@@ -9,6 +9,11 @@ import {
   generateDynamicFieldOptions,
   generateFieldOptions,
 } from "./generate-field-options";
+import {
+  getArrayBasePath,
+  getArrayItemSubPath,
+  isArrayMappingPath,
+} from "../array-field-utils";
 
 import { ErrorBoundary } from "../../components/error-boundary";
 import { AppStore } from "../../store";
@@ -83,7 +88,7 @@ export const builderConfig = (
               ? await component.resolveFields(data, params)
               : component.fields || {};
 
-          if (!fields._map) {
+          if (!fields._map || params.changed._map) {
             const rootProps = getRootProps(params.appState);
             const fromOptions = generateDynamicFieldOptions(
               rootProps?._fields || [],
@@ -96,15 +101,13 @@ export const builderConfig = (
               )
               : defaultFields;
 
-            const toOptions = generateFieldOptions(toOptionsFields, [], "");
+            const toOptions = generateFieldOptions(toOptionsFields);
 
             fields._map = overrides.map
               ? {
                 type: "custom",
                 render: ({ value, onChange, id }) => {
-                  // Need to update the to options whenever params change for map to pick up new possible props.
 
-                  const toOptions = generateFieldOptions(defaultFields, []);
                   const rootProps = getRootProps(params.appState);
 
                   return overrides.map!({
@@ -118,10 +121,47 @@ export const builderConfig = (
                   });
                 },
               }
-              : {
-                type: "array",
-                label: "Dynamic Field Map",
-                arrayFields: {
+              : (() => {
+                // Build default value sub-fields from target array's arrayFields
+                const mapEntries = data.props?._map || [];
+                const toPaths = mapEntries.flatMap((entry) =>
+                  Array.isArray(entry.to)
+                    ? entry.to
+                    : entry.to
+                      ? [entry.to]
+                      : []
+                );
+                const toPath = toPaths.find(
+                  (path) => typeof path === "string" && isArrayMappingPath(path)
+                ) as string | undefined;
+                const arrayBaseName = toPath ? getArrayBasePath(toPath) : null;
+                const targetArrayField = arrayBaseName ? defaultFields[arrayBaseName] : null;
+                const mappedSubProps = new Set<string>();
+
+                if (arrayBaseName) {
+                  toPaths.forEach((path) => {
+                    if (typeof path !== "string") return;
+                    if (getArrayBasePath(path) !== arrayBaseName) return;
+                    const subProp = getArrayItemSubPath(path);
+                    if (subProp) mappedSubProps.add(subProp);
+                  });
+                }
+
+                // Build objectFields from the target array's arrayFields (primitive sub-fields only)
+                const defaultValueFields: Record<string, Field> = {};
+                if (targetArrayField && targetArrayField.type === "array" && (targetArrayField as any).arrayFields) {
+                  const arrayFields = (targetArrayField as any).arrayFields as Record<string, Field>;
+
+                  Object.entries(arrayFields).forEach(([key, fld]) => {
+                    // Skip the mapped field itself — it gets its value from the mapping
+                    if (mappedSubProps.has(key)) return;
+                    // Only include primitive fields
+                    if (fld.type === "array" || fld.type === "object" || fld.type === "slot") return;
+                    defaultValueFields[key] = { ...fld, label: fld.label || key };
+                  });
+                }
+
+                const baseArrayFields: Record<string, Field> = {
                   from: {
                     type: "select",
                     label: "From",
@@ -138,14 +178,27 @@ export const builderConfig = (
                     label: "To",
                     options: [
                       { label: "Select a field", value: "" },
-                      ...toOptions.map(({ label, value }) => ({
+                      ...toOptions.map(({ label, value }: { label: string; value: string }) => ({
                         label,
                         value,
                       })),
                     ],
                   },
-                } as any,
-              };
+                };
+                if (arrayBaseName && Object.keys(defaultValueFields).length > 0) {
+                  baseArrayFields.unmappedArrayItemDefaultValues = {
+                    type: "object",
+                    label: "Default Item Values",
+                    objectFields: defaultValueFields,
+                  } as Field;
+                }
+
+                return {
+                  type: "array" as const,
+                  label: "Dynamic Field Map",
+                  arrayFields: baseArrayFields,
+                };
+              })();
           }
 
           fields = {
@@ -156,45 +209,50 @@ export const builderConfig = (
           return fields;
         },
         resolveData: ({ props }, { lastData }) => {
-          const _map = props._map || [];
+          // Migrate string default values to objects if needed (from old textarea UI)
+          // and ensure they are objects for Puck's object field to avoid crashes.
+          const _map = (props._map || []).map((item) => {
+            const newItem = { ...item };
+            if (typeof newItem.unmappedArrayItemDefaultValues === "string") {
+              try {
+                newItem.unmappedArrayItemDefaultValues = JSON.parse(
+                  newItem.unmappedArrayItemDefaultValues
+                );
+              } catch (e) {
+                newItem.unmappedArrayItemDefaultValues = {};
+              }
+            } else if (!newItem.unmappedArrayItemDefaultValues) {
+              newItem.unmappedArrayItemDefaultValues = {};
+            }
+            return newItem;
+          });
 
           const readOnlyFields = _map.flatMap((item) => item.to);
 
+          // Also mark parent array fields as read-only when any child
+          // item property is mapped (e.g. items[].imageUrl → items)
+          const readOnlyArrayBases = readOnlyFields
+            .filter((field): field is string => typeof field === "string")
+            .map(getArrayBasePath)
+            .filter((base): base is string => base !== null);
+
           if (_map.length) {
             return {
-              props,
-              readOnly: readOnlyFields.reduce(
-                (acc, field) => ({ ...acc, [field!]: true }),
+              props: { ...props, _map },
+              readOnly: [
+                ...readOnlyFields.map((f) => String(f)),
+                ...readOnlyArrayBases,
+              ].reduce(
+                (acc, field) => ({ ...acc, [field]: true }),
                 {}
-              ) as any,
+              ),
             };
           }
 
           // Resetting the read-only props
-          const prevMap = lastData?.props?._map;
-          if (prevMap && prevMap.length === 1) {
-            const lastField = prevMap[0].to;
-            if (typeof lastField === "string") {
-              return {
-                props,
-                readOnly: { [lastField]: false },
-              };
-            }
-            if (Array.isArray(lastField)) {
-              return {
-                props,
-                readOnly: lastField.reduce(
-                  (acc, field) => ({ ...acc, [String(field)]: false }),
-                  {}
-                ) as any,
-              };
-            }
-          }
-
-          // Default: no readOnly fields
           return {
-            props,
-            readOnly: {} as any,
+            props: { ...props, _map },
+            readOnly: {},
           };
         },
         render: (props) => {
