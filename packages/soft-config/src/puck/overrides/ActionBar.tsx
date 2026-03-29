@@ -58,7 +58,7 @@ export const ActionBarOverride = (props: {
 
   const displayName = useMemo(() => {
     if (isSoftComponent) {
-      return getComponentNameFromKey(key!, overrides) || softComponents[key!]?.name;
+      return softComponents[key!]?.name || getComponentNameFromKey(key!, overrides);
     }
     return props.label || "";
   }, [isSoftComponent, key, props.label, overrides, softComponents]);

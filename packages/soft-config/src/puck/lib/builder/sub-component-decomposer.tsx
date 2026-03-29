@@ -1,8 +1,7 @@
 import { ComponentData } from "@measured/puck";
 import { SoftSubComponent } from "../../types/SoftComponent";
 import { generateId } from "../generate-id";
-import { getFieldSettingsByPath } from "../get-settings-by-path";
-import { setPropertyByPath } from "../set-prop-by-path";
+import { applyMapping } from "../apply-mapping";
 
 export const subComponentDecomposer = (
   componentRootData: ComponentData,
@@ -13,24 +12,17 @@ export const subComponentDecomposer = (
   };
 
   softSubComponent.map?.forEach((mapItem) => {
-    const { from, to, transform } = mapItem || {};
-    const fromPaths = Array.isArray(from) ? from : from ? [from] : [];
-    const toPaths = Array.isArray(to) ? to : to ? [to] : [];
-
-    const inputs = fromPaths.map((path) =>
-      getFieldSettingsByPath(componentRootData.props || {}, path)
+    const { newProps } = applyMapping(
+      resolvedProps,
+      {},
+      [mapItem],
+      "propsFirst",
+      {
+        sourceProps: componentRootData.props || {},
+      }
     );
 
-    const runner = transform;
-    const result = runner ? runner(inputs, componentRootData.props) : inputs[0];
-
-    if (Array.isArray(result)) {
-      result.forEach((val, idx) => {
-        if (toPaths[idx]) setPropertyByPath(resolvedProps, toPaths[idx], val);
-      });
-    } else if (toPaths[0]) {
-      setPropertyByPath(resolvedProps, toPaths[0], result);
-    }
+    Object.assign(resolvedProps, newProps);
   });
 
   // Convert enabled slots to key value object
