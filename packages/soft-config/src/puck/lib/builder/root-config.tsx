@@ -16,7 +16,9 @@ import getFieldSettings from "../get-field-settings";
 import { useSoftConfig } from "../../context/useStore";
 import { AppStore } from "../../store";
 import { applyMapping } from "../apply-mapping";
+import { getCustomFieldTypeOptions } from "../custom-fields";
 import type { MapEntry } from "../../types/Mapping";
+import type { CustomFields } from "../../types/SoftFields";
 
 const useCustomPuck = createUsePuck();
 
@@ -73,8 +75,12 @@ export const builderRootConfig = (
   config: Config,
   overrides: AppStore["overrides"],
   editingComponent?: string,
-  showVersionFields: boolean = true
-): RootConfig<BuilderRootConfig> => ({
+  showVersionFields: boolean = true,
+  customFields?: CustomFields
+): RootConfig<BuilderRootConfig> => {
+  const customTypeOptions = getCustomFieldTypeOptions(customFields);
+
+  return ({
   fields: {
     _name: (overrides.name || {
       type: "text",
@@ -104,7 +110,7 @@ export const builderRootConfig = (
         type: "text",
       },
       getItemSummary(
-        item: { name: string; type: Field["type"] },
+        item: { name: string; type: string },
         index?: number
       ) {
         return item.name || `Field ${(index || 0) + 1}`;
@@ -123,6 +129,7 @@ export const builderRootConfig = (
             { label: "Array", value: "array" },
             { label: "Object", value: "object" },
             // { label: "Reference", value: "reference" },
+            ...customTypeOptions,
           ],
         },
       },
@@ -131,15 +138,27 @@ export const builderRootConfig = (
   },
   resolveFields({ props: data }, { fields, changed }) {
     const newFields = { ...fields };
+    const rootFields: NonNullable<BuilderRootConfig["_fields"]> = Array.isArray(
+      (data as BuilderRootConfig | undefined)?._fields
+    )
+      ? (((data as BuilderRootConfig | undefined)?._fields || []) as NonNullable<
+          BuilderRootConfig["_fields"]
+        >)
+      : [];
+    const rootFieldSettings =
+      ((data as BuilderRootConfig | undefined)?._fieldSettings || {}) as NonNullable<
+        BuilderRootConfig["_fieldSettings"]
+      >;
 
     if (changed._fields || changed._fieldSettings) {
-      if (data?._fields?.length) {
+      if (rootFields.length) {
         newFields._fieldSettings = {
           type: "object",
           label: "Field Settings",
           objectFields: getFieldSettings(
-            data!._fields || [],
-            data!._fieldSettings || {}
+            rootFields,
+            rootFieldSettings,
+            customFields
           ),
         };
       } else {
@@ -266,5 +285,6 @@ export const builderRootConfig = (
 
     return <>{props.children}</>;
   },
-});
+  });
+};
 

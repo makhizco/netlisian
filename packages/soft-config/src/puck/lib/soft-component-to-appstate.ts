@@ -1,9 +1,8 @@
-import { AppState, ComponentData, ComponentDataOptionalId, Config, Fields } from "@measured/puck";
+import { AppState, ComponentData, Config, Fields } from "@measured/puck";
 import { SoftSubComponent } from "../types/SoftComponent";
 import { VersionedSoftComponent } from "../types/SoftComponent";
 import { generateId } from "./generate-id";
 import { BuilderRootConfig } from "../types/BuilderConfig";
-import { getFieldSettingsByPath } from "./get-settings-by-path";
 import { setPropertyByPath } from "./set-prop-by-path";
 import { getComponentNameFromKey } from "./component-key";
 import { Overrides } from "../types/Overrides";
@@ -13,6 +12,13 @@ import {
   isArrayMappingPath,
 } from "./array-field-utils";
 import { applyMapping } from "./apply-mapping";
+import {
+  resolveCustomFieldSchema,
+} from "./custom-fields";
+import type {
+  CustomFieldReturnType,
+  CustomFields,
+} from "../types/SoftFields";
 
 const mergeFieldSettings = (
   generated: BuilderRootConfig["_fieldSettings"] = {},
@@ -42,7 +48,9 @@ const mergeFieldSettings = (
  */
 const puckFieldsToSoftFields = (
   fields: Fields,
-  slots: Set<string>
+  slots: Set<string>,
+  persistedFieldSettings: BuilderRootConfig["_fieldSettings"] = {},
+  customFields?: CustomFields
 ): {
   fields: BuilderRootConfig["_fields"];
   fieldSettings: BuilderRootConfig["_fieldSettings"];
@@ -51,6 +59,19 @@ const puckFieldsToSoftFields = (
   const fieldSettings: BuilderRootConfig["_fieldSettings"] = {};
 
   Object.entries(fields).forEach(([fieldName, field]) => {
+    const persistedSettings = persistedFieldSettings?.[fieldName];
+    const fieldWithMeta = field as typeof field & {
+      customFieldType?: string;
+      customFieldReturnType?: CustomFieldReturnType;
+    };
+
+    const customFieldType =
+      fieldWithMeta.customFieldType || persistedSettings?.customFieldType;
+    const customFieldReturnType =
+      fieldWithMeta.customFieldReturnType ||
+      persistedSettings?.customFieldReturnType ||
+      (customFieldType ? customFields?.[customFieldType]?.returnType : undefined);
+
     // Skip slot fields as they're handled separately
     if (slots.has(fieldName)) {
       return;
@@ -58,6 +79,30 @@ const puckFieldsToSoftFields = (
 
     // Skip the _version field as it's implicit
     if (fieldName === "_version") {
+      return;
+    }
+
+    if (field.type === "custom" && customFieldType) {
+      softFields.push({ name: fieldName, type: customFieldType });
+
+      const customSchema = resolveCustomFieldSchema(customFieldType, customFields);
+
+      fieldSettings[fieldName] = {
+        ...(persistedSettings || {}),
+        customFieldType,
+        customFieldReturnType,
+        ...(customSchema
+          ? {
+              subFields: customSchema.subFields,
+              subFieldSettings: customSchema.subFieldSettings,
+            }
+          : {}),
+      };
+
+      if (!Object.prototype.hasOwnProperty.call(fieldSettings[fieldName], "defaultValue")) {
+        fieldSettings[fieldName].defaultValue = undefined;
+      }
+
       return;
     }
 
@@ -80,7 +125,7 @@ const puckFieldsToSoftFields = (
       case "radio":
         softFields.push({ name: fieldName, type: field.type });
         fieldSettings[fieldName] = {
-          options: field.options || [],
+          options: field.options ? [...field.options] : [],
         };
         break;
 
@@ -88,9 +133,12 @@ const puckFieldsToSoftFields = (
         softFields.push({ name: fieldName, type: "array" });
         const arrayFieldsResult = puckFieldsToSoftFields(
           field.arrayFields || {},
-          new Set()
+          new Set(),
+          persistedSettings?.subFieldSettings,
+          customFields
         );
         fieldSettings[fieldName] = {
+          ...(persistedSettings || {}),
           subFields: arrayFieldsResult.fields,
           subFieldSettings: arrayFieldsResult.fieldSettings,
         };
@@ -100,9 +148,12 @@ const puckFieldsToSoftFields = (
         softFields.push({ name: fieldName, type: "object" });
         const objectFieldsResult = puckFieldsToSoftFields(
           field.objectFields || {},
-          new Set()
+          new Set(),
+          persistedSettings?.subFieldSettings,
+          customFields
         );
         fieldSettings[fieldName] = {
+          ...(persistedSettings || {}),
           subFields: objectFieldsResult.fields,
           subFieldSettings: objectFieldsResult.fieldSettings,
         };
@@ -113,11 +164,15 @@ const puckFieldsToSoftFields = (
     }
 
     // Add default value from defaultProps if it exists
-    if (fieldSettings[fieldName]) {
-      fieldSettings[fieldName].defaultValue = undefined;
-    } else {
-      fieldSettings[fieldName] = { defaultValue: undefined };
-    }
+    fieldSettings[fieldName] = {
+      ...(fieldSettings[fieldName] || persistedSettings || {}),
+      defaultValue: Object.prototype.hasOwnProperty.call(
+        fieldSettings[fieldName] || persistedSettings || {},
+        "defaultValue"
+      )
+        ? (fieldSettings[fieldName] || persistedSettings || {}).defaultValue
+        : undefined,
+    };
   });
 
   return { fields: softFields, fieldSettings };
@@ -237,13 +292,16 @@ export const softComponentToAppState = (
   componentConfigs: Config["components"],
   overrides: Overrides,
   displayName?: string,
-  category?: string
+  category?: string,
+  customFields?: CustomFields
 ): Pick<AppState["data"], "root" | "content"> => {
   // Convert soft fields back to builder format
   const slots = new Set(Object.keys(softComponent.slots));
   const { fields, fieldSettings } = puckFieldsToSoftFields(
     softComponent.fields,
-    slots
+    slots,
+    softComponent.fieldSettings,
+    customFields
   );
   const mergedFieldSettings = mergeFieldSettings(
     fieldSettings,

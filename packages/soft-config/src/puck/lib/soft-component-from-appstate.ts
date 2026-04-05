@@ -10,6 +10,12 @@ import {
 } from "./array-field-utils";
 import { TECHNICAL_KEYS } from "./soft-component-constants";
 import { stripIdFromProps } from "./strip-id";
+import {
+  resolveCustomFieldDefinition,
+  resolveCustomFieldReturnType,
+  resolveCustomFieldSchema,
+} from "./custom-fields";
+import type { CustomFields } from "../types/SoftFields";
 
 const getSubComponents = (
   content: AppState["data"]["content"],
@@ -100,11 +106,31 @@ const getSubComponents = (
 
 const softFieldsToPuckFields = (
   fields: BuilderRootConfig["_fields"],
-  fieldSettings: BuilderRootConfig["_fieldSettings"]
+  fieldSettings: BuilderRootConfig["_fieldSettings"],
+  customFields?: CustomFields
 ): { [key: string]: Field } => {
   return (
     fields?.reduce(
       (acc, field) => {
+        const customFieldDefinition = resolveCustomFieldDefinition(
+          field.type,
+          customFields
+        );
+        const customReturnType = resolveCustomFieldReturnType(
+          field.type,
+          customFields
+        );
+
+        if (customFieldDefinition && customReturnType) {
+          acc[field.name] = {
+            ...customFieldDefinition.field,
+            type: "custom",
+            label: customFieldDefinition.field.label || field.name,
+          } as Field;
+
+          return acc;
+        }
+
         switch (field.type) {
           case "text":
           case "textarea":
@@ -137,7 +163,8 @@ const softFieldsToPuckFields = (
               max: currentArraySettings.max,
               arrayFields: softFieldsToPuckFields(
                 currentArraySettings.subFields || [],
-                currentArraySettings.subFieldSettings || {}
+                currentArraySettings.subFieldSettings || {},
+                customFields
               ),
               defaultItemProps: buildArrayDefaultItemProps(
                 currentArraySettings.subFields,
@@ -155,7 +182,8 @@ const softFieldsToPuckFields = (
               label: field.name,
               objectFields: softFieldsToPuckFields(
                 fieldSettings?.[field.name]?.subFields || [],
-                fieldSettings?.[field.name]?.subFieldSettings || {}
+                fieldSettings?.[field.name]?.subFieldSettings || {},
+                customFields
               ),
             };
             break;
@@ -177,13 +205,47 @@ export const softComponentFromAppState = (
   metadata: {
     name: string;
     category?: string;
-  }
+  },
+  customFields?: CustomFields
 ): [SoftComponent, string] => {
   const rootProps = appState.data.root?.props || {};
 
   const fields = (rootProps._fields || []) as BuilderRootConfig["_fields"];
   const field_settings =
     (rootProps._fieldSettings as BuilderRootConfig["_fieldSettings"]) || {};
+  const normalizedFieldSettings: BuilderRootConfig["_fieldSettings"] = {
+    ...field_settings,
+  };
+
+  (fields || []).forEach((field) => {
+    const customFieldDefinition = resolveCustomFieldDefinition(
+      field.type,
+      customFields
+    );
+    const customReturnType = resolveCustomFieldReturnType(
+      field.type,
+      customFields
+    );
+
+    if (!customFieldDefinition || !customReturnType) {
+      return;
+    }
+
+    const schema = resolveCustomFieldSchema(field.type, customFields);
+    const existingSettings = normalizedFieldSettings[field.name] || {};
+
+    normalizedFieldSettings[field.name] = {
+      ...existingSettings,
+      customFieldType: field.type,
+      customFieldReturnType: customReturnType,
+      ...(schema
+        ? {
+            subFields: schema.subFields,
+            subFieldSettings: schema.subFieldSettings,
+          }
+        : {}),
+    };
+  });
 
   // Extract all custom root fields (all starting with _ but not built-in)
   const builtInRootProps = new Set([
@@ -210,27 +272,32 @@ export const softComponentFromAppState = (
   const components = getSubComponents(
     [editedItem],
     configComponents,
-    field_settings,
+    normalizedFieldSettings,
     slots
   );
 
   const defaultProps = {
-    ...Object.keys(field_settings).reduce(
+    ...Object.keys(normalizedFieldSettings).reduce(
       (acc, field) => {
         const fieldDefinition = (fields || []).find((item) => item.name === field);
+        const customFieldReturnType =
+          normalizedFieldSettings[field]?.customFieldReturnType;
 
-        if (fieldDefinition?.type === "array") {
+        if (
+          fieldDefinition?.type === "array" ||
+          customFieldReturnType === "array"
+        ) {
           acc[field] =
-            field_settings[field].defaultValue !== undefined
-              ? field_settings[field].defaultValue
+            normalizedFieldSettings[field].defaultValue !== undefined
+              ? normalizedFieldSettings[field].defaultValue
               : buildArrayDefaultValue(
-                  field_settings[field].subFields,
-                  field_settings[field].subFieldSettings
+                  normalizedFieldSettings[field].subFields,
+                  normalizedFieldSettings[field].subFieldSettings
                 );
           return acc;
         }
 
-        acc[field] = field_settings[field].defaultValue;
+        acc[field] = normalizedFieldSettings[field].defaultValue;
         return acc;
       },
       {} as Record<string, any>
@@ -243,13 +310,13 @@ export const softComponentFromAppState = (
       name: metadata.name,
       category: metadata.category,
       fields: {
-        ...softFieldsToPuckFields(fields, field_settings),
+        ...softFieldsToPuckFields(fields, normalizedFieldSettings, customFields),
         ...Object.keys(slots).reduce((acc, slot) => {
           acc[slot] = { type: "slot", label: slot };
           return acc;
         }, {} as Fields),
       },
-      fieldSettings: field_settings,
+      fieldSettings: normalizedFieldSettings,
       defaultProps,
       rootProps: customRootProps,
       components,

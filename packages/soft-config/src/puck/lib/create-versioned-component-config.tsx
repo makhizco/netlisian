@@ -1,6 +1,43 @@
 import { SoftRender } from "../components/soft-render";
 import { SoftComponents } from "../types/SoftComponent";
 import { ComponentConfig, Config, DefaultComponentProps, Field } from "@measured/puck";
+import type { CustomFields } from "../types/SoftFields";
+
+const hydrateCustomField = (
+  fieldName: string,
+  field: Field,
+  fieldSettings: Record<string, unknown> | undefined,
+  customFields?: CustomFields
+): Field => {
+  if (field.type !== "custom") {
+    return field;
+  }
+
+  const fieldWithMeta = field as Field & {
+    customFieldType?: string;
+  };
+
+  const customFieldType =
+    fieldWithMeta.customFieldType ||
+    (fieldSettings?.[fieldName] as { customFieldType?: string } | undefined)
+      ?.customFieldType;
+
+  if (!customFieldType) {
+    return field;
+  }
+
+  const customField = customFields?.[customFieldType];
+  if (!customField) {
+    return field;
+  }
+
+  return {
+    ...field,
+    ...customField.field,
+    type: "custom",
+    label: field.label || customField.field.label || fieldName,
+  } as Field;
+};
 
 export const createVersionedComponentConfig = (
   componentName: string,
@@ -10,7 +47,8 @@ export const createVersionedComponentConfig = (
   config: Config,
   softComponents: SoftComponents,
   defaultProps: DefaultComponentProps,
-  showVersioning = true
+  showVersioning = true,
+  customFields?: CustomFields
 ): ComponentConfig => {
   const softConfig = config;
   return {
@@ -29,7 +67,10 @@ export const createVersionedComponentConfig = (
       version,
     },
     resolveFields: (data) => {
-      const selectedVersion = (data.props as any)?.version || version;
+      const selectedVersion =
+        ((data.props as Record<string, unknown> | undefined)?.version as
+          | string
+          | undefined) || version;
 
       const versionedComponent =
         softComponents[componentName]?.versions[selectedVersion];
@@ -47,14 +88,21 @@ export const createVersionedComponentConfig = (
       Object.entries(versionedComponent?.fields || {})
         .filter(([, field]) => field.type !== "slot")
         .forEach(([key, field]) => {
-          fields[key] = field;
+          fields[key] = hydrateCustomField(
+            key,
+            field,
+            versionedComponent?.fieldSettings,
+            customFields
+          );
         })
 
 
       return fields;
     },
     render: (props) => {
-      const selectedVersion = (props as any).version || version;
+      const selectedVersion =
+        ((props as Record<string, unknown>).version as string | undefined) ||
+        version;
       const versionedComponent =
         softComponents[componentName]?.versions[selectedVersion];
 

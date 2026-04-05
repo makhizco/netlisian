@@ -19,6 +19,7 @@ import {
 import { clearEditVisibility, setEditVisibility } from "../lib/edit-visibility-utils";
 import { Overrides } from "../types/Overrides";
 import { OnActionsCallback } from "../types/ActionEvents";
+import type { CustomFields } from "../types/SoftFields";
 
 type Status = "building" | "remodeling" | "ready" | "inspecting";
 
@@ -30,6 +31,7 @@ export type AppStore = {
   originalHistory: History[];
   storedConfig?: Config;
   overrides: Overrides;
+  customFields: CustomFields;
   onActions?: OnActionsCallback;
   itemSelector: {
     index: number;
@@ -129,7 +131,8 @@ export const createSoftConfigStore = (
   softComponents: SoftComponents = {},
   overrides: Overrides = {},
   onActions?: OnActionsCallback,
-  showVersionFields = true
+  showVersionFields = true,
+  customFields: CustomFields = {}
 ) => {
   const normalizedSoftComponents = Object.fromEntries(
     Object.entries(softComponents || {})
@@ -163,6 +166,7 @@ export const createSoftConfigStore = (
         state: "ready",
         originalHistory: [],
         overrides,
+        customFields,
         onActions,
         iframeDocRef,
         showVersionFields: showVersionFields,
@@ -212,7 +216,9 @@ export const createSoftConfigStore = (
             ...buildInitialSoftComponents(
               hardConfig,
               hydratedSoftComponents,
-              overrides
+              overrides,
+              showVersionFields,
+              customFields
             ),
           },
           categories: {
@@ -282,7 +288,8 @@ export const createSoftConfigStore = (
                 state.softConfig,
                 nextSoftComponents,
                 activeVersionData.defaultProps,
-                state.showVersionFields
+                state.showVersionFields,
+                state.customFields
               );
             }
           });
@@ -320,7 +327,8 @@ export const createSoftConfigStore = (
                 softConfig,
                 hydratedComponents,
                 activeVersionData.defaultProps,
-                get().showVersionFields
+                get().showVersionFields,
+                get().customFields
               );
             }
           });
@@ -354,7 +362,8 @@ export const createSoftConfigStore = (
             get().softConfig,
             get().softComponents,
             softComponent.defaultProps,
-            get().showVersionFields
+            get().showVersionFields,
+            get().customFields
           );
 
           set((state) => ({
@@ -531,7 +540,8 @@ export const createSoftConfigStore = (
               config,
               softComponents,
               versionedComponent.defaultProps,
-              state.showVersionFields
+              state.showVersionFields,
+              state.customFields
             );
 
             config.components[dependentName] = newConfig;

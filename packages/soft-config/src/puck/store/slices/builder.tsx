@@ -180,7 +180,14 @@ export const createBuildersSlice = (
 
     const config = { ...get().softConfig };
     const overrides = get().overrides;
-    const buildConfig = builderConfig(config, overrides, undefined, get().showVersionFields);
+    const buildConfig = builderConfig(
+      config,
+      overrides,
+      undefined,
+      get().showVersionFields,
+      undefined,
+      get().customFields
+    );
 
     // Building editable ids
     const editableIds = new Set<string>([selectedItem.props.id]);
@@ -275,7 +282,8 @@ export const createBuildersSlice = (
       get().softConfig.components,
       get().overrides,
       softComponentMeta?.name || softComponentName,
-      softComponentMeta?.category
+      softComponentMeta?.category,
+      get().customFields
     );
 
     const config = { ...get().softConfig };
@@ -286,7 +294,14 @@ export const createBuildersSlice = (
     // Get dependent components from the reverse dependency graph
     const dependents = get().dependencyGraph.get(softComponentName) || new Set<string>();
 
-    const buildConfig = builderConfig(config, overrides, softComponentName, get().showVersionFields, dependents);
+    const buildConfig = builderConfig(
+      config,
+      overrides,
+      softComponentName,
+      get().showVersionFields,
+      dependents,
+      get().customFields
+    );
 
     // Collect all descendant IDs in edit scope using walkTree
     const editableIds = new Set<string>([]);
@@ -609,7 +624,8 @@ export const createBuildersSlice = (
         {
           name: displayName,
           category,
-        }
+        },
+        get().customFields
       );
 
     // Get all versions and the default version of this component
@@ -634,7 +650,8 @@ export const createBuildersSlice = (
         },
       },
       softComponent.defaultProps,
-      get().showVersionFields
+      get().showVersionFields,
+      get().customFields
     );
 
     get().setSoftComponent(componentName, version, softComponent);
@@ -701,7 +718,8 @@ export const createBuildersSlice = (
       get().softConfig.components,
       get().overrides,
       softComponentMeta?.name || componentName,
-      softComponentMeta?.category
+      softComponentMeta?.category,
+      get().customFields
     );
 
     // Update puck data with new version

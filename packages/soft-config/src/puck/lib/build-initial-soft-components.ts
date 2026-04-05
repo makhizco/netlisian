@@ -1,6 +1,7 @@
 import { Config, ComponentConfig } from "@measured/puck";
 import { SoftComponents, SoftSubComponent, VersionedSoftComponent } from "../types/SoftComponent";
 import { Overrides } from "../types/Overrides";
+import type { CustomFields } from "../types/SoftFields";
 import { createVersionedComponentConfig } from "./create-versioned-component-config";
 
 type Hydrator = NonNullable<Overrides["hydrateMapTransform"]>;
@@ -250,7 +251,8 @@ export function buildInitialSoftComponents(
   hardConfig: Config,
   softComponents: SoftComponents,
   overrides?: Overrides,
-  showVersioning = false
+  showVersioning = false,
+  customFields?: CustomFields
 ): Record<string, ComponentConfig> {
   if (!softComponents || Object.keys(softComponents).length === 0) {
     return {};
@@ -303,6 +305,7 @@ export function buildInitialSoftComponents(
         hydratedSoftComponents,
         versionedComponent.defaultProps,
         showVersioning,
+        customFields,
       );
 
       componentConfigs[name] = newSoftComponentConfig;
@@ -342,6 +345,7 @@ export function buildInitialSoftComponents(
         hydratedSoftComponents,
         versionedComponent.defaultProps,
         showVersioning,
+        customFields,
       );
 
       componentConfigs[name] = newSoftComponentConfig;

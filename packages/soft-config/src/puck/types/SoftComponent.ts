@@ -1,5 +1,6 @@
 import { DefaultComponentProps, Fields } from "@measured/puck";
 import { BuilderComponentConfig } from "./BuilderConfig";
+import type { SoftFieldSettings } from "./SoftFields";
 
 export type SoftSubComponent = {
   type: string;
@@ -16,9 +17,9 @@ export type SoftComponent = {
   name: string;
   category?: string;
   fields: Fields;
-  fieldSettings?: Record<string, any>;
+  fieldSettings?: SoftFieldSettings;
   defaultProps: DefaultComponentProps;
-  rootProps?: Record<string, any>;
+  rootProps?: Record<string, unknown>;
   components: SoftSubComponent;
   slots: {
     [slot: string]: DefaultComponentProps;
@@ -32,9 +33,9 @@ export type VersionedSoftComponent = {
   versions: {
     [version: string]: {
       fields: Fields;
-      fieldSettings?: Record<string, any>;
+      fieldSettings?: SoftFieldSettings;
       defaultProps: DefaultComponentProps;
-      rootProps?: Record<string, any>;
+      rootProps?: Record<string, unknown>;
       components: SoftSubComponent;
       slots: {
         [slot: string]: DefaultComponentProps;

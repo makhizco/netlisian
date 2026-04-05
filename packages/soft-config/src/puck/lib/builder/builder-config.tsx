@@ -1,4 +1,4 @@
-import { AutoField, ComponentConfig, Config, Field, Fields } from "@measured/puck";
+import { ComponentConfig, Config, Field, Fields } from "@measured/puck";
 import {
   BuilderConfig,
   BuilderComponentConfig,
@@ -17,6 +17,7 @@ import {
 
 import { ErrorBoundary } from "../../components/error-boundary";
 import { AppStore } from "../../store";
+import type { CustomFields } from "../../types/SoftFields";
 
 /* Generates builder soft config
  *  - Update root to include: name, fields, fieldSettings, for soft component
@@ -28,9 +29,16 @@ export const builderConfig = (
   overrides: AppStore["overrides"],
   editingComponent?: string,
   showVersionFields: boolean = true,
-  dependents?: Set<string>
+  dependents?: Set<string>,
+  customFields?: CustomFields
 ): BuilderConfig => ({
-  root: builderRootConfig(config, overrides, editingComponent, showVersionFields),
+  root: builderRootConfig(
+    config,
+    overrides,
+    editingComponent,
+    showVersionFields,
+    customFields
+  ),
   components: Object.entries({
     ...config.components,
   }).reduce(
@@ -41,7 +49,7 @@ export const builderConfig = (
           insert: editingComponent !== name && !dependents?.has(name)
         },
         async resolveFields(data, params) {
-          let fields: Fields = {};
+          let fields: Record<string, Field> = {};
 
           if (!fields._slot) {
             const slotFields = Object.entries(params.fields).filter(
@@ -83,23 +91,25 @@ export const builderConfig = (
               };
           }
 
-          const defaultFields: Fields<BuilderComponentConfig> =
-            component.resolveFields
+          const defaultFields =
+            (component.resolveFields
               ? await component.resolveFields(data, params)
-              : component.fields || {};
+              : component.fields || {}) as Record<string, Field>;
 
           if (!fields._map || params.changed._map) {
             const rootProps = getRootProps(params.appState);
             const fromOptions = generateDynamicFieldOptions(
               rootProps?._fields || [],
-              rootProps?._fieldSettings || {}
+              rootProps?._fieldSettings || {},
+              customFields
             );
-            const toOptionsFields = component.resolveFields && data.props?._map
-              ? await component.resolveFields(
-                { ...data, props: { ...data.props, _map: undefined } },
-                params
-              )
-              : defaultFields;
+            const toOptionsFields =
+              (component.resolveFields && data.props?._map
+                ? await component.resolveFields(
+                  { ...data, props: { ...data.props, _map: undefined } },
+                  params
+                )
+                : defaultFields) as Record<string, Field>;
 
             const toOptions = generateFieldOptions(toOptionsFields);
 
@@ -204,9 +214,9 @@ export const builderConfig = (
           fields = {
             ...fields,
             ...defaultFields,
-          };
+          } as Record<string, Field>;
 
-          return fields;
+          return fields as Fields;
         },
         resolveData: ({ props }, { lastData }) => {
           // Migrate string default values to objects if needed (from old textarea UI)

@@ -4,23 +4,46 @@ import {
   getArrayItemSummary,
   isPrimitiveFieldType,
 } from "./array-field-utils";
+import {
+  getCustomFieldTypeOptions,
+  resolveCustomFieldDefinition,
+  resolveCustomFieldReturnType,
+  resolveCustomFieldSchema,
+} from "./custom-fields";
 import type {
-  FieldSettings,
+  CustomFields,
   SoftFieldDefinition,
   SoftFieldSettings,
 } from "../types/SoftFields";
 
 const buildPuckField = (
   field: SoftFieldDefinition,
-  fieldSettings?: SoftFieldSettings[string]
+  fieldSettings?: SoftFieldSettings[string],
+  customFields?: CustomFields
 ): Field => {
-  switch (field.type) {
+  const customFieldDefinition = resolveCustomFieldDefinition(
+    field.type,
+    customFields
+  );
+  const customReturnType = resolveCustomFieldReturnType(field.type, customFields);
+
+  if (customFieldDefinition && customReturnType) {
+    return {
+      ...customFieldDefinition.field,
+      type: "custom",
+      label: customFieldDefinition.field.label || field.name,
+    } as Field;
+  }
+
+  const resolvedType = field.type;
+
+  switch (resolvedType) {
     case "text":
     case "textarea":
-      return { type: field.type, label: field.name };
+      return { type: resolvedType, label: field.name };
     case "number":
       return {
-        type: field.type,
+        type: resolvedType,
         label: field.name,
         min: fieldSettings?.min,
         max: fieldSettings?.max,
@@ -29,19 +52,24 @@ const buildPuckField = (
     case "select":
     case "radio":
       return {
-        type: field.type,
+        type: resolvedType,
         label: field.name,
         options: fieldSettings?.options || [],
       };
     case "array": {
       const subFields = fieldSettings?.subFields || [];
       const subFieldSettings = fieldSettings?.subFieldSettings || {};
+
       return {
         type: "array",
         label: field.name,
         min: fieldSettings?.min,
         max: fieldSettings?.max,
-        arrayFields: buildDefaultEditorFields(subFields, subFieldSettings),
+        arrayFields: buildDefaultEditorFields(
+          subFields,
+          subFieldSettings,
+          customFields
+        ),
         defaultItemProps: buildArrayDefaultItemProps(subFields, subFieldSettings),
         getItemSummary(item, index) {
           return getArrayItemSummary(item, index, fieldSettings);
@@ -54,7 +82,8 @@ const buildPuckField = (
         label: field.name,
         objectFields: buildDefaultEditorFields(
           fieldSettings?.subFields || [],
-          fieldSettings?.subFieldSettings || {}
+          fieldSettings?.subFieldSettings || {},
+          customFields
         ),
       };
     default:
@@ -64,100 +93,140 @@ const buildPuckField = (
 
 const buildDefaultEditorFields = (
   fields: SoftFieldDefinition[] = [],
-  fieldSettings: SoftFieldSettings = {}
+  fieldSettings: SoftFieldSettings = {},
+  customFields?: CustomFields
 ): Fields => {
   return fields.reduce((acc, field) => {
-    acc[field.name] = buildPuckField(field, fieldSettings[field.name]);
+    acc[field.name] = buildPuckField(
+      field,
+      fieldSettings[field.name],
+      customFields
+    );
     return acc;
   }, {} as Fields);
 };
 
 const getFieldSettings = (
-  _fields?: {
-    name: string;
-    type: Field["type"] | "reference";
-  }[],
-  _fieldSettings?: FieldSettings,
+  _fields?: SoftFieldDefinition[],
+  _fieldSettings?: SoftFieldSettings,
+  customFields?: CustomFields,
   deep?: boolean
 ): Fields => {
+  const customTypeOptions = getCustomFieldTypeOptions(customFields);
+
   return (
-    (_fields || []) as {
-      name: string;
-      type: Field["type"] | "reference";
-      label: string;
-    }[]
+    (_fields || [])
   ).reduce((fields, field) => {
     const fieldSettings: Fields = {
       // placeholder: { type: "text", label: "Placeholder" },
     };
 
     const currentFieldSettings = _fieldSettings?.[field.name];
+    const customFieldDefinition = resolveCustomFieldDefinition(
+      field.type,
+      customFields
+    );
+    const customReturnType = resolveCustomFieldReturnType(
+      field.type,
+      customFields
+    );
+    const resolvedType = field.type;
+    const customSchema = resolveCustomFieldSchema(field.type, customFields);
+    const resolvedSubFields =
+      customSchema?.subFields || currentFieldSettings?.subFields || [];
+    const resolvedSubFieldSettings =
+      customSchema?.subFieldSettings ||
+      currentFieldSettings?.subFieldSettings ||
+      {};
+    const customDefaultValueField =
+      customFieldDefinition && customReturnType
+        ? ({
+            ...customFieldDefinition.field,
+            type: "custom",
+            label: customFieldDefinition.field.label || "Default Value",
+          } as Field)
+        : null;
 
-    switch (field.type) {
+    if (customDefaultValueField) {
+      fieldSettings.defaultValue = customDefaultValueField;
+    }
+
+    switch (resolvedType) {
       case "text":
       case "textarea":
-        fieldSettings.defaultValue = {
-          type: field.type,
-          label: "Default Value",
-        };
+        if (!customDefaultValueField) {
+          fieldSettings.defaultValue = {
+            type: resolvedType,
+            label: "Default Value",
+          };
+        }
         break;
 
       case "number":
-        fieldSettings.defaultValue = {
-          type: field.type,
-          label: "Default Value",
-        };
+        if (!customDefaultValueField) {
+          fieldSettings.defaultValue = {
+            type: resolvedType,
+            label: "Default Value",
+          };
+        }
         fieldSettings.min = {
-          type: field.type,
+          type: resolvedType,
           label: "Minimum Value",
         };
         fieldSettings.max = {
-          type: field.type,
+          type: resolvedType,
           label: "Maximum Value",
         };
         fieldSettings.step = {
-          type: field.type,
+          type: resolvedType,
           label: "Step Size",
         };
         break;
       case "radio":
-      case "select":
-        fieldSettings.defaultValue = {
-          type: "custom",
-          label: "Default Value",
-          render: ({ value, onChange, id }) => (
-            <AutoField
-              field={{
-                type: field.type as "select" | "radio",
-                label: "Default Value",
-                options: currentFieldSettings?.options || [],
-              }}
-              value={value}
-              onChange={onChange}
-              readOnly={false}
-              id={id}
-            />
-          ),
-        };
-        fieldSettings.options = {
-          type: "array",
-          label: "Options",
-          defaultItemProps: {
-            label: "New Option",
-            value: "new",
-          },
-          arrayFields: {
-            label: { type: "text", label: "Label" },
-            value: {
-              type: "text",
-              label: "Value",
+      case "select": {
+        const selectOptions = currentFieldSettings?.options || [];
+
+        if (!customDefaultValueField) {
+          fieldSettings.defaultValue = {
+            type: "custom",
+            label: "Default Value",
+            render: ({ value, onChange, id }) => (
+              <AutoField
+                field={{
+                  type: resolvedType as "select" | "radio",
+                  label: "Default Value",
+                  options: selectOptions,
+                }}
+                value={value}
+                onChange={onChange}
+                readOnly={false}
+                id={id}
+              />
+            ),
+          };
+        }
+
+          fieldSettings.options = {
+            type: "array",
+            label: "Options",
+            defaultItemProps: {
+              label: "New Option",
+              value: "new",
             },
-          },
-          getItemSummary(item, index) {
-            return item.label || `Option ${(index || 0) + 1}`;
-          },
-        };
+            arrayFields: {
+              label: { type: "text", label: "Label" },
+              value: {
+                type: "text",
+                label: "Value",
+              },
+            },
+            getItemSummary(item, index) {
+              return item.label || `Option ${(index || 0) + 1}`;
+            },
+          };
+
         break;
+      }
       case "array":
       case "object":
         fieldSettings.subFields = {
@@ -189,6 +258,7 @@ const getFieldSettings = (
                       label: "Radio",
                       value: "radio",
                     },
+                    ...customTypeOptions,
                   ]
                 : [
                     {
@@ -219,6 +289,7 @@ const getFieldSettings = (
                       label: "Reference",
                       value: "reference",
                     },
+                    ...customTypeOptions,
                   ],
             },
           },
@@ -231,31 +302,35 @@ const getFieldSettings = (
           fieldSettings.subFieldSettings = {
             type: "object",
             label: "Sub Field Settings",
-            objectFields: currentFieldSettings?.subFields
+            objectFields: resolvedSubFields
               ? getFieldSettings(
-                  currentFieldSettings.subFields,
-                  currentFieldSettings.subFieldSettings,
+                  resolvedSubFields,
+                  resolvedSubFieldSettings,
+                  customFields,
                   true
                 )
               : {},
           };
 
-        if (field.type === "array") {
-          fieldSettings.defaultValue = {
-            type: "array",
-            label: "Default Items",
-            arrayFields: buildDefaultEditorFields(
-              currentFieldSettings?.subFields,
-              currentFieldSettings?.subFieldSettings
-            ),
-            defaultItemProps: buildArrayDefaultItemProps(
-              currentFieldSettings?.subFields,
-              currentFieldSettings?.subFieldSettings
-            ),
-            getItemSummary(item, index) {
-              return getArrayItemSummary(item, index, currentFieldSettings);
-            },
-          };
+        if (resolvedType === "array") {
+          if (!customDefaultValueField) {
+            fieldSettings.defaultValue = {
+              type: "array",
+              label: "Default Items",
+              arrayFields: buildDefaultEditorFields(
+                resolvedSubFields,
+                resolvedSubFieldSettings,
+                customFields
+              ),
+              defaultItemProps: buildArrayDefaultItemProps(
+                resolvedSubFields,
+                resolvedSubFieldSettings
+              ),
+              getItemSummary(item, index) {
+                return getArrayItemSummary(item, index, currentFieldSettings);
+              },
+            };
+          }
 
           fieldSettings.min = {
             type: "number",
@@ -293,7 +368,7 @@ const getFieldSettings = (
                   label: "Select a field",
                   value: "",
                 },
-                ...(currentFieldSettings?.subFields || [])
+                ...resolvedSubFields
                   .filter((subField) => isPrimitiveFieldType(subField.type))
                   .map((subField) => ({
                     label: subField.name,
@@ -313,10 +388,19 @@ const getFieldSettings = (
         break;
     }
 
+    const overriddenFieldSettings = customFieldDefinition?.fieldSettingsOverride
+      ? customFieldDefinition.fieldSettingsOverride({
+          fieldName: field.name,
+          fieldType: field.type,
+          fieldSettings: currentFieldSettings,
+          originalFieldSettings: fieldSettings,
+        })
+      : fieldSettings;
+
     fields[field.name] = {
       type: "object",
       label: field.name,
-      objectFields: fieldSettings,
+      objectFields: overriddenFieldSettings,
     };
 
     return fields;

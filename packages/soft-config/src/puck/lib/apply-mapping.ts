@@ -26,7 +26,7 @@ import type {
   MapEntry,
 } from "../types/Mapping";
 
-const resolveValueByPath = (source: any, path: string): any => {
+export const resolveValueByPath = (source: any, path: string): any => {
   if (!path) return source;
 
   const segments = path.split(".");
@@ -56,6 +56,36 @@ const resolveValueByPath = (source: any, path: string): any => {
   };
 
   return resolveSegments(source, 0);
+};
+
+const resolveFieldSettingEntryByPath = (
+  settings: Record<string, any>,
+  path: string
+): any => {
+  if (!path) return undefined;
+
+  const segments = path.split(".");
+  let currentSettings: Record<string, any> | undefined = settings;
+  let currentEntry: any;
+
+  for (const segmentWithArraySuffix of segments) {
+    const segment = segmentWithArraySuffix.endsWith("[]")
+      ? segmentWithArraySuffix.slice(0, -2)
+      : segmentWithArraySuffix;
+
+    if (!currentSettings || typeof currentSettings !== "object") {
+      return undefined;
+    }
+
+    currentEntry = currentSettings[segment];
+    if (currentEntry === undefined) {
+      return undefined;
+    }
+
+    currentSettings = currentEntry?.subFieldSettings;
+  }
+
+  return currentEntry;
 };
 
 /**
@@ -110,7 +140,12 @@ export function applyMapping(
         }
         return propVal;
       }
-      return resolveValueByPath(fieldSettings, f);
+      const directValue = resolveValueByPath(fieldSettings, f);
+      if (directValue !== undefined) {
+        return directValue;
+      }
+
+      return resolveFieldSettingEntryByPath(fieldSettings, f);
     });
 
     const resolvedInputs = inputValues.map((v) =>

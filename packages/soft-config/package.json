@@ -1,6 +1,6 @@
 {
   "name": "@netlisian/softconfig",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -27,7 +27,8 @@
     "dev": "tsup src/index.tsx src/puck/index.tsx --format esm,cjs --watch --dts --out-dir dist --external react --external react-dom",
     "lint": "eslint \"src/**/*.ts*\"",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
-    "size": "size-limit"
+    "size": "size-limit",
+    "knip": "pnpm dlx knip --config knip.config.cjs"
   },
   "devDependencies": {
     "@netlisian/eslint-config": "workspace:*",

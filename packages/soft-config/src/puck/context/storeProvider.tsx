@@ -8,14 +8,15 @@ import type { AppStore } from "../store";
 import type { SoftComponents } from "../types/SoftComponent";
 import type { Overrides } from "../types/Overrides";
 import type { OnActionsCallback } from "../types/ActionEvents";
+import type { CustomFields } from "../types/SoftFields";
 import type { StoreApi } from "zustand";
 import { clearEditVisibility, setEditVisibility } from "../lib/edit-visibility-utils";
-import { notify } from "../lib/notify";
 
 export const SoftConfigProvider = ({
   children,
   hardConfig,
   softComponents,
+  customFields,
   overrides,
   value,
   onActions,
@@ -29,14 +30,30 @@ export const SoftConfigProvider = ({
   ) => ReactNode;
   hardConfig: Config;
   softComponents: SoftComponents;
+  customFields?: CustomFields;
   overrides?: Overrides;
   value?: StoreApi<AppStore>;
   onActions?: OnActionsCallback;
   useVersioning?: boolean;
 }) => {
   const store = value ?? useMemo(
-    () => createSoftConfigStore(hardConfig, softComponents, overrides, onActions, useVersioning),
-    [hardConfig, softComponents, overrides, onActions, useVersioning]
+    () =>
+      createSoftConfigStore(
+        hardConfig,
+        softComponents,
+        overrides,
+        onActions,
+        useVersioning,
+        customFields
+      ),
+    [
+      hardConfig,
+      softComponents,
+      overrides,
+      onActions,
+      useVersioning,
+      customFields,
+    ]
   );
   const [softConfig, setSoftConfig] = useState(
     () => store.getState().softConfig

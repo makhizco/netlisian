@@ -10,6 +10,14 @@ export type { SoftComponent, SoftComponents, VersionedSoftComponent } from "./ty
 export type { Overrides } from "./types/Overrides";
 export type { BuilderConfig, BuilderComponentConfig, BuilderRootConfig } from "./types/BuilderConfig";
 export type { ActionEventPayload, OnActionsCallback } from "./types/ActionEvents";
+export type {
+	CustomFieldDefinition,
+	CustomFieldReturnType,
+	CustomFields,
+	FieldSettings,
+	SoftFieldDefinition,
+	SoftFieldSettings,
+} from "./types/SoftFields";
 
 // export actions
 export * from "./actions";
@@ -33,3 +41,10 @@ export { Modal } from "./components/modal";
 
 // Export mapping utilities for overrides.map consumers
 export { filterToOptionsForFrom } from "./lib/builder/generate-field-options";
+
+// Export apply-mapping utilities
+export { applyMapping, resolveValueByPath } from "./lib/apply-mapping";
+export type { MapEntry, ApplyMappingOptions, ApplyMappingResult } from "./types/Mapping";
+
+// Export array-field utilities for mapping UI use
+export { isArrayMappingPath, getArrayBasePath, getArrayItemSubPath } from "./lib/array-field-utils";

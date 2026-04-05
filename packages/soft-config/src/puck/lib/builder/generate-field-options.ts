@@ -1,6 +1,16 @@
 import type { Field } from "@measured/puck";
 import type { MappingOption } from "../../types/Mapping";
-import type { SoftFieldDefinition, SoftFieldSettings } from "../../types/SoftFields";
+import type {
+  CustomFields,
+  SoftFieldDefinition,
+  SoftFieldSettings,
+} from "../../types/SoftFields";
+import {
+  isBuiltInSoftFieldType,
+  mapCustomReturnTypeToMappingType,
+  resolveCustomFieldReturnType,
+  resolveCustomFieldSchema,
+} from "../custom-fields";
 
 const hasArrayMappingPath = (value: string) => value.includes("[]");
 
@@ -73,11 +83,13 @@ export function generateFieldOptions(
 export function generateDynamicFieldOptions(
   _fields: SoftFieldDefinition[] | undefined,
   _fieldSettings: SoftFieldSettings | undefined,
+  customFields?: CustomFields,
   prefix = "",
 ): MappingOption[] {
   const opts: MappingOption[] = [];
 
-  if (!_fields || !_fieldSettings) return opts;
+  if (!_fields) return opts;
+
   function recurse(
     fields: SoftFieldDefinition[],
     fieldSettings: SoftFieldSettings,
@@ -85,22 +97,57 @@ export function generateDynamicFieldOptions(
   ) {
     fields.forEach((field) => {
       const settings = fieldSettings[field.name];
+      const customReturnType = resolveCustomFieldReturnType(
+        field.type,
+        customFields
+      );
 
       const path = currentPrefix
         ? `${currentPrefix}.${field.name}`
         : field.name;
 
+      if (customReturnType) {
+        if (customReturnType === "array" || customReturnType === "object") {
+          const customSchema = resolveCustomFieldSchema(field.type, customFields);
+          if (!customSchema) {
+            return;
+          }
+
+          recurse(
+            customSchema.subFields,
+            customSchema.subFieldSettings,
+            path + (customReturnType === "array" ? "[]" : "")
+          );
+          return;
+        }
+
+        opts.push({
+          label: path,
+          value: path,
+          type: mapCustomReturnTypeToMappingType(customReturnType),
+        });
+        return;
+      }
+
+      if (!isBuiltInSoftFieldType(field.type)) {
+        return;
+      }
+
       // Handle subfields if they exist
       if (settings?.subFields?.length) {
 
-        recurse(settings.subFields, settings.subFieldSettings || {}, path + (field.type === "array" ? "[]" : ""));
+        recurse(
+          settings.subFields,
+          settings.subFieldSettings || {},
+          path + (field.type === "array" ? "[]" : "")
+        );
       } else if (field.type !== "array" && field.type !== "object") {
         opts.push({ label: path, value: path, type: field.type });
       }
     });
   }
 
-  recurse(_fields, _fieldSettings, prefix);
+  recurse(_fields, _fieldSettings || {}, prefix);
 
   return opts;
 }

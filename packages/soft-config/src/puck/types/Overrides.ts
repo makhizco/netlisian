@@ -11,9 +11,10 @@ import {
 } from "@measured/puck";
 import { VersionedSoftComponent } from "./SoftComponent";
 import { OnActionsCallback } from "./ActionEvents";
+import type { MappingOption } from "./Mapping";
 
 type RenderFunc<
-  Props extends { [key: string]: any } = { children: ReactNode },
+  Props extends Record<string, unknown> = { children: ReactNode },
 > = (props: Props) => ReactElement;
 
 export type Overrides = {
@@ -25,20 +26,12 @@ export type Overrides = {
     }
   ) => string;
   componentKeyToName?: (key: string) => string;
-  onRemodel?: (key: string) => Record<string, any>;
+  onRemodel?: (key: string) => Record<string, unknown>;
   additionalRootFields?: Record<string, Field>;
   map?: RenderFunc<{
     rootProps: BuilderRootConfig;
-    toOptions: {
-      label: string;
-      value: string;
-      type: Field["type"] | "reference";
-    }[];
-    fromOptions: {
-      label: string;
-      value: string;
-      type: Field["type"] | "reference";
-    }[];
+    toOptions: MappingOption[];
+    fromOptions: MappingOption[];
     props: DefaultComponentProps;
     value: BuilderComponentConfig["_map"];
     onChange: (value: BuilderComponentConfig["_map"]) => void;
@@ -52,7 +45,12 @@ export type Overrides = {
       subComponentPath: string[];
       softComponent: VersionedSoftComponent["versions"][string];
     },
-  ) => ((inputs: any[], props: DefaultComponentProps) => any) | undefined;
+  ) =>
+    | ((
+        inputs: unknown[],
+        props: Record<string, unknown>
+      ) => unknown)
+    | undefined;
   onActions?: OnActionsCallback;
   name?: Field<string>;
   categories?: Field<string | undefined>;

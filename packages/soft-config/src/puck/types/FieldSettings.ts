@@ -1,1 +1,6 @@
-export type { FieldSettings, FieldSettingsEntry } from "./SoftFields";
+export type {
+  FieldSettings,
+  FieldSettingsEntry,
+  SoftFieldSettings,
+  SoftFieldSettingsEntry,
+} from "./SoftFields";

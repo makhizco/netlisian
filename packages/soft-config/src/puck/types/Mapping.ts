@@ -1,24 +1,34 @@
 import type { Field } from "@measured/puck";
 
 export type MapEntry = {
+  mode?: "simple" | "cva";
   from?: string | string[];
   to?: string | string[];
-  transform?: (values: any[], props: any) => any;
-  unmappedArrayItemDefaultValues?: Record<string, any>;
+  cva?: {
+    base?: string;
+    variants?: Array<{
+      fieldId?: string;
+      classes?: Record<string, string>;
+    }>;
+  };
+  transform?: (
+    values: unknown[],
+    props: Record<string, unknown>
+  ) => unknown;
+  unmappedArrayItemDefaultValues?: Record<string, unknown>;
   /** @deprecated in favour of unmappedArrayItemDefaultValues – kept for back-compat */
-  defaultOverrides?: Record<string, any>;
-  [key: string]: any;
+  defaultOverrides?: Record<string, unknown>;
 };
 
 export type ApplyMappingResult = {
-  newProps: Record<string, any>;
+  newProps: Record<string, unknown>;
   mappedArrayPaths: Set<string>;
   changed: boolean;
 };
 
 export type ApplyMappingOptions = {
-  sourceProps?: Record<string, any>;
-  arrayDefaults?: Record<string, any[]>;
+  sourceProps?: Record<string, unknown>;
+  arrayDefaults?: Record<string, unknown[]>;
 };
 
 export type MappingOption = {
