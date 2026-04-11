@@ -2,6 +2,7 @@ import { SoftRender } from "../components/soft-render";
 import { SoftComponents } from "../types/SoftComponent";
 import { ComponentConfig, Config, DefaultComponentProps, Field } from "@measured/puck";
 import type { CustomFields } from "../types/SoftFields";
+import type { Overrides } from "../types/Overrides";
 
 const hydrateCustomField = (
   fieldName: string,
@@ -48,16 +49,16 @@ export const createVersionedComponentConfig = (
   softComponents: SoftComponents,
   defaultProps: DefaultComponentProps,
   showVersioning = true,
-  customFields?: CustomFields
+  customFields?: CustomFields,
+  overrides?: Overrides
 ): ComponentConfig => {
-  const softConfig = config;
-  return {
+  const baseConfig: ComponentConfig = {
     label: displayName,
     fields: Object.fromEntries(
       (
         Object.entries(
           softComponents[componentName].versions?.[version]?.fields
-        ) || [] // BUG: Issue not version dependent as has no co-relation with data. Refresh page or make custom implementation for slot.
+        ) || []
       ).filter(
         ([key, field]) => field.type === "slot"
       ).map(([key, field]) => [key, { ...field }])
@@ -111,10 +112,17 @@ export const createVersionedComponentConfig = (
           softComponentFields={versionedComponent.fields}
           softComponentFieldSettings={versionedComponent.fieldSettings}
           softSubComponent={versionedComponent.components}
-          configComponents={softConfig.components}
+          configComponents={config.components}
           props={props}
         />
       );
     },
   };
+
+  // Apply component metadata overrides (icon, description, etc.)
+  if (overrides?.mapComponentConfig) {
+    return { ...baseConfig, ...overrides.mapComponentConfig(componentName, baseConfig) };
+  }
+
+  return baseConfig;
 };

@@ -1,121 +1,61 @@
-# Puck Soft Config
+# @netlisian/soft-config
 
-Enhanced configuration and UI utilities for Puck that add “soft components” (composable, versioned, and remodelable components) plus ready-to-use UI chrome.
+The core library for building and managing **Soft Components** within the Netlisian ecosystem. It provides type-safe field definitions, recursive mapping logic, and state management for the Puck editor.
 
-## Packages & Exports
-
-- `@netlisian/softconfig` → bundled CJS/ESM + types (`./dist/index.{js,mjs,d.ts}`)
-- `@netlisian/softconfig/puck` → Puck-focused entry (`./dist/puck/index.*`)
-- Styles: `@netlisian/softconfig/styles.css` (alias `./dist/index.css`) and `@netlisian/softconfig/puck/index.css`
-
-Peer dependencies: `react@^18`, `@measured/puck@0.20.x`.
-
-## Install
+## Installation
 
 ```bash
-pnpm add @netlisian/softconfig @measured/puck react
+npm install @netlisian/soft-config
 ```
 
-## Quick Start
+## Features
 
-```tsx
-import { SoftConfigProvider } from "@netlisian/softconfig/puck";
-import "@netlisian/softconfig/styles.css";
+- **Soft Component Builder**: Easy-to-use interface for creating versioned components.
+- **Dynamic Field Options**: Automatically generates dot-notated mapping paths for nested objects and arrays.
+- **Custom Field Support**: Extend the editor with custom UI while maintaining return type safety.
+- **Puck Overrides**: Pre-built component overrides (ActionBar, Header, ComponentList) to seamlessly integrate Soft Components into the Puck editor.
 
-const hardConfig = { components: {/* your hard Puck components */} };
-const softComponents = {/* optional persisted soft components */};
-const overrides = {/* optional UI overrides like map/action bar/etc. */};
+## Key Concepts
 
-export default function App({ children }: { children: React.ReactNode }) {
-  return (
-    <SoftConfigProvider
-      hardConfig={hardConfig}
-      softComponents={softComponents}
-      overrides={overrides}
-    >
-      {(softConfig, softComponentsRegistry) => (
-        /* render Puck with the soft-config-driven config */
-        <YourPuckHost config={softConfig} softComponents={softComponentsRegistry} />
-      )}
-    </SoftConfigProvider>
-  );
-}
+### Soft Component Definitions
+
+A Soft Component consists of fields, default props, and typed components.
+
+```typescript
+import { SoftFieldDefinition } from "@netlisian/soft-config";
+
+const galleryField: SoftFieldDefinition = {
+  name: "gallery",
+  type: "array",
+  subFields: [
+    { name: "src", type: "text" },
+    { name: "alt", type: "text" }
+  ]
+};
 ```
 
-`SoftConfigProvider` accepts an optional `value` prop if you want to bring your own Zustand store (see `src/puck/context/storeProvider.tsx`). Children are rendered via a render-prop to give you the hydrated `softConfig` and `softComponents` to pass directly to Puck.
+### Custom Field Extensibility
 
-## Field Mapping & Transforms
+Define custom field types with specified return types (`string`, `number`, `boolean`, `object`, `array`).
 
-- Soft components support `_map` entries with optional transforms or CVA-like configs. Because functions are not persisted, the library regenerates missing transforms at runtime (including during remodel/decompose) using the stored CVA config.
-- Field defaults are read from `_fieldSettings` when resolving mappings, so mapped props fall back to configured defaults when source data is absent.
+```typescript
+import { CustomFields } from "@netlisian/soft-config";
 
-## Styles
-
-Import once in your app root:
-
-```ts
-import "@netlisian/softconfig/styles.css";
+export const myCustomFields: CustomFields = {
+  "my-color": {
+    field: { type: "custom", render: () => <div>Color Picker</div> },
+    returnType: "string"
+  }
+};
 ```
 
-## Overrides
+### Field Mapping
 
-You can supply custom overrides (action bar, headers, map UI, etc.) through the `overrides` prop. See `src/puck/types/Overrides.ts` for the full surface.
+The library handles the logic for mapping configuration data to component props, including recursive array iteration using `[]` syntax (e.g., `features[].title`).
 
-## Action Lifecycle Events
+## Documentation
 
-`SoftConfigProvider` supports `onActions` for lifecycle callbacks:
-
-- `build` → when build mode starts
-- `remodel` → when remodel mode starts
-- `complete` → when a build/remodel is finalized
-- `inspect` → when inspect is requested
-- `demolish` → when a soft component is deleted
-- `setDefaultVersion`, `decompose`, `cancel`, `publish`
-
-Version-aware payloads are included for build finalization and inspection flows:
-
-```ts
-type ActionEventPayload =
-  | {
-      type: "remodel";
-      payload: {
-        id: string;
-        version?: string;
-        softComponent?: VersionedSoftComponent["versions"][string];
-      };
-    }
-  | {
-      type: "complete";
-      payload: {
-        id: string;
-        version: string;
-        componentData: Record<string, any>;
-        softComponent: VersionedSoftComponent["versions"][string];
-      };
-    }
-  | {
-      type: "inspect";
-      payload: {
-        id: string;
-        version?: string;
-        softComponent?: VersionedSoftComponent["versions"][string];
-      };
-    }
-  | {
-      type: "demolish";
-      payload: {
-        id: string;
-      };
-    };
-```
-
-This contract allows downstream consumers (for example, save/sync bridges) to persist using exact version metadata without relying on inferred/default versions.
-
-## Development
-
-- Build: `pnpm --filter @netlisian/softconfig build`
-- Dev (watch): `pnpm --filter @netlisian/softconfig dev`
-- Lint: `pnpm --filter @netlisian/softconfig lint`
+For detailed guides and API references, check the [Netlisian Docs](https://docs.netlisian.com).
 
 ## License
 

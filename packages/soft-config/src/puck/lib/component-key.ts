@@ -1,19 +1,39 @@
 import { Overrides } from "../types/Overrides";
 import { BuilderRootConfig } from "../types/BuilderConfig";
 
-const defaultToCamelCase = (value: string): string => {
-  const tokens = value
-    .trim()
-    .replace(/[^a-zA-Z0-9\s_-]/g, " ")
-    .split(/[\s_-]+/)
-    .filter(Boolean);
+const toSlug = (value: string): string => {
+  return value
+    .replace(/([a-z])([A-Z])/g, "$1-$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+};
 
-  if (tokens.length === 0) return "";
+const defaultComponentNameToKey = (
+  displayName: string,
+  context: Partial<BuilderRootConfig> & {
+    existingKeys: string[];
+    state: "building" | "remodeling" | "ready" | "inspecting";
+    registry?: string;
+    registryName?: string;
+  }
+): string => {
+  const registry = context.registryName ?? context.registry ?? "default";
+  return `${toSlug(registry)}/${toSlug(displayName)}`;
+};
 
-  const [first, ...rest] = tokens;
-  return `${first.toLowerCase()}${rest
-    .map((token) => token.charAt(0).toUpperCase() + token.slice(1).toLowerCase())
-    .join("")}`;
+const defaultComponentKeyToName = (key: string): string => {
+  const slashIndex = key.indexOf("/");
+  const componentPart = slashIndex === -1 ? key : key.slice(slashIndex + 1);
+
+  if (!componentPart) return "";
+
+  return componentPart
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
 export const createComponentKeyFromName = (
@@ -26,7 +46,7 @@ export const createComponentKeyFromName = (
 ): string => {
   const key = overrides.componentNameToKey
     ? overrides.componentNameToKey(displayName, context)
-    : defaultToCamelCase(displayName);
+    : defaultComponentNameToKey(displayName, context);
 
   return key.trim();
 };
@@ -38,5 +58,5 @@ export const getComponentNameFromKey = (
   if (overrides?.componentKeyToName) {
     return overrides.componentKeyToName(key);
   }
-  return key;
+  return defaultComponentKeyToName(key);
 };

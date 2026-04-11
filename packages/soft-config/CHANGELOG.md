@@ -1,103 +1,21 @@
-# @netlisian/softconfig
+# @netlisian/soft-config
 
-## 0.1.3
-
-### Patch Changes
-
-- fix: useComplete action call back with proper props of new component passing
-  feat: setup action for delete version
-  fix: Added scroll to top on open drawer for better UX when many components are present
-
-## 0.1.2
+## 0.1.6
 
 ### Patch Changes
 
-- feat: fixed issue to properly use name and created custom drawer to support category changes.
+- feat: Added mapComponentConfig override.
 
-## 0.1.1
+## 0.0.1 (2026-04-06)
 
-### Patch Changes
+This initial release introduces the core tools for defining and managing **Soft Components** within the Puck editor.
 
-- feat: Updated the flow to generate camelCase key from name. Provided overrides to use custom componentKeyGenerator. Setup categories.
+### Key Changes:
 
-## 0.1.0
-
-### Minor Changes
-
-- feat: Modified the flow to build and remodel in place rather than replacing the whole data at the root.
-
-  feat: Added a new flag `showVersionFields` to control the visibility of version-related fields in the editor UI.
-
-  feat: Optimized the soft-renderer to use fast-deep-equal for prop comparison, improving performance during remodeling.
-
-## 0.0.11
-
-### Patch Changes
-
-- feat: Added support for hydrating functions after puck has been rendered
-
-## 0.0.9
-
-### Patch Changes
-
-- fix: Added types for Actions
-
-## 0.0.8
-
-### Patch Changes
-
-- fix: Typescript issues
-
-## 0.0.7
-
-### Patch Changes
-
-- feat: Added onActions callback.
-
-## 0.0.6
-
-### Patch Changes
-
-- fix: Strip id from the slots enabled children to avoid linking and added support for soft-components transformation via hydration
-
-## 0.0.5
-
-### Patch Changes
-
-- fix: Updated soft-render function and create-versioned-component to support transfrom in field mapping, when available.
-
-## 0.0.4
-
-### Patch Changes
-
-- fix: export types for Builder and component for modal
-
-## 0.0.3
-
-### Patch Changes
-
-- fix: Added tsup es postcss pluign for css modules.
-
-## 0.0.2
-
-### Patch Changes
-
-- fix: Export the css files for overrides and other funtions.
-
-## 0.0.1
-
-### Patch Changes
-
-- fix: Removed creation of softconfig store at module evaluation time.
-
-## 0.0.0
-
-### Patch Changes
-
-- Fixed the package json export issue.
-
-## 0.0.0-alpha-20251026130436
-
-### Minor Changes
-
-- Initial Release for Soft Config Puck
+- **Soft Component Builder**: Comprehensive API for versioned component creation.
+- **Dynamic Field Strategy**: Robust generation of dot-notation paths for mapping (e.g., `user.address`), supporting both scalars and iterables.
+- **Array Field Support**: Integration of nested fields within arrays with `getItemSummary` support.
+- **Custom Field Support**: Advanced extensibility for the Puck editor with type-safe return values (`string`, `number`, `boolean`, `object`, `array`).
+- **Puck Editor Overrides**: Built-in React components (`ActionBar`, `Header`, `ComponentList`, `Drawer`, `DrawerItem`) tailored for Soft Component management.
+- **Recursive Mapping Options**: Intelligent filtering and generation of field paths, including `[]` notation for array-to-prop mapping.
+- **Store Slices**: `builder` slice for managing global editor state and component definitions.

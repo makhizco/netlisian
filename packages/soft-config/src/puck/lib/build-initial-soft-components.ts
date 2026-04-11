@@ -306,6 +306,7 @@ export function buildInitialSoftComponents(
         versionedComponent.defaultProps,
         showVersioning,
         customFields,
+        overrides,
       );
 
       componentConfigs[name] = newSoftComponentConfig;
@@ -345,8 +346,7 @@ export function buildInitialSoftComponents(
         hydratedSoftComponents,
         versionedComponent.defaultProps,
         showVersioning,
-        customFields,
-      );
+        customFields,        overrides,      );
 
       componentConfigs[name] = newSoftComponentConfig;
     }

@@ -2,6 +2,7 @@ import { ReactElement, ReactNode } from "react";
 import { BuilderComponentConfig, BuilderRootConfig } from "./BuilderConfig";
 import {
   AsFieldProps,
+  ComponentConfig,
   DefaultComponentProps,
   Field,
   Metadata,
@@ -75,4 +76,8 @@ export type Overrides = {
       | Promise<RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>>;
     readOnly: Readonly<Record<string, boolean>> | undefined;
   };
+  mapComponentConfig?: (
+    componentName: string,
+    defaultConfig: ComponentConfig
+  ) => Partial<ComponentConfig>;
 };
