@@ -19,15 +19,15 @@ type RenderFunc<
 > = (props: Props) => ReactElement;
 
 export type Overrides = {
-  componentNameToKey?: (
-    displayName: string,
+  componentLabelToName?: (
+    label: string,
     context: Partial<BuilderRootConfig> & {
       existingKeys: string[];
       state: "building" | "remodeling" | "ready" | "inspecting";
-    }
+    },
   ) => string;
-  componentKeyToName?: (key: string) => string;
-  onRemodel?: (key: string) => Record<string, unknown>;
+  componentNameToLabel?: (name: string) => string;
+  onRemodel?: (name: string) => Record<string, unknown>;
   additionalRootFields?: Record<string, Field>;
   map?: RenderFunc<{
     rootProps: BuilderRootConfig;
@@ -47,10 +47,7 @@ export type Overrides = {
       softComponent: VersionedSoftComponent["versions"][string];
     },
   ) =>
-    | ((
-        inputs: unknown[],
-        props: Record<string, unknown>
-      ) => unknown)
+    | ((inputs: unknown[], props: Record<string, unknown>) => unknown)
     | undefined;
   onActions?: OnActionsCallback;
   name?: Field<string>;
@@ -69,7 +66,7 @@ export type Overrides = {
     },
     context: {
       editingComponent?: string;
-    }
+    },
   ) => {
     props:
       | RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>
@@ -78,6 +75,7 @@ export type Overrides = {
   };
   mapComponentConfig?: (
     componentName: string,
-    defaultConfig: ComponentConfig
-  ) => Partial<ComponentConfig>;
+    defaultConfig: ComponentConfig,
+    rootProps: BuilderRootConfig & RootData,
+  ) => ComponentConfig;
 };

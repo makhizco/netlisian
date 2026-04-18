@@ -10,25 +10,19 @@ import { notify } from "./notify";
  */
 export const createActionCallback = (
   validateAction: (action: PuckAction) => boolean,
-  undo: PuckApi['history']['back']
+  undo: PuckApi["history"]["back"] | null,
 ) => {
   return (action: PuckAction) => {
+    if (!undo) {
+      return;
+    }
     const isValid = validateAction(action);
 
     if (!isValid) {
-        notify.error(
-          "Editing outside the soft component is not allowed when you are editing component definition.",
-        );
-      // Delay undo by one render cycle to ensure Puck has processed the action
-      if (typeof requestAnimationFrame === "function") {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            undo();
-          });
-        });
-      } else {
-        setTimeout(() => undo(), 0);
-      }
+      notify.error(
+        "Editing outside the soft component is not allowed when you are editing component definition.",
+      );
+      requestAnimationFrame(() => undo());
     }
   };
 };

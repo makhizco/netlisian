@@ -44,7 +44,7 @@ export const setEditVisibility = (
   try {
     // Apply greyscale filter to entire document when in editing mode
     const root = doc.documentElement;
-
+  
     if (context.mode === "none") {
       // Remove any visibility styling
       root.removeAttribute("data-edit-mode");

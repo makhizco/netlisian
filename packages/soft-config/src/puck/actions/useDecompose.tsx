@@ -1,3 +1,5 @@
+"use client"
+
 import { ComponentData, createUsePuck, walkTree } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";

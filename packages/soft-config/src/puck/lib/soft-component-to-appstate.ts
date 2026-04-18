@@ -4,7 +4,7 @@ import { VersionedSoftComponent } from "../types/SoftComponent";
 import { generateId } from "./generate-id";
 import { BuilderRootConfig } from "../types/BuilderConfig";
 import { setPropertyByPath } from "./set-prop-by-path";
-import { getComponentNameFromKey } from "./component-key";
+
 import { Overrides } from "../types/Overrides";
 import {
   buildArrayDefaultValue,
@@ -19,6 +19,7 @@ import type {
   CustomFieldReturnType,
   CustomFields,
 } from "../types/SoftFields";
+import { componentLabelFromName } from "./component-key";
 
 const mergeFieldSettings = (
   generated: BuilderRootConfig["_fieldSettings"] = {},
@@ -331,7 +332,7 @@ export const softComponentToAppState = (
 
   // Build root props for the builder
   let rootProps: BuilderRootConfig = {
-    _name: displayName || getComponentNameFromKey(componentName, overrides),
+    _name: displayName || componentLabelFromName(componentName, overrides),
     _category: category,
     _version: version,
     _versions: versions,

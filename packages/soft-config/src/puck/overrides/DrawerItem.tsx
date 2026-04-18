@@ -222,6 +222,7 @@ export const DrawerItem = (props: {
 
                             return (
                               <button
+                                aria-label={target.label}
                                 key={target.value}
                                 type="button"
                                 role="radio"

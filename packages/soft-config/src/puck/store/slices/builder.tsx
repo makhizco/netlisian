@@ -19,8 +19,13 @@ import { rootDroppableId } from "../../lib/root-droppable-id";
 import { createVersionedComponentConfig } from "../../lib/create-versioned-component-config";
 import { decomposeSoftComponent } from "../../lib/decompose-soft-component";
 import { demolishSoftComponent } from "../../lib/demolish-soft-component";
-import { createComponentKeyFromName } from "../../lib/component-key";
+import { componentNameFromLabel } from "../../lib/component-key";
 import { VersionedSoftComponent } from "../../types/SoftComponent";
+import { generateId } from "../../lib/generate-id";
+import {
+  clearEditVisibility,
+  setEditVisibility,
+} from "../../lib/edit-visibility-utils";
 
 export type CompletedComponentResult = {
   id: string;
@@ -67,7 +72,7 @@ export type BuildersSlice = {
     selectedItem: PuckApi["selectedItem"],
     itemSelector: { index: number; zone?: string } | null,
     puckDispatch: PuckApi["dispatch"],
-    refreshPermission: () => void
+    refreshPermission: () => void,
   ) => void;
 
   /**
@@ -82,7 +87,7 @@ export type BuildersSlice = {
     componentName: string,
     newVersion: string,
     currentProps: Record<string, any>,
-    puckDispatch: PuckApi["dispatch"]
+    puckDispatch: PuckApi["dispatch"],
   ) => void;
   /**
    * Mark the current build/remodel as complete.
@@ -100,13 +105,13 @@ export type BuildersSlice = {
   complete: (
     appState: AppState<any>,
     setHistories: PuckApi["history"]["setHistories"],
-    getItemBySelector: PuckApi["getItemBySelector"]
+    getItemBySelector: PuckApi["getItemBySelector"],
   ) => CompletedComponentResult;
 
   demolish: (
     componentName: string,
     data: AppState["data"],
-    puckDispatch: PuckApi["dispatch"]
+    puckDispatch: PuckApi["dispatch"],
   ) => void;
 
   inspect: (componentName: string, puckDispatch: PuckApi["dispatch"]) => void;
@@ -130,7 +135,7 @@ export type BuildersSlice = {
     componentName: string,
     editedItem: ComponentData,
     displayName: string,
-    category?: string
+    category?: string,
   ) => [ComponentConfig, string] | undefined;
 
   /** Break down a composed component into its parts.
@@ -147,10 +152,10 @@ export const createBuildersSlice = (
       | AppStore
       | Partial<AppStore>
       | ((state: AppStore) => AppStore | Partial<AppStore>),
-    replace?: false
+    replace?: false,
   ) => void,
   get: () => AppStore,
-  initialConfig: Config
+  initialConfig: Config,
 ): BuildersSlice => ({
   build: (history, selectedItem, itemSelector, puckDispatch, name) => {
     if (!selectedItem || !itemSelector) {
@@ -186,7 +191,7 @@ export const createBuildersSlice = (
       undefined,
       get().showVersionFields,
       undefined,
-      get().customFields
+      get().customFields,
     );
 
     // Building editable ids
@@ -195,9 +200,8 @@ export const createBuildersSlice = (
 
     walkTree(
       {
-        root: {
-
-        }, content: initialContent
+        root: {},
+        content: initialContent,
       },
       { components: config.components },
       (components) => {
@@ -205,7 +209,15 @@ export const createBuildersSlice = (
           editableIds.add(comp.props.id);
         });
         return components;
-      }
+      },
+    );
+
+    // If iframe doc is set, apply edit visibility
+    requestAnimationFrame(() =>
+      setEditVisibility(get().iframeDoc, {
+        mode: "build",
+        editableIds: editableIds,
+      }),
     );
 
     set((s) => ({
@@ -223,16 +235,14 @@ export const createBuildersSlice = (
     }));
 
     // TODO: Hack to rerender root
-    setTimeout(
-      () =>
-        puckDispatch({
-          type: "replaceRoot",
-          root: {
-            title: "Soft Component Builder",
-            _name: name || "New Soft Component",
-          },
-        } as any),
-      100
+    requestAnimationFrame(() =>
+      puckDispatch({
+        type: "replaceRoot",
+        root: {
+          title: "Soft Component Builder",
+          _name: name || "New Soft Component",
+        },
+      } as any),
     );
   },
   remodel: (history, selectedItem, itemSelector, puckDispatch) => {
@@ -255,12 +265,12 @@ export const createBuildersSlice = (
     const softComponentMeta = get().softComponents[softComponentName];
 
     const versions = Object.keys(
-      get().softComponents[softComponentName].versions || {}
+      get().softComponents[softComponentName].versions || {},
     );
 
     if (!softComponent) {
       throw new Error(
-        `Soft component "${softComponentName}" with version "${softComponentVersion}" not found.`
+        `Soft component "${softComponentName}" with version "${softComponentVersion}" not found.`,
       );
     }
 
@@ -283,7 +293,7 @@ export const createBuildersSlice = (
       get().overrides,
       softComponentMeta?.name || softComponentName,
       softComponentMeta?.category,
-      get().customFields
+      get().customFields,
     );
 
     const config = { ...get().softConfig };
@@ -292,7 +302,8 @@ export const createBuildersSlice = (
     // const getEditableIds = () => getStore().editableComponentIds;
 
     // Get dependent components from the reverse dependency graph
-    const dependents = get().dependencyGraph.get(softComponentName) || new Set<string>();
+    const dependents =
+      get().dependencyGraph.get(softComponentName) || new Set<string>();
 
     const buildConfig = builderConfig(
       config,
@@ -300,7 +311,7 @@ export const createBuildersSlice = (
       softComponentName,
       get().showVersionFields,
       dependents,
-      get().customFields
+      get().customFields,
     );
 
     // Collect all descendant IDs in edit scope using walkTree
@@ -316,7 +327,7 @@ export const createBuildersSlice = (
           editableIds.add(comp.props.id);
         });
         return components;
-      }
+      },
     );
 
     // Remove the component at current position
@@ -339,7 +350,6 @@ export const createBuildersSlice = (
 
     // refreshPermissions()
 
-
     puckDispatch({
       type: "setData",
       data: (prevData) => ({
@@ -351,7 +361,7 @@ export const createBuildersSlice = (
           }));
 
           const index = next.findIndex(
-            (component) => component.props.id === selectedItem.props.id
+            (component) => component.props.id === selectedItem.props.id,
           );
 
           if (index !== -1) {
@@ -361,14 +371,21 @@ export const createBuildersSlice = (
               ...decomposedComponents.map((component) => ({
                 ...component,
                 props: { ...component.props },
-              }))
+              })),
             );
           }
 
           return next;
-        }).content
-      })
+        }).content,
+      }),
     });
+
+    requestAnimationFrame(() =>
+      setEditVisibility(get().iframeDoc, {
+        mode: "remodel",
+        editableIds: editableIds,
+      }),
+    );
 
     set((s) => ({
       ...s,
@@ -385,17 +402,15 @@ export const createBuildersSlice = (
       state: "remodeling",
     }));
 
-    setTimeout(
-      () =>
-        puckDispatch({
-          type: "replaceRoot",
-          root: {
-            title: (root.props as any).title,
-            _name: (root.props as any)._name,
-            _category: (root.props as any)._category,
-          },
-        } as any),
-      100
+    requestAnimationFrame(() =>
+      puckDispatch({
+        type: "replaceRoot",
+        root: {
+          title: (root.props as any).title,
+          _name: (root.props as any)._name,
+          _category: (root.props as any)._category,
+        },
+      } as any),
     );
   },
   complete: (appState, setHistories, getItemBySelector) => {
@@ -408,7 +423,6 @@ export const createBuildersSlice = (
         _name?: string;
       }
     )?._name?.trim();
-
 
     // Handle existing name for remodelling
     if (!displayName) {
@@ -423,12 +437,10 @@ export const createBuildersSlice = (
 
     // Get item selector
     // Get the item being edited
-    const selectedItem = getItemBySelector(
-      itemSelector
-    )
+    const selectedItem = getItemBySelector(itemSelector);
 
     if (!selectedItem) {
-      throw new Error("Cannot find item being edited")
+      throw new Error("Cannot find item being edited");
     }
 
     const rootCategory = (
@@ -439,27 +451,26 @@ export const createBuildersSlice = (
 
     const rootProps = appState.data.root?.props as BuilderRootConfig;
 
-    const componentName =
-      createComponentKeyFromName(displayName, get().overrides, {
-        ...(rootProps || {}),
-        existingKeys: Object.keys(get().softComponents),
-        state: get().state,
-      });
+    const componentName = componentNameFromLabel(displayName, get().overrides, {
+      ...(rootProps || {}),
+      existingKeys: Object.keys(get().softComponents),
+      state: get().state,
+    });
 
     if (!componentName) {
       throw new Error("Failed to generate component key from name.");
     }
 
-    const [newSoftComponentConfig, version] =
+    const [defaultSoftComponentConfig, version] =
       get().builder.compose(
         appState,
         componentName,
         selectedItem,
         displayName,
-        rootCategory
+        rootCategory,
       ) || [];
 
-    if (!newSoftComponentConfig) {
+    if (!defaultSoftComponentConfig) {
       throw new Error("Failed to compose new soft component config.");
     }
 
@@ -467,6 +478,12 @@ export const createBuildersSlice = (
     setHistories([...storedHistories]);
 
     const config = { ...(get().softConfig || initialConfig) };
+
+    const mapComponentConfig = get().overrides.mapComponentConfig;
+
+    const newSoftComponentConfig: ComponentConfig = mapComponentConfig
+      ? mapComponentConfig(componentName, defaultSoftComponentConfig, rootProps)
+      : defaultSoftComponentConfig;
 
     set((s) => {
       const nextComponents = {
@@ -485,7 +502,7 @@ export const createBuildersSlice = (
             }
             return acc;
           },
-          {} as Config["components"]
+          {} as Config["components"],
         ),
         [componentName]: { ...newSoftComponentConfig },
       };
@@ -494,19 +511,18 @@ export const createBuildersSlice = (
 
       const nextCategories = rootCategory
         ? {
-          ...categories,
-          [rootCategory]: {
-            ...(categories[rootCategory] || {}),
-            title:
-              categories[rootCategory]?.title || rootCategory,
-            components: Array.from(
-              new Set([
-                ...(categories[rootCategory]?.components || []),
-                componentName,
-              ])
-            ),
-          },
-        }
+            ...categories,
+            [rootCategory]: {
+              ...(categories[rootCategory] || {}),
+              title: categories[rootCategory]?.title || rootCategory,
+              components: Array.from(
+                new Set([
+                  ...(categories[rootCategory]?.components || []),
+                  componentName,
+                ]),
+              ),
+            },
+          }
         : categories;
 
       return {
@@ -522,9 +538,6 @@ export const createBuildersSlice = (
         storedConfig: undefined,
         state: "inspecting",
         originalHistory: [],
-        editingComponent: null,
-        editingComponentId: null,
-        editableComponentIds: new Set(),
       };
     });
 
@@ -532,11 +545,12 @@ export const createBuildersSlice = (
       throw new Error("Failed to resolve completed component version.");
     }
 
-    const completedSoftComponent = get().softComponents[componentName]?.versions[version];
+    const completedSoftComponent =
+      get().softComponents[componentName]?.versions[version];
 
     if (!completedSoftComponent) {
       throw new Error(
-        `Completed soft component \"${componentName}\" version \"${version}\" not found.`
+        `Completed soft component \"${componentName}\" version \"${version}\" not found.`,
       );
     }
 
@@ -560,32 +574,54 @@ export const createBuildersSlice = (
       throw new Error("No selector found for last item.");
     }
 
-    setTimeout(() => {
+    const editableComponentId = get().editingComponentId;
+
+    requestAnimationFrame(() => {
+      const config = get().softConfig;
+      const newComponent = config.components[componentName];
+
+      const reconstructedTree = (data: Data) =>
+        walkTree(data, config, (components) => {
+          return components.map((comp) => {
+            if (comp.props.id === editableComponentId) {
+              // Replace with new component
+              return {
+                type: componentName,
+                props: {
+                  ...newComponent.defaultProps,
+                  id: generateId(componentName),
+                },
+              } as ComponentData;
+            }
+            return comp;
+          });
+        });
+
       puckDispatch({
-        type: "remove",
-        index: selector.index!,
-        zone: selector.zone!,
+        type: "setData",
+        data: (data) => {
+          return reconstructedTree(data);
+        },
       });
-      puckDispatch({
-        type: "insert",
-        destinationIndex: selector.index!,
-        destinationZone: selector.zone!,
-        componentType: componentName,
-      });
-    }, 500);
+    });
+
+    requestAnimationFrame(() => clearEditVisibility(get().iframeDoc));
 
     set((s) => ({
       ...s,
       state: "ready",
       setItemSelector: undefined,
       setOriginalItem: undefined,
+      editingComponent: null,
       editingComponentId: null,
       editableComponentIds: new Set(),
     }));
   },
   cancel: (setHistories) => {
     const storedHistories = get().originalHistory;
-    setTimeout(() => setHistories([...storedHistories]), 100);
+    requestAnimationFrame(() => setHistories([...storedHistories]));
+
+    requestAnimationFrame(() => clearEditVisibility(get().iframeDoc));
 
     set((s) => ({
       ...s,
@@ -612,7 +648,7 @@ export const createBuildersSlice = (
       Object.keys(componentConfigs).includes(componentName)
     ) {
       throw new Error(
-        `Component name "${componentName}" already exists in the configuration.`
+        `Component name "${componentName}" already exists in the configuration.`,
       );
     }
 
@@ -625,7 +661,7 @@ export const createBuildersSlice = (
           name: displayName,
           category,
         },
-        get().customFields
+        get().customFields,
       );
 
     // Get all versions and the default version of this component
@@ -651,7 +687,7 @@ export const createBuildersSlice = (
       },
       softComponent.defaultProps,
       get().showVersionFields,
-      get().customFields
+      get().customFields,
     );
 
     get().setSoftComponent(componentName, version, softComponent);
@@ -674,7 +710,7 @@ export const createBuildersSlice = (
       componentName,
       data,
       get().softConfig,
-      get().softComponents
+      get().softComponents,
     );
 
     puckDispatch({
@@ -700,12 +736,12 @@ export const createBuildersSlice = (
 
     if (!softComponent) {
       throw new Error(
-        `Soft component "${componentName}" with version "${newVersion}" not found.`
+        `Soft component "${componentName}" with version "${newVersion}" not found.`,
       );
     }
 
     const versions = Object.keys(
-      get().softComponents[componentName].versions || {}
+      get().softComponents[componentName].versions || {},
     );
 
     // Convert soft component to AppState format
@@ -719,7 +755,7 @@ export const createBuildersSlice = (
       get().overrides,
       softComponentMeta?.name || componentName,
       softComponentMeta?.category,
-      get().customFields
+      get().customFields,
     );
 
     // Update puck data with new version

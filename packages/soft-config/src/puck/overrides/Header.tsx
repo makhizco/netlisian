@@ -22,7 +22,6 @@ export const Header = ({
     useComplete();
   const { handleCancel, canCancel } = useCancel();
   const { handlePublish } = usePublish();
-  const puck = usePuck(s => s.config);
 
   useInspect(newComponent);
 

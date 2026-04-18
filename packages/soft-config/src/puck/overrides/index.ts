@@ -4,3 +4,5 @@ export { DrawerItem, ComponentItem } from "./DrawerItem";
 export { Drawer } from "./Drawer";
 /** @deprecated Use Drawer instead */
 export { Drawer as ComponentList } from "./Drawer";
+
+export { HeaderActions } from "./HeaderActions";
