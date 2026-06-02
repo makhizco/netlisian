@@ -1,7 +1,7 @@
 "use client";
 
-import { Config, PuckAction } from "@measured/puck";
-import { ReactNode, use, useEffect, useMemo, useState } from "react";
+import { Config } from "@measured/puck";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { appStoreContext } from "./useStore";
 import { createSoftConfigStore } from "../store";
 import type { AppStore } from "../store";
@@ -10,11 +10,6 @@ import type { Overrides } from "../types/Overrides";
 import type { OnActionsCallback } from "../types/ActionEvents";
 import type { CustomFields } from "../types/SoftFields";
 import type { StoreApi } from "zustand";
-import {
-  clearEditVisibility,
-  setEditVisibility,
-} from "../lib/edit-visibility-utils";
-import { createActionCallback } from "../lib/action-callback";
 
 /**
  * SoftConfigProvider is responsible for providing the soft config context to the Puck editor.
@@ -43,11 +38,7 @@ export const SoftConfigProvider = ({
   onActions,
   useVersioning = false,
 }: {
-  children: (
-    softConfig: Config,
-    softComponents: SoftComponents,
-    actionGuard: (action: PuckAction) => void,
-  ) => ReactNode;
+  children: (softConfig: Config) => ReactNode;
   hardConfig: Config;
   softComponents?: SoftComponents;
   customFields?: CustomFields;
@@ -56,67 +47,37 @@ export const SoftConfigProvider = ({
   onActions?: OnActionsCallback;
   useVersioning?: boolean;
 }) => {
-  const store =
-    value ??
-    useMemo(
-      () =>
-        createSoftConfigStore(
-          hardConfig,
-          softComponents,
-          overrides,
-          onActions,
-          useVersioning,
-          customFields,
-        ),
-      [
+  const store = useMemo(
+    () =>
+      value ??
+      createSoftConfigStore(
         hardConfig,
         softComponents,
         overrides,
         onActions,
         useVersioning,
         customFields,
-      ],
-    );
+      ),
+    [value],
+  );
+
   const [softConfig, setSoftConfig] = useState(
     () => store.getState().softConfig,
   );
-  const [internalSoftComponents, setSoftComponents] = useState(
-    () => store.getState().softComponents,
-  );
-  const [actionGuard, setActionGuard] = useState<(action: PuckAction) => void>(
-    (action) => null,
-  );
-
   useEffect(() => {
-    const unsubscribe = store.subscribe(() => {
-      setSoftConfig(store.getState().softConfig);
-      setSoftComponents(store.getState().softComponents);
-    });
-    return () => {
-      unsubscribe();
-    };
-  }, [store]);
-
-  useEffect(() => {
-    const unsubscribe = store.subscribe((state, prevState) => {
-      if (prevState && prevState.undoFn === state.undoFn) {
-        return;
+    let prev = store.getState().softConfig;
+    const unsubscribe = store.subscribe((state) => {
+      if (state.softConfig !== prev) {
+        prev = state.softConfig;
+        setSoftConfig(state.softConfig);
       }
-      setActionGuard(() =>
-        createActionCallback(
-          state.validateAction,
-          state.undoFn,
-        ),
-      );
     });
-    return () => {
-      unsubscribe();
-    };
-  }, [store.getState().undoFn]);
+    return unsubscribe;
+  }, [store]);
 
   return (
     <appStoreContext.Provider value={store}>
-      {children(softConfig as Config, internalSoftComponents, actionGuard)}
+      {children(softConfig as Config)}
     </appStoreContext.Provider>
   );
 };

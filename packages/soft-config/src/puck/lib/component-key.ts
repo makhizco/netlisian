@@ -1,5 +1,6 @@
 import { Overrides } from "../types/Overrides";
 import { BuilderRootConfig } from "../types/BuilderConfig";
+import { Status } from "../store";
 
 const toSlug = (value: string): string => {
   return value
@@ -24,7 +25,7 @@ export const componentNameFromLabel = (
   overrides: Overrides,
   context: Partial<BuilderRootConfig> & {
     existingKeys: string[];
-    state: "building" | "remodeling" | "ready" | "inspecting";
+    state: Status;
   },
 ): string => {
   const key = overrides.componentLabelToName

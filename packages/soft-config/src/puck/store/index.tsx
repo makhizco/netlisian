@@ -17,16 +17,17 @@ import {
   hydrateSoftComponentsTransforms,
   buildReverseDependencyGraph,
 } from "../lib/build-initial-soft-components";
-import {
-  clearEditVisibility,
-  setEditVisibility,
-} from "../lib/edit-visibility-utils";
 import { Overrides } from "../types/Overrides";
 import { OnActionsCallback } from "../types/ActionEvents";
 import type { CustomFields } from "../types/SoftFields";
 
 /** Represents the current editing mode of the Puck editor. */
-type Status = "building" | "remodeling" | "ready" | "inspecting";
+export type Status =
+  | "building"
+  | "remodeling"
+  | "ready"
+  | "cancelling"
+  | "inspecting";
 
 export type AppStore = {
   // ─── Puck Config ────────────────────────────────────────────────────────────

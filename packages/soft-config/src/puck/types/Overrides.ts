@@ -13,6 +13,7 @@ import {
 import { VersionedSoftComponent } from "./SoftComponent";
 import { OnActionsCallback } from "./ActionEvents";
 import type { MappingOption } from "./Mapping";
+import { Status } from "../store";
 
 type RenderFunc<
   Props extends Record<string, unknown> = { children: ReactNode },
@@ -23,7 +24,7 @@ export type Overrides = {
     label: string,
     context: Partial<BuilderRootConfig> & {
       existingKeys: string[];
-      state: "building" | "remodeling" | "ready" | "inspecting";
+      state: Status;
     },
   ) => string;
   componentNameToLabel?: (name: string) => string;
@@ -69,8 +70,8 @@ export type Overrides = {
     },
   ) => {
     props:
-      | RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>
-      | Promise<RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>>;
+    | RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>
+    | Promise<RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>>;
     readOnly: Readonly<Record<string, boolean>> | undefined;
   };
   mapComponentConfig?: (

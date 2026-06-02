@@ -9,7 +9,6 @@ import { SoftComponents } from "../types/SoftComponent";
 import { usePublish } from "../actions/usePublish";
 
 const getClassName = getClassNameFactory("Header", styles);
-const usePuck = createUsePuck();
 
 export const Header = ({
   onPublish,
@@ -18,8 +17,7 @@ export const Header = ({
   onPublish?: (data: Data, softComponents: SoftComponents) => void;
   children: React.ReactNode;
 }) => {
-  const { handleComplete, newComponent, setNewComponent } =
-    useComplete();
+  const { handleComplete, newComponent, setNewComponent } = useComplete();
   const { handleCancel, canCancel } = useCancel();
   const { handlePublish } = usePublish();
 

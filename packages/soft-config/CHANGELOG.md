@@ -1,5 +1,23 @@
 # @netlisian/soft-config
 
+## 0.1.9
+
+### Patch Changes
+
+- Fix: order of calls for build, cancle, remodel to avoid triggering action guard and not isolate action based on status = "ready"
+
+## 0.1.8
+
+### Patch Changes
+
+- feat: simplified the store provied and exposed the softconfig store
+
+## 0.1.7
+
+### Patch Changes
+
+- feat: Matched component naming to puck and improved the builder slice to use requestAnimationFrame for performance.
+
 ## 0.1.6
 
 ### Patch Changes

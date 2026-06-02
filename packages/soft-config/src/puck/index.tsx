@@ -3,7 +3,7 @@ export * from "./store";
 
 // export context and selector
 export { SoftConfigProvider } from "./context/storeProvider";
-export { useSoftConfig, createUseSoftConfig } from "./context/useStore";
+export { useSoftConfig, createUseSoftConfig, useSoftConfigStore } from "./context/useStore";
 
 // export types
 export type { SoftComponent, SoftComponents, VersionedSoftComponent } from "./types/SoftComponent";

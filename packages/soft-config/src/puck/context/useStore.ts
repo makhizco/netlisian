@@ -30,3 +30,16 @@ export const createUseSoftConfig = () => {
 // Default hook instance for convenience
 export const useSoftConfig = createUseSoftConfig();
 
+/**
+ * Access the soft config store instance without subscribing to state changes.
+ */
+export const useSoftConfigStore = () => {
+  const context = useContext(appStoreContext);
+  if (!context) {
+    throw new Error(
+      "useSoftConfigStore must be used inside a SoftConfigProvider."
+    );
+  }
+  return context;
+};
+

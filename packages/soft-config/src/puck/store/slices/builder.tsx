@@ -28,23 +28,42 @@ import {
 } from "../../lib/edit-visibility-utils";
 
 export type CompletedComponentResult = {
+  /**
+   * The generated unique registry key/identifier of the completed soft component.
+   */
   id: string;
+
+  /**
+   * The resolved semantic version string of the completed soft component version.
+   */
   version: string;
+
+  /**
+   * The compiled underlying JSON definition representing the soft component structure.
+   */
   softComponent: VersionedSoftComponent["versions"][string];
 };
 
 export type BuildersSlice = {
   /**
-   * Build a new soft component based on the selected item in history.
+   * Initializes the "build" mode to package standard component tree elements into a
+   * brand-new, unified, and reusable soft component.
    *
-   * Steps:
-   * 1. Data Modifications:
-   *    - Store History
-   *    - Set currently selected item to the root
-   * 2. Soft Config Modifications:
-   *    - Update root to include: name, fields, fieldSettings, for soft component
-   *    - Update each component config to map the soft fields to component fields
-   *    - Update each component for slot settings (Dropzone enable/disable)
+   * @param history - The current Puck workspace history timeline stack. Used to store
+   *                  the undo/redo states so they can be restored if the session is canceled.
+   * @param selectedItem - The component instance selected in the workspace that will
+   *                       serve as the seed/root of the building sandbox.
+   * @param itemSelector - Placement and index metadata of the selected item in the editor.
+   * @param puckDispatch - The Puck API dispatch function to apply state modifications.
+   * @param name - Optional initial user-facing label/display name for the new soft component.
+   *
+   * @throws {Error} If no item is selected or the item selector is null.
+   *
+   * Lifecycle & Side Effects:
+   * 1. Clones and caches the current core soft configuration and history to the store.
+   * 2. Scans the workspace sub-tree to collect all descendent element IDs.
+   * 3. Schedules edit visibility highlights to visual-lock edits within the builder boundaries.
+   * 4. Transitions the builder workflow state to "building".
    */
   build: (
     history: History<AppState>[],
@@ -55,17 +74,25 @@ export type BuildersSlice = {
   ) => void | null;
 
   /**
-   * Remodel the selected soft component by decomposing it and resetting as root.
+   * Enters "remodel" mode for an existing soft component, decomposing its compiled structure back
+   * into constituent discrete components inside the builder workspace.
    *
-   * Steps:
-   * 1. Data Modifications:
-   *    - Store History
-   *    - Decompose and set selected soft component to root
-   * 2. Soft Config Modifications:
-   *    - Update root with name, fields, fieldSettings for soft component
-   *    - Update each component config to map soft fields to component fields
-   *    - Update each component for slot settings (Dropzone enable/disable)
-   *    - Remove selected component or dependencies to avoid circular dependencies
+   * @param history - The current Puck history list to cache for later restoration.
+   * @param selectedItem - The compiled soft component instance selected in the editor.
+   * @param itemSelector - Workspace index and droppable zone metadata of the selected component.
+   * @param puckDispatch - The Puck API dispatch function.
+   * @param refreshPermission - Callback function to refresh access permissions (currently unused).
+   *
+   * @throws {Error} If the selection parameters are missing, or if the target soft component
+   *                 definition cannot be resolved from the cache.
+   *
+   * Lifecycle & Side Effects:
+   * 1. Fetches the soft component version schema from the Zustand store.
+   * 2. Evaluates the reverse dependency graph to identify components depending on this soft component.
+   *    This locks editing on dependent elements to avoid creating circular dependencies.
+   * 3. Explodes the soft component into its constituent raw components in-place within the document data.
+   * 4. Updates visual iframe overlays to confine editing to the decomposed sub-tree.
+   * 5. Transitions the builder workspace state to "remodeling".
    */
   remodel: (
     history: History<AppState>[],
@@ -76,12 +103,21 @@ export type BuildersSlice = {
   ) => void;
 
   /**
-   * Switch to a different version of the soft component being remodeled.
+   * Switches the active soft component inside the remodeling session to a different
+   * registered semantic version.
    *
-   * Steps:
-   * 1. Get the soft component for the selected version
-   * 2. Convert it back to AppState format
-   * 3. Update the puck data with the new version's content
+   * @param componentName - The unique registry key of the soft component.
+   * @param newVersion - The target version to activate.
+   * @param currentProps - The current top-level properties configured for this element instance.
+   * @param puckDispatch - The Puck API dispatch function.
+   *
+   * @throws {Error} If the store is not currently in the 'remodeling' state, or if the
+   *                 requested version is missing.
+   *
+   * Lifecycle & Side Effects:
+   * 1. Resolves the target version's raw layout structure from the store.
+   * 2. Re-runs soft component-to-AppState conversions for the target version.
+   * 3. Replaces the active remodeling workspace content in-place with the selected version's elements.
    */
   setVersion: (
     componentName: string,
@@ -89,18 +125,26 @@ export type BuildersSlice = {
     currentProps: Record<string, any>,
     puckDispatch: PuckApi["dispatch"],
   ) => void;
+
   /**
-   * Mark the current build/remodel as complete.
+   * Finalizes the current build or remodel session, packaging all active workspace components
+   * into a compiled, versioned, reusable soft component configuration.
    *
-   * Steps:
-   * 1. Config Modifications:
-   *    - Compose the build settings into soft component
-   *    - Set the component to the config
-   *    - Restore permissions, resolve fields and resolve data of all components
-   * 2. Data Modifications:
-   *    - Transform the last item of history to replace the source components into composed soft component
-   *    - Strip the build settings fields
-   *    - Apply modified history to puck data.
+   * @param appState - The current state of the builder editor workspace containing the composed elements.
+   * @param setHistories - Puck API callback to restore the original builder history timeline.
+   * @param getItemBySelector - Puck API utility to resolve a workspace item using its selector.
+   * @returns An object containing the generated component ID, version, and compiled soft component structure.
+   *
+   * @throws {Error} If the store is not in building/remodeling state, the root component is unnamed,
+   *                 or if the selected item cannot be resolved in the workspace.
+   *
+   * Lifecycle & Side Effects:
+   * 1. Converts display labels into safe, unique PascalCase configuration registration keys.
+   * 2. Packages workspace child items into a JSON-serializable versioned schema.
+   * 3. Re-registers the component with the core configuration components registry.
+   * 4. Categorizes the component within layout groups.
+   * 5. Restores original history timelines and transitions store state to "inspecting".
+   * 6. Rebuilds all other registered soft components that depend on this updated component.
    */
   complete: (
     appState: AppState<any>,
@@ -108,27 +152,64 @@ export type BuildersSlice = {
     getItemBySelector: PuckApi["getItemBySelector"],
   ) => CompletedComponentResult;
 
+  /**
+   * Permanently deletes a soft component registration and purges all of its active
+   * occurrences/instances from the active workspace document data.
+   *
+   * @param componentName - The unique registry name of the soft component to delete.
+   * @param data - The active workspace document data to scan and clean.
+   * @param puckDispatch - The Puck API dispatch function to apply document cleanups.
+   *
+   * @throws {Error} If the store is not currently in the stable 'ready' state.
+   */
   demolish: (
     componentName: string,
     data: AppState["data"],
     puckDispatch: PuckApi["dispatch"],
   ) => void;
 
+  /**
+   * Concludes the inspection workflow, replacing the temporary seed item within the
+   * editor workspace document with the newly compiled soft component instance.
+   *
+   * @param componentName - The final compiled component registry name.
+   * @param puckDispatch - The Puck API dispatch function.
+   *
+   * @throws {Error} If the store is not currently in the 'inspecting' state.
+   *
+   * Lifecycle & Side Effects:
+   * 1. Walk the workspace tree to locate the temporary component being built/remodeled.
+   * 2. Replace it with the compiled component type and default versioned props.
+   * 3. Flushes layout restriction overlays on the iframe.
+   * 4. Resets active builder metadata and transitions state back to "ready".
+   */
   inspect: (componentName: string, puckDispatch: PuckApi["dispatch"]) => void;
 
   /**
-   * Mark the current build/remodel as complete.
+   * Discards all modifications made during the current build or remodel session,
+   * reverting the editor config, workspace elements, and histories back to their original state.
    *
-   * Steps:
-   * 1. Config Modifications:
-   *    - Restore permissions, resolve fields and resolve data of all components
-   * 2. Data Modifications:
-   *    - Restore history to puck data.
+   * @param setHistories - Puck API callback to restore the original history list.
+   *
+   * Lifecycle & Side Effects:
+   * 1. Transitions store state to "cancelling" to suppress conflicting updates.
+   * 2. Re-applies the original workspace config and timeline histories.
+   * 3. Clears visual iframe constraints and resets active builder metadata back to normal.
    */
   cancel: (setHistories: PuckApi["history"]["setHistories"]) => void;
 
-  /** Compose multiple components into a soft component.
-   * 1. SoftComponent: Get soft fields + default values from the appState.root + sub-component maps + fixedProps
+  /**
+   * Internal compiler hook that converts builder editor workspace states (root props, children)
+   * into a unified `SoftComponent` schema and creates a versioned config.
+   *
+   * @param appState - The current builder editor state.
+   * @param componentName - The unique registry key for the soft component.
+   * @param editedItem - The original seed component that initiated the build session.
+   * @param displayName - The user-facing display name of the soft component.
+   * @param category - Optional layout category placement inside the component toolbox.
+   * @returns A tuple containing the `ComponentConfig` and its resolved version string, or undefined if failed.
+   *
+   * @throws {Error} If the component name is empty or collides with existing configs during a new build.
    */
   compose: (
     appState: AppState,
@@ -138,10 +219,14 @@ export type BuildersSlice = {
     category?: string,
   ) => [ComponentConfig, string] | undefined;
 
-  /** Break down a composed component into its parts.
-   * 1. Get softComponentProps
-   * 2. Create a virtual component with all the props from soft-component.
-   * 3. Replace the softComponent with hardComponent
+  /**
+   * Utility to break down a composed soft component's props and children back into
+   * their discrete, uncompiled constituent elements.
+   *
+   * @param componentData - The compiled component data instance.
+   * @returns An array of unpacked standard child component data objects.
+   *
+   * @throws {Error} If the input component data lacks type or ID.
    */
   decompose: (componentData: ComponentData) => ComponentData[];
 };
@@ -158,33 +243,16 @@ export const createBuildersSlice = (
   initialConfig: Config,
 ): BuildersSlice => ({
   build: (history, selectedItem, itemSelector, puckDispatch, name) => {
+    // 1. Initial validations before launching builder session
     if (!selectedItem || !itemSelector) {
       throw new Error("No item selected to build from.");
     }
 
-    puckDispatch({
-      type: "set",
-      state: (previous) => ({
-        ui: {
-          ...previous.ui,
-          itemSelector: null,
-        },
-        data: {
-          ...previous.data,
-          root: {
-            ...previous.data.root,
-            props: {
-              ...previous.data.root?.props,
-              _name: name || "New Soft Component",
-            },
-          } as Data["root"],
-          // content: [{ ...selectedItem }],
-        },
-      }),
-    });
-
+    // 2. Cache current configuration to allow structural revert on cancellation
     const config = { ...get().softConfig };
     const overrides = get().overrides;
+
+    // 3. Generate a temporary builder configuration targeting only the building sandbox constraints
     const buildConfig = builderConfig(
       config,
       overrides,
@@ -194,10 +262,12 @@ export const createBuildersSlice = (
       get().customFields,
     );
 
-    // Building editable ids
+    // 4. Track sub-tree component IDs to lock down edits.
+    // Only the seed component and its nested children are allowed to be modified.
     const editableIds = new Set<string>([selectedItem.props.id]);
     const initialContent = [{ ...selectedItem }];
 
+    // Traverse the child component hierarchy to capture all nested descendant IDs
     walkTree(
       {
         root: {},
@@ -212,7 +282,8 @@ export const createBuildersSlice = (
       },
     );
 
-    // If iframe doc is set, apply edit visibility
+    // 5. Apply iframe visual restrictions.
+    // We defer using requestAnimationFrame to ensure the editor has rendered the new layout frames.
     requestAnimationFrame(() =>
       setEditVisibility(get().iframeDoc, {
         mode: "build",
@@ -220,6 +291,7 @@ export const createBuildersSlice = (
       }),
     );
 
+    // 6. Transition workspace states and store builder tracking metadata in Zustand
     set((s) => ({
       ...s,
       softConfig: buildConfig,
@@ -234,18 +306,32 @@ export const createBuildersSlice = (
       state: "building",
     }));
 
-    // TODO: Hack to rerender root
+    // 7. Update Puck's workspace document: reset visual item selectors and designate temporary root name
     requestAnimationFrame(() =>
       puckDispatch({
-        type: "replaceRoot",
-        root: {
-          title: "Soft Component Builder",
-          _name: name || "New Soft Component",
-        },
-      } as any),
+        type: "set",
+        state: (previous) => ({
+          ui: {
+            ...previous.ui,
+            itemSelector: null,
+          },
+          data: {
+            ...previous.data,
+            root: {
+              ...previous.data.root,
+              props: {
+                ...previous.data.root?.props,
+                _name: name || "New Soft Component",
+              },
+            } as Data["root"],
+          },
+        }),
+      }),
     );
   },
+
   remodel: (history, selectedItem, itemSelector, puckDispatch) => {
+    // 1. Initial parameter validations
     if (!selectedItem || !itemSelector) {
       throw new Error("No item selected to build from.");
     }
@@ -259,7 +345,7 @@ export const createBuildersSlice = (
     const softComponentVersion =
       (selectedItem.props as DefaultComponentProps)?.version || "1.0.0";
 
-    // Get soft component from store
+    // 2. Fetch target soft component and its version metadata from the Zustand store
     const softComponent =
       get().softComponents[softComponentName]?.versions[softComponentVersion];
     const softComponentMeta = get().softComponents[softComponentName];
@@ -274,15 +360,8 @@ export const createBuildersSlice = (
       );
     }
 
-    puckDispatch({
-      type: "setUi",
-      ui: (previous) => ({
-        ...previous,
-        itemSelector: undefined,
-      }),
-    });
-
-    // Convert soft component back to AppState format for remodeling (decomposition)
+    // 3. Convert the compiled soft component schema back to discrete elements
+    // to allow layout and structural editing in the workspace
     const { root, content } = softComponentToAppState(
       softComponent,
       softComponentName,
@@ -298,10 +377,9 @@ export const createBuildersSlice = (
 
     const config = { ...get().softConfig };
     const overrides = get().overrides;
-    // const getStore = () => get();
-    // const getEditableIds = () => getStore().editableComponentIds;
 
-    // Get dependent components from the reverse dependency graph
+    // 4. Query reverse dependency graph.
+    // This allows builders to insulate editing and prevent creating circular dependencies.
     const dependents =
       get().dependencyGraph.get(softComponentName) || new Set<string>();
 
@@ -314,11 +392,12 @@ export const createBuildersSlice = (
       get().customFields,
     );
 
-    // Collect all descendant IDs in edit scope using walkTree
+    // 5. Track element edit scopes during the remodeling session.
+    // The soft component itself will be replaced with its decomposed children.
     const editableIds = new Set<string>([]);
     const decomposedComponents = get().builder.decompose(selectedItem);
 
-    // These will become stale when component is decomposed we need the decomposed ids rather than soft component id
+    // Scan decomposed constituent components to include their IDs in the active editing scope
     walkTree(
       { root: {}, content: decomposedComponents || [] },
       { components: config.components },
@@ -330,63 +409,57 @@ export const createBuildersSlice = (
       },
     );
 
-    // Remove the component at current position
-    // puckDispatch({
-    //   type: "remove",
-    //   index: itemSelector.index,
-    //   zone: itemSelector.zone || rootDroppableId,
-    // });
+    // 6. Splice-replace the compiled soft component in-place inside workspace document data
+    requestAnimationFrame(() => {
+      puckDispatch({
+        type: "set",
+        state: (previous) => ({
+          data: {
+            root: { ...root, _versions: versions } as any,
+            content: walkTree(
+              { ...previous.data },
+              { ...config },
+              (components) => {
+                const next = components.map((component) => ({
+                  ...component,
+                  props: { ...component.props },
+                }));
 
-    // Insert decomposed content at the same position
-    // content.forEach((componentData, index) => {
-    //   puckDispatch({
-    //     type: "insert",
-    //     componentType: componentData.type,
-    //     destinationIndex: itemSelector.index + index,
-    //     destinationZone: itemSelector.zone || rootDroppableId,
-    //     id: componentData.props.id,
-    //   });
-    // });
+                const index = next.findIndex(
+                  (component) => component.props.id === selectedItem.props.id,
+                );
 
-    // refreshPermissions()
+                if (index !== -1) {
+                  // Replace the single soft component with all decomposed elements
+                  next.splice(
+                    index,
+                    1,
+                    ...decomposedComponents.map((component) => ({
+                      ...component,
+                      props: { ...component.props },
+                    })),
+                  );
+                }
 
-    puckDispatch({
-      type: "setData",
-      data: (prevData) => ({
-        root: { ...root, _versions: versions } as any,
-        content: walkTree({ ...prevData }, { ...config }, (components) => {
-          const next = components.map((component) => ({
-            ...component,
-            props: { ...component.props },
-          }));
+                return next;
+              },
+            ).content,
+          },
+          ui: {
+            ...previous.ui,
+            itemSelector: null,
+          },
+        }),
+      });
 
-          const index = next.findIndex(
-            (component) => component.props.id === selectedItem.props.id,
-          );
-
-          if (index !== -1) {
-            next.splice(
-              index,
-              1,
-              ...decomposedComponents.map((component) => ({
-                ...component,
-                props: { ...component.props },
-              })),
-            );
-          }
-
-          return next;
-        }).content,
-      }),
-    });
-
-    requestAnimationFrame(() =>
+      // Update iframe layout boundaries to emphasize only the editable sub-tree elements
       setEditVisibility(get().iframeDoc, {
         mode: "remodel",
         editableIds: editableIds,
-      }),
-    );
+      });
+    });
 
+    // 7. Store configuration, history, and active remodeling metadata in Zustand
     set((s) => ({
       ...s,
       storedConfig: config,
@@ -402,6 +475,7 @@ export const createBuildersSlice = (
       state: "remodeling",
     }));
 
+    // 8. Update root attributes such as name, category, and title inside the editor workspace
     requestAnimationFrame(() =>
       puckDispatch({
         type: "replaceRoot",
@@ -413,7 +487,9 @@ export const createBuildersSlice = (
       } as any),
     );
   },
+
   complete: (appState, setHistories, getItemBySelector) => {
+    // 1. Validate builder workflow state
     if (get().state === "ready") {
       throw new Error("Not building or remodeling a component.");
     }
@@ -424,7 +500,7 @@ export const createBuildersSlice = (
       }
     )?._name?.trim();
 
-    // Handle existing name for remodelling
+    // Soft components require a name to generate a registration key
     if (!displayName) {
       throw new Error("Root component must have a name to compose.");
     }
@@ -435,8 +511,7 @@ export const createBuildersSlice = (
       throw new Error("No item selector found for completed component.");
     }
 
-    // Get item selector
-    // Get the item being edited
+    // 2. Resolve the original workspace item that was modified or designated as builder target
     const selectedItem = getItemBySelector(itemSelector);
 
     if (!selectedItem) {
@@ -451,6 +526,7 @@ export const createBuildersSlice = (
 
     const rootProps = appState.data.root?.props as BuilderRootConfig;
 
+    // 3. Generate a safe, unique PascalCase key for registering the component in Puck
     const componentName = componentNameFromLabel(displayName, get().overrides, {
       ...(rootProps || {}),
       existingKeys: Object.keys(get().softComponents),
@@ -461,6 +537,7 @@ export const createBuildersSlice = (
       throw new Error("Failed to generate component key from name.");
     }
 
+    // 4. Compile the workspace's elements and fields into a versioned soft component configuration
     const [defaultSoftComponentConfig, version] =
       get().builder.compose(
         appState,
@@ -474,6 +551,7 @@ export const createBuildersSlice = (
       throw new Error("Failed to compose new soft component config.");
     }
 
+    // 5. Restore standard undo/redo history captured before launching the builder session
     const storedHistories = get().originalHistory;
     setHistories([...storedHistories]);
 
@@ -481,10 +559,12 @@ export const createBuildersSlice = (
 
     const mapComponentConfig = get().overrides.mapComponentConfig;
 
+    // 6. Apply custom configuration transformers/mappers if provided in overrides
     const newSoftComponentConfig: ComponentConfig = mapComponentConfig
       ? mapComponentConfig(componentName, defaultSoftComponentConfig, rootProps)
       : defaultSoftComponentConfig;
 
+    // 7. Register the newly created/remodelled component and categories within core soft configuration
     set((s) => {
       const nextComponents = {
         ...Object.entries(config.components).reduce(
@@ -509,6 +589,7 @@ export const createBuildersSlice = (
 
       const categories = get().softConfig.categories || {};
 
+      // Insert component key into designated layout/toolbox categories
       const nextCategories = rootCategory
         ? {
             ...categories,
@@ -536,7 +617,7 @@ export const createBuildersSlice = (
           categories: nextCategories,
         },
         storedConfig: undefined,
-        state: "inspecting",
+        state: "inspecting", // Temporarily shift state to inspect() before finalizing back to ready
         originalHistory: [],
       };
     });
@@ -550,11 +631,11 @@ export const createBuildersSlice = (
 
     if (!completedSoftComponent) {
       throw new Error(
-        `Completed soft component \"${componentName}\" version \"${version}\" not found.`,
+        `Completed soft component "${componentName}" version "${version}" not found.`,
       );
     }
 
-    // Rebuild all dependent components after successfully completing the component
+    // 8. Re-compile other soft components in the system that depend on this component
     get().rebuildDependents(componentName, version);
 
     return {
@@ -563,7 +644,9 @@ export const createBuildersSlice = (
       softComponent: completedSoftComponent,
     };
   },
+
   inspect: (componentName, puckDispatch) => {
+    // 1. Enforce correct inspection state
     if (get().state !== "inspecting") {
       throw new Error("Not in inspecting state.");
     }
@@ -576,15 +659,17 @@ export const createBuildersSlice = (
 
     const editableComponentId = get().editingComponentId;
 
+    // 2. Perform the swap inside the editor workspace document data
     requestAnimationFrame(() => {
       const config = get().softConfig;
       const newComponent = config.components[componentName];
 
+      // Reconstruct document tree, replacing the temporary seed item with the finished component
       const reconstructedTree = (data: Data) =>
         walkTree(data, config, (components) => {
           return components.map((comp) => {
             if (comp.props.id === editableComponentId) {
-              // Replace with new component
+              // Swap in the newly compiled component type and default versioned props
               return {
                 type: componentName,
                 props: {
@@ -602,47 +687,66 @@ export const createBuildersSlice = (
         data: (data) => {
           return reconstructedTree(data);
         },
+        recordHistory: true, // Record this swap on the standard undo/redo stack
       });
+
+      // 3. Purge iframe edit overlay boundaries
+      clearEditVisibility(get().iframeDoc);
+
+      // 4. Clear active builder metadata and restore store state to "ready"
+      set((s) => ({
+        ...s,
+        state: "ready",
+        setItemSelector: undefined,
+        setOriginalItem: undefined,
+        editingComponent: null,
+        editingComponentId: null,
+        editableComponentIds: new Set(),
+      }));
     });
-
-    requestAnimationFrame(() => clearEditVisibility(get().iframeDoc));
-
-    set((s) => ({
-      ...s,
-      state: "ready",
-      setItemSelector: undefined,
-      setOriginalItem: undefined,
-      editingComponent: null,
-      editingComponentId: null,
-      editableComponentIds: new Set(),
-    }));
   },
+
   cancel: (setHistories) => {
     const storedHistories = get().originalHistory;
-    requestAnimationFrame(() => setHistories([...storedHistories]));
 
-    requestAnimationFrame(() => clearEditVisibility(get().iframeDoc));
-
+    // 1. Lock workspace state to "cancelling" to suppress conflicting visual rendering updates
     set((s) => ({
       ...s,
-      softConfig: get().storedConfig || initialConfig,
-      storedConfig: undefined,
-      originalHistory: [],
-      itemSelector: null,
-      originalItem: null,
-      state: "ready",
-      editingComponent: null,
-      editingComponentId: null,
-      editableComponentIds: new Set(),
+      state: "cancelling",
     }));
+
+    // 2. Re-apply history stacks from before launch
+    setHistories([...storedHistories]);
+
+    requestAnimationFrame(() => {
+      // 3. Clear visual highlight boundary elements inside the editor iframe
+      clearEditVisibility(get().iframeDoc);
+
+      // 4. Restore original soft configurations and reset tracked states
+      set((s) => ({
+        ...s,
+        softConfig: get().storedConfig || initialConfig,
+        storedConfig: undefined,
+        originalHistory: [],
+        itemSelector: null,
+        originalItem: null,
+        state: "ready",
+        editingComponent: null,
+        editingComponentId: null,
+        editableComponentIds: new Set(),
+      }));
+    });
   },
+
   compose: (appState, componentName, editedItem, displayName, category) => {
+    // 1. Validate parameters
     if (!componentName) {
       throw new Error("Root component must have a name to compose.");
     }
 
     const componentConfigs = get().softConfig.components;
 
+    // 2. Prevent namespace collision inside config during fresh builds
     if (
       get().state === "building" &&
       Object.keys(componentConfigs).includes(componentName)
@@ -652,6 +756,7 @@ export const createBuildersSlice = (
       );
     }
 
+    // 3. Execute conversion from editor document tree structure into soft component JSON schema
     const [softComponent, version]: [SoftComponent, string] =
       softComponentFromAppState(
         appState,
@@ -664,11 +769,12 @@ export const createBuildersSlice = (
         get().customFields,
       );
 
-    // Get all versions and the default version of this component
+    // 4. Track historical versions and determine if this is a newly introduced version key
     const existingComponent = get().softComponents[componentName];
     const allVersions = Object.keys(existingComponent?.versions || {});
     const isNewVersion = !allVersions.includes(version);
 
+    // 5. Package the versioned configuration schema for Puck registry
     const newSoftComponentConfig = createVersionedComponentConfig(
       componentName,
       displayName,
@@ -690,22 +796,27 @@ export const createBuildersSlice = (
       get().customFields,
     );
 
+    // 6. Persist the compiled version schema into local storage via Zustand slice
     get().setSoftComponent(componentName, version, softComponent);
 
     return [newSoftComponentConfig, version];
   },
+
   decompose: (componentData) => {
     if (!componentData?.type || !componentData?.props.id) {
       throw new Error("Component data must have type and id to decompose.");
     }
 
+    // Delegate structural decomposition to dedicated library function
     return decomposeSoftComponent(componentData, get().softComponents);
   },
+
   demolish: (componentName, data, puckDispatch) => {
     if (get().state !== "ready") {
       throw new Error("Components can only be demolished in ready state.");
     }
 
+    // 1. Remove registrations and filter out the demolished component instances from active workspace data
     const result = demolishSoftComponent(
       componentName,
       data,
@@ -713,23 +824,26 @@ export const createBuildersSlice = (
       get().softComponents,
     );
 
+    // 2. Re-apply cleaned document data to Puck workspace
     puckDispatch({
       type: "setData",
       data: result.data,
     });
 
-    // Update store with new config and soft components
+    // 3. Clean registries and softComponents mapping in Zustand store
     set((s) => ({
       ...s,
       softComponents: result.softComponents,
       softConfig: result.config,
     }));
   },
+
   setVersion: (componentName, newVersion, currentProps, puckDispatch) => {
     if (get().state !== "remodeling") {
       throw new Error("Can only switch versions during remodeling.");
     }
 
+    // 1. Fetch metadata and version definition schemas from the store
     const softComponent =
       get().softComponents[componentName]?.versions[newVersion];
     const softComponentMeta = get().softComponents[componentName];
@@ -744,7 +858,7 @@ export const createBuildersSlice = (
       get().softComponents[componentName].versions || {},
     );
 
-    // Convert soft component to AppState format
+    // 2. Convert target version's compiled schema back to standard constituent components
     const { root, content } = softComponentToAppState(
       softComponent,
       componentName,
@@ -758,7 +872,7 @@ export const createBuildersSlice = (
       get().customFields,
     );
 
-    // Update puck data with new version
+    // 3. Swap the active remodeling workspace content in-place with the selected version's elements
     puckDispatch({
       type: "setData",
       data: (previous) => ({
