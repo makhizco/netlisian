@@ -1,0 +1,40 @@
+# Installation
+
+## Setup
+
+```bash
+npm install @netlisian/soft-config
+```
+
+## Initial Setup
+
+To use Soft Components in your Puck editor, you need to wrap your application in the `SoftConfigProvider` and pass the necessary overrides to the `Puck` component.
+
+```typescript
+import { SoftConfigProvider } from "@netlisian/soft-config";
+import { ActionBar, Header, DrawerItem } from "@netlisian/soft-config/overrides";
+import { Puck } from "@measured/puck";
+
+const config = {
+  // your puck config
+};
+
+export const Editor = () => {
+  return (
+    <SoftConfigProvider>
+      <Puck 
+        config={config} 
+        data={initialData}
+        overrides={{
+          header: (props) => <Header {...props} />,
+          actionBar: (props) => <ActionBar {...props} />,
+          drawerItem: (props) => <DrawerItem {...props} />,
+        }}
+      />
+    </SoftConfigProvider>
+  );
+};
+```
+
+> [!NOTE]
+> These overrides are essential for the core Soft Component lifecycle (Building, Remodeling, and Persistence).

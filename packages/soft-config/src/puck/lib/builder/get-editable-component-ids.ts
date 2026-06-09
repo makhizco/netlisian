@@ -1,3 +1,4 @@
+"use client";
 import { ComponentData, Config, walkTree } from "@measured/puck";
 
 /**

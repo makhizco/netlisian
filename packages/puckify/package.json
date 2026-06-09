@@ -1,0 +1,79 @@
+{
+  "name": "@netlisian/puckify",
+  "version": "0.0.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "license": "MIT",
+  "files": [
+    "dist/**"
+  ],
+  "bin": {
+    "netlisian": "./dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "development": "./src/index.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": "./dist/index.js"
+    },
+    "./compiler": {
+      "import": {
+        "development": "./src/compiler/index.ts",
+        "default": "./dist/compiler/index.mjs"
+      },
+      "require": "./dist/compiler/index.js"
+    },
+    "./browser": {
+      "import": {
+        "development": "./src/browser/index.tsx",
+        "default": "./dist/browser/index.mjs"
+      },
+      "require": "./dist/browser/index.js"
+    },
+    "./cli": {
+      "import": {
+        "development": "./src/cli/index.ts",
+        "default": "./dist/cli/index.mjs"
+      },
+      "require": "./dist/cli/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint \"src/**/*.ts*\"",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+  },
+  "devDependencies": {
+    "@netlisian/eslint-config": "workspace:*",
+    "@netlisian/tsconfig": "workspace:*",
+    "@types/babel__traverse": "^7.28.0",
+    "@types/cli-table": "^0.3.4",
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.0.0 || ^19.0.0",
+    "@types/react-dom": "^18.0.0 || ^19.0.0",
+    "@types/yargs": "^17.0.35",
+    "eslint": "^9.36.0",
+    "tsup": "^8.0.2",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.24.5",
+    "@babel/traverse": "^7.24.5",
+    "@babel/types": "^7.24.5",
+    "cli-table": "^0.3.11",
+    "cosmiconfig": "^9.0.0",
+    "fast-glob": "^3.3.2",
+    "picocolors": "^1.1.0",
+    "ts-node": "^10.9.2",
+    "yargs": "^17.7.2"
+  },
+  "peerDependencies": {
+    "@measured/puck": "0.20.x",
+    "react": ">=18.0.0 <20.3.0"
+  }
+}

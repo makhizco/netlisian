@@ -6,12 +6,15 @@
     "build": "next build",
     "start": "next start ",
     "dev": "next dev -p 3002",
+    "inspect": "NODE_OPTIONS='--inspect' next dev -p 3002",
     "lint": "next lint",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf .next"
   },
   "dependencies": {
+    "@base-ui/react": "^1.5.0",
     "@measured/puck": "^0.20.2",
-    "@netlisian/dynamic-functions": "workspace:*",
+    "@netlisian/multipage": "workspace:^",
+    "@netlisian/outline": "workspace:^",
     "@netlisian/softconfig": "workspace:*",
     "@netlisian/tailwind": "workspace:*",
     "@netlisian/utils": "workspace:*",
@@ -22,6 +25,7 @@
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@tailwindcss/postcss": "^4.1.17",
+    "@xyflow/react": "^12.4.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
@@ -29,9 +33,11 @@
     "postcss": "^8.5.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-fast-compare": "^3.2.2",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss": "^4.1.8"
+    "tailwindcss": "^4.1.8",
+    "use-debounce": "^10.1.0"
   },
   "devDependencies": {
     "@netlisian/eslint-config": "workspace:*",

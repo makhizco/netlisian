@@ -29,7 +29,7 @@ export const useInspect = (component: CompletedComponentResult | null) => {
     }
 
     try {
-      inspect(component.id, dispatch);
+      inspect(component.id, dispatch, null);
 
       void triggerAction({
         type: "inspect",

@@ -1,3 +1,4 @@
+"use client";
 import type { Field } from "@measured/puck";
 import type { MappingOption } from "../../types/Mapping";
 import type {
@@ -11,6 +12,19 @@ import {
   resolveCustomFieldReturnType,
   resolveCustomFieldSchema,
 } from "../custom-fields";
+import { componentLabelFromName } from "../component-key";
+
+const formatPathLabel = (path: string) => {
+  return path
+    .split(".")
+    .map((part) => {
+      if (part.endsWith("[]")) {
+        return componentLabelFromName(part.slice(0, -2)) + "[]";
+      }
+      return componentLabelFromName(part);
+    })
+    .join(" . ");
+};
 
 const hasArrayMappingPath = (value: string) => value.includes("[]");
 
@@ -72,7 +86,7 @@ export function generateFieldOptions(
           path + "[]"
         );
       } else {
-        opts.push({ label: path, value: path, type: fld.type });
+        opts.push({ label: formatPathLabel(path), value: path, type: fld.type });
       }
     });
   }
@@ -122,7 +136,7 @@ export function generateDynamicFieldOptions(
         }
 
         opts.push({
-          label: path,
+          label: formatPathLabel(path),
           value: path,
           type: mapCustomReturnTypeToMappingType(customReturnType),
         });
@@ -142,7 +156,7 @@ export function generateDynamicFieldOptions(
           path + (field.type === "array" ? "[]" : "")
         );
       } else if (field.type !== "array" && field.type !== "object") {
-        opts.push({ label: path, value: path, type: field.type });
+        opts.push({ label: formatPathLabel(path), value: path, type: field.type });
       }
     });
   }

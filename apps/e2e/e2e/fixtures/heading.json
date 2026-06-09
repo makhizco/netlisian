@@ -1,0 +1,79 @@
+{
+  "_comment": "Heading soft component fixture — simple two-field component with text + level select.",
+  "_notes": [
+    "Fields use Puck field types: 'text', 'textarea', 'number', 'select', 'radio', 'array', 'object'.",
+    "fieldSettings.defaultValue seeds the defaultProps for each field.",
+    "components[] describes the tree of base components (container/text/repeat) that this soft component renders.",
+    "map[] inside each node declares how soft props flow into the base component's props.",
+    "The 'to' path for a container's map entry should target 'values.className' or a fixedProp key.",
+    "enabledSlots[] is empty for leaf nodes (text), populated for containers that accept children."
+  ],
+  "name": "Heading",
+  "defaultVersion": "1.0.0",
+  "versions": {
+    "1.0.0": {
+      "name": "Heading",
+      "fields": {
+        "title": { "type": "text", "label": "Title" },
+        "level": {
+          "type": "select",
+          "label": "Level",
+          "options": [
+            { "label": "H1", "value": "h1" },
+            { "label": "H2", "value": "h2" },
+            { "label": "H3", "value": "h3" }
+          ]
+        }
+      },
+      "fieldSettings": {
+        "title": { "defaultValue": "Heading Text" },
+        "level": {
+          "defaultValue": "h2",
+          "options": [
+            { "label": "H1", "value": "h1" },
+            { "label": "H2", "value": "h2" },
+            { "label": "H3", "value": "h3" }
+          ]
+        }
+      },
+      "defaultProps": {
+        "title": "Heading Text",
+        "level": "h2"
+      },
+      "rootProps": {},
+      "components": [
+        {
+          "_comment": "Outer container — maps nothing, wraps the text node.",
+          "type": "container",
+          "map": [],
+          "fixedProps": {
+            "element": "div",
+            "attributes": [{ "key": "className", "valueType": "string" }],
+            "values": { "className": "heading-wrapper" }
+          },
+          "components": {
+            "slotItem": [
+              {
+                "_comment": "Text leaf — maps 'title' soft prop → 'text' base prop.",
+                "type": "text",
+                "map": [
+                  {
+                    "mode": "simple",
+                    "from": "title",
+                    "to": "text",
+                    "unmappedArrayItemDefaultValues": {}
+                  }
+                ],
+                "fixedProps": {},
+                "components": {},
+                "enabledSlots": []
+              }
+            ]
+          },
+          "enabledSlots": []
+        }
+      ],
+      "slots": {}
+    }
+  }
+}

@@ -11,3 +11,8 @@ dist-ssr
 server/dist
 public/dist
 .turbo
+.vscode/
+test-results/
+*.md
+!README.md
+!CHANGELOG.md

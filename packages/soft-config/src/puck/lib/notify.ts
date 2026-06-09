@@ -6,8 +6,7 @@ let customHandler: NotificationHandler | null = null;
 // Default handler using native alert (non-blocking alternative would be console)
 const defaultHandler: NotificationHandler = (message, type) => {
   if (type === "error") {
-    console.error(`[Error] ${message}`);
-    // Non-blocking, just log to console instead of alert
+    alert(`[Error] ${message}`);
   } else {
     console.log(`[Success] ${message}`);
   }

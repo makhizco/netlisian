@@ -1,3 +1,4 @@
+"use client";
 import { createUsePuck } from "@measured/puck";
 import type { DefaultComponentProps } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
@@ -31,23 +32,31 @@ export const useRemodel = () => {
     }
 
     const selectedVersion =
-      ((selectedItem?.props as DefaultComponentProps | undefined)?.version as string | undefined) ||
-      softComponents[name]?.defaultVersion;
+      ((selectedItem?.props as DefaultComponentProps | undefined)?.version as
+        | string
+        | undefined) || softComponents[name]?.defaultVersion;
 
-    const selectedSoftComponent =
-      selectedVersion
-        ? softComponents[name]?.versions[selectedVersion]
-        : undefined;
+    const selectedSoftComponent = selectedVersion
+      ? softComponents[name]?.versions[selectedVersion]
+      : undefined;
 
     try {
-      remodel(history, selectedItem, itemSelector, dispatch, refreshPermissions);
+      remodel(
+        history,
+        selectedItem,
+        itemSelector,
+        dispatch,
+        refreshPermissions,
+      );
 
       void triggerAction({
         type: "remodel",
         payload: {
           id: name,
           version: selectedVersion,
-          softComponent: selectedSoftComponent as VersionedSoftComponent["versions"][string] | undefined,
+          softComponent: selectedSoftComponent as
+            | VersionedSoftComponent["versions"][string]
+            | undefined,
         },
       });
 
@@ -61,11 +70,10 @@ export const useRemodel = () => {
 
       return { id: name, version: selectedVersion };
     } catch (error) {
-      console.error("Failed to remodel:", error);
+      alert("Failed to remodel:" + " " + error);
       notify.error(
         "Failed to remodel: " +
-          (error instanceof Error ? error.message : String(error))
-      );
+          (error instanceof Error ? error.message : String(error)) + " " + String( ));
       return null;
     }
   };

@@ -1,0 +1,10 @@
+{
+  "extends": "@netlisian/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "incremental": false,
+    "types": ["node"],
+    "lib": ["dom", "dom.iterable", "esnext"]
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

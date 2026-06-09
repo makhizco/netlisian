@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import { Button, Data, createUsePuck } from "@measured/puck";
 import { useComplete } from "../actions/useComplete";

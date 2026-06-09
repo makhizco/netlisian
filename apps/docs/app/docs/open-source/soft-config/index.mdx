@@ -1,0 +1,54 @@
+# Getting Started
+
+**Soft Config** is a runtime engine that enables visual editing for React components by separating the "Hard Config" (code components) from the "Soft Config" (dynamic instances).
+
+To get started, you wrap your editor with the `SoftConfigProvider`, which dynamically decomposes and recomposes your component configurations.
+
+## Installation
+
+```bash
+pnpm add @netlisian/softconfig
+```
+
+## Basic Setup
+
+The `SoftConfigProvider` takes your static `hardConfig` and any existing `softComponents` to generate a dynamic configuration compatible with editors like Puck.
+
+```tsx
+import { SoftConfigProvider } from "@netlisian/softconfig/puck";
+import { Puck } from "@measured/puck";
+
+// Your static component definitions
+const hardConfig = {
+  components: {
+    Button: {
+      render: ({ label }) => <button>{label}</button>
+    }
+  }
+};
+
+export function Editor({ initialData, softComponents }) {
+  return (
+    <SoftConfigProvider
+      hardConfig={hardConfig}
+      softComponents={softComponents || {}}
+      overrides={{}}
+    >
+      {(softConfig, components) => (
+        <Puck
+          config={softConfig}
+          data={initialData}
+        />
+      )}
+    </SoftConfigProvider>
+  );
+}
+```
+
+### Editor Primitives
+
+When building a full editor, you can utilize the internal primitives that provide the Netlisian look and feel:
+
+- **DrawerItem**: Items rendered in the side panel for drag-and-drop.
+- **ActionBar**: The persistent bottom bar for saving, publishing, and status updates.
+- **Header Action**: Custom buttons or status indicators placed in the top navigation bar.

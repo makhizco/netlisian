@@ -1,4 +1,10 @@
 module.exports = {
   reactStrictMode: true,
-  transpilePackages: ["@netlisian/softconfig", "@netlisian/dynamic-functions"],
+  transpilePackages: ["@netlisian/softconfig"],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  }
 };

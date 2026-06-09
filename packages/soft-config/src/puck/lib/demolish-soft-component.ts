@@ -1,3 +1,4 @@
+"use client";
 import { ComponentData, Config, Data, walkTree } from "@measured/puck";
 import { SoftComponents } from "../types/SoftComponent";
 import { decomposeSoftComponent } from "./decompose-soft-component";

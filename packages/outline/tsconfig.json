@@ -1,0 +1,11 @@
+{
+  "extends": "@netlisian/tsconfig/react-library.json",
+  "compilerOptions": {
+    "paths": {
+      "@/core": ["../core"],
+      "@/core/*": ["../core/*"]
+    }
+  },
+  "include": ["."],
+  "exclude": ["dist", "build", "node_modules"]
+}

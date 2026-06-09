@@ -1,3 +1,4 @@
+"use client";
 import { useSoftConfig } from "../context/useStore";
 import { useActionEvent } from "../hooks/useActionEvent";
 

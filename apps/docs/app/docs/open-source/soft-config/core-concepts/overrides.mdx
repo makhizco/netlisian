@@ -1,0 +1,77 @@
+# Overrides
+
+Overrides allow you to customize the internal editor components and behavior of Soft Config. The most powerful override is the `map` function, which controls how dynamic fields are connected to your component props.
+
+## The Map Override
+
+By default, Soft Config provides a simple array-based mapping UI. However, you can override this to provide a more advanced experience, such as a node-based visual programming editor.
+
+### Default Implementation
+
+The default mapping UI is an array of pairs, where you select a source field (from the page context) and a target prop (on the component).
+
+```tsx
+// Internal default implementation
+{
+  type: "array",
+  label: "Dynamic Field Map",
+  arrayFields: {
+    from: {
+      type: "select",
+      label: "From",
+      options: [ ...fromOptions ]
+    },
+    to: {
+      type: "select",
+      label: "To",
+      options: [ ...toOptions ]
+    },
+  }
+}
+```
+
+### Customizing the Map UI
+
+You can override the `map` prop in the `overrides` object passed to `SoftConfigProvider`. This function receives the current mapping value, available options, and an `onChange` handler.
+
+```tsx
+import { SoftConfigProvider } from "@netlisian/softconfig/puck";
+import { DynamicFunctionModal } from "@netlisian/dynamic-functions";
+
+const overrides = {
+  map: ({ 
+    value, 
+    onChange, 
+    fromOptions, 
+    toOptions 
+  }) => {
+    return (
+      <DynamicFunctionModal
+        value={value}
+        onChange={onChange}
+        fromOptions={fromOptions}
+        toOptions={toOptions}
+      />
+    );
+  }
+};
+
+// ... in your provider
+<SoftConfigProvider overrides={overrides}>
+  {/* ... */}
+</SoftConfigProvider>
+```
+
+### Available Params
+
+The `map` override receives an object with the following properties:
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `rootProps` | `object` | The properties defined at the root level of the page/puck state. |
+| `value` | `any` | The current mapping data. |
+| `onChange` | `(value: any) => void` | Callback to update the mapping data. |
+| `id` | `string` | Unique identifier for the current component instance. |
+| `props` | `object` | The current "hard" props of the component. |
+| `fromOptions` | `Array` | List of available source fields (e.g., from the page root). |
+| `toOptions` | `Array` | List of available target props on the component. |

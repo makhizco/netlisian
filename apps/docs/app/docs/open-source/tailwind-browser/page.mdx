@@ -1,0 +1,26 @@
+# Tailwind Browser
+
+**@netlisian/tailwind** is a runtime compiler that brings the full power of Tailwind CSS to the browser. It allows you to generate functional utility classes on the fly based on dynamic content.
+
+## Why use it?
+
+Standard Tailwind requires a build step that scans your source code for class names. This is impossible for headless CMSs or page builders where class names are stored in a database and only known at runtime.
+
+Tailwind Browser solves this by:
+1.  Running a lightweight version of the Tailwind engine in the browser.
+2.  Monitoring the DOM or specific configurations for Tailwind classes.
+3.  Injecting the generated CSS into a `<style>` tag in real-time.
+
+## Basic Usage
+
+```tsx
+import { initTailwind } from "@netlisian/tailwind";
+
+// Initialize on the current document
+const processor = await initTailwind(document);
+
+// Or on an iframe document
+const iframeProcessor = await initTailwind(iframeDoc);
+```
+
+Once initialized, any element with a Tailwind class (e.g., `bg-blue-500`) will automatically receive the corresponding styles.

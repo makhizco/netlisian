@@ -1,0 +1,26 @@
+{
+  "exclude": ["node_modules"],
+  "extends": "@netlisian/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "app",
+    "components",
+    "lib",
+    "examples",
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    "mdx-components.tsx",
+    "theme.config.jsx"
+  ]
+}

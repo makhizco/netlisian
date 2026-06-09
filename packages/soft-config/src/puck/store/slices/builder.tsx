@@ -1,17 +1,20 @@
-import {
+"use client";
+import { DefaultComponentProps,
   AppState,
   ComponentConfig,
   Config,
   Data,
-  DefaultComponentProps,
+  
   History,
   PuckApi,
   ComponentData,
   walkTree,
+  Content,
+  RootData,
 } from "@measured/puck";
 import { AppStore } from "../";
-import { builderConfig } from "../../lib/builder/builder-config";
-import { BuilderRootConfig } from "../../types/BuilderConfig";
+
+import { BuilderRootConfig, GlobalRootProps } from "../../types/BuilderConfig";
 import { SoftComponent } from "../../types/SoftComponent";
 import { softComponentFromAppState } from "../../lib/soft-component-from-appstate";
 import { softComponentToAppState } from "../../lib/soft-component-to-appstate";
@@ -26,6 +29,9 @@ import {
   clearEditVisibility,
   setEditVisibility,
 } from "../../lib/edit-visibility-utils";
+import { getPropertyByPath } from "../../lib/get-prop-by-path";
+import { setPropertyByPath } from "../../lib/set-prop-by-path";
+import { getArrayBasePath } from "../../lib/array-field-utils";
 
 export type CompletedComponentResult = {
   /**
@@ -99,7 +105,7 @@ export type BuildersSlice = {
     selectedItem: PuckApi["selectedItem"],
     itemSelector: { index: number; zone?: string } | null,
     puckDispatch: PuckApi["dispatch"],
-    refreshPermission: () => void,
+    refreshPermissions: () => void,
   ) => void;
 
   /**
@@ -124,6 +130,8 @@ export type BuildersSlice = {
     newVersion: string,
     currentProps: Record<string, any>,
     puckDispatch: PuckApi["dispatch"],
+    getItemBySelector: PuckApi["getItemBySelector"],
+    getSelectorForId: PuckApi["getSelectorForId"],
   ) => void;
 
   /**
@@ -183,7 +191,11 @@ export type BuildersSlice = {
    * 3. Flushes layout restriction overlays on the iframe.
    * 4. Resets active builder metadata and transitions state back to "ready".
    */
-  inspect: (componentName: string, puckDispatch: PuckApi["dispatch"]) => void;
+  inspect: (
+    componentName: string,
+    puckDispatch: PuckApi["dispatch"],
+    selectedItemSelector: { index: number; zone?: string } | null,
+  ) => void;
 
   /**
    * Discards all modifications made during the current build or remodel session,
@@ -196,7 +208,11 @@ export type BuildersSlice = {
    * 2. Re-applies the original workspace config and timeline histories.
    * 3. Clears visual iframe constraints and resets active builder metadata back to normal.
    */
-  cancel: (setHistories: PuckApi["history"]["setHistories"]) => void;
+  cancel: (
+    setHistories: PuckApi["history"]["setHistories"],
+    puckDispatch: PuckApi["dispatch"],
+    selectedItemSelector: { index: number; zone?: string } | null,
+  ) => void;
 
   /**
    * Internal compiler hook that converts builder editor workspace states (root props, children)
@@ -228,7 +244,10 @@ export type BuildersSlice = {
    *
    * @throws {Error} If the input component data lacks type or ID.
    */
-  decompose: (componentData: ComponentData) => ComponentData[];
+  decompose: (
+    componentData: ComponentData,
+    keepMapField?: boolean,
+  ) => ComponentData[];
 };
 
 export const createBuildersSlice = (
@@ -240,7 +259,7 @@ export const createBuildersSlice = (
     replace?: false,
   ) => void,
   get: () => AppStore,
-  initialConfig: Config,
+  // initialConfig: Config,
 ): BuildersSlice => ({
   build: (history, selectedItem, itemSelector, puckDispatch, name) => {
     // 1. Initial validations before launching builder session
@@ -248,22 +267,9 @@ export const createBuildersSlice = (
       throw new Error("No item selected to build from.");
     }
 
-    // 2. Cache current configuration to allow structural revert on cancellation
-    const config = { ...get().softConfig };
-    const overrides = get().overrides;
-
-    // 3. Generate a temporary builder configuration targeting only the building sandbox constraints
-    const buildConfig = builderConfig(
-      config,
-      overrides,
-      undefined,
-      get().showVersionFields,
-      undefined,
-      get().customFields,
-    );
-
-    // 4. Track sub-tree component IDs to lock down edits.
+    // 3. Track sub-tree component IDs to lock down edits.
     // Only the seed component and its nested children are allowed to be modified.
+    const config = get().softConfig;
     const editableIds = new Set<string>([selectedItem.props.id]);
     const initialContent = [{ ...selectedItem }];
 
@@ -294,8 +300,6 @@ export const createBuildersSlice = (
     // 6. Transition workspace states and store builder tracking metadata in Zustand
     set((s) => ({
       ...s,
-      softConfig: buildConfig,
-      storedConfig: config,
       originalHistory: history,
       itemSelector: {
         index: itemSelector.index,
@@ -307,30 +311,32 @@ export const createBuildersSlice = (
     }));
 
     // 7. Update Puck's workspace document: reset visual item selectors and designate temporary root name
-    requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
       puckDispatch({
-        type: "set",
-        state: (previous) => ({
-          ui: {
-            ...previous.ui,
-            itemSelector: null,
+        type: "setUi",
+        ui: { itemSelector: null },
+        recordHistory: false,
+      });
+
+      puckDispatch({
+        type: "replaceRoot",
+        root: {
+          props: {
+            _name: name || "New Soft Component",
           },
-          data: {
-            ...previous.data,
-            root: {
-              ...previous.data.root,
-              props: {
-                ...previous.data.root?.props,
-                _name: name || "New Soft Component",
-              },
-            } as Data["root"],
-          },
-        }),
-      }),
-    );
+        } as Data["root"],
+        recordHistory: false,
+      });
+    });
   },
 
-  remodel: (history, selectedItem, itemSelector, puckDispatch) => {
+  remodel: (
+    history,
+    selectedItem,
+    itemSelector,
+    puckDispatch,
+    refreshPermission,
+  ) => {
     // 1. Initial parameter validations
     if (!selectedItem || !itemSelector) {
       throw new Error("No item selected to build from.");
@@ -362,7 +368,7 @@ export const createBuildersSlice = (
 
     // 3. Convert the compiled soft component schema back to discrete elements
     // to allow layout and structural editing in the workspace
-    const { root, content } = softComponentToAppState(
+    const { root } = softComponentToAppState(
       softComponent,
       softComponentName,
       softComponentVersion,
@@ -375,117 +381,141 @@ export const createBuildersSlice = (
       get().customFields,
     );
 
-    const config = { ...get().softConfig };
-    const overrides = get().overrides;
+    const config = get().softConfig;
 
     // 4. Query reverse dependency graph.
     // This allows builders to insulate editing and prevent creating circular dependencies.
     const dependents =
       get().dependencyGraph.get(softComponentName) || new Set<string>();
 
-    const buildConfig = builderConfig(
-      config,
-      overrides,
-      softComponentName,
-      get().showVersionFields,
-      dependents,
-      get().customFields,
-    );
-
     // 5. Track element edit scopes during the remodeling session.
     // The soft component itself will be replaced with its decomposed children.
-    const editableIds = new Set<string>([]);
-    const decomposedComponents = get().builder.decompose(selectedItem);
+    const decomposedComponents = get().builder.decompose(selectedItem, true);
 
     // Scan decomposed constituent components to include their IDs in the active editing scope
-    walkTree(
-      { root: {}, content: decomposedComponents || [] },
+    const editableIds = new Set<string>([decomposedComponents[0].props.id]);
+
+    const { content: decomposedComponentsWithId } = walkTree(
+      { root: {}, content: decomposedComponents },
       { components: config.components },
       (components) => {
         components.forEach((comp) => {
-          editableIds.add(comp.props.id);
+          const id = generateId(comp.type);
+          comp.props.id = id;
+          editableIds.add(id);
         });
         return components;
       },
     );
 
-    // 6. Splice-replace the compiled soft component in-place inside workspace document data
-    requestAnimationFrame(() => {
-      puckDispatch({
-        type: "set",
-        state: (previous) => ({
-          data: {
-            root: { ...root, _versions: versions } as any,
-            content: walkTree(
-              { ...previous.data },
-              { ...config },
-              (components) => {
-                const next = components.map((component) => ({
-                  ...component,
-                  props: { ...component.props },
-                }));
-
-                const index = next.findIndex(
-                  (component) => component.props.id === selectedItem.props.id,
-                );
-
-                if (index !== -1) {
-                  // Replace the single soft component with all decomposed elements
-                  next.splice(
-                    index,
-                    1,
-                    ...decomposedComponents.map((component) => ({
-                      ...component,
-                      props: { ...component.props },
-                    })),
-                  );
-                }
-
-                return next;
-              },
-            ).content,
-          },
-          ui: {
-            ...previous.ui,
-            itemSelector: null,
-          },
-        }),
-      });
-
-      // Update iframe layout boundaries to emphasize only the editable sub-tree elements
-      setEditVisibility(get().iframeDoc, {
-        mode: "remodel",
-        editableIds: editableIds,
-      });
-    });
-
-    // 7. Store configuration, history, and active remodeling metadata in Zustand
+    // 6. Transition state to remodeling first
     set((s) => ({
       ...s,
-      storedConfig: config,
-      softConfig: buildConfig,
       originalHistory: history,
       itemSelector: {
         index: itemSelector.index,
         zone: itemSelector.zone || rootDroppableId,
       },
-      editingComponentId: selectedItem.props.id,
       editingComponent: softComponentName,
+      editingDependents: dependents,
       editableComponentIds: editableIds,
-      state: "remodeling",
+      state: "assessing",
     }));
 
-    // 8. Update root attributes such as name, category, and title inside the editor workspace
-    requestAnimationFrame(() =>
+    // 7. Execute atomic layout changes
+    // a. Remove the original compiled component
+    puckDispatch({
+      type: "remove",
+      index: itemSelector.index,
+      zone: itemSelector.zone || rootDroppableId,
+      recordHistory: false,
+    });
+
+    // b. Insert new placeholder component for the root decomposed part
+    const comp = decomposedComponentsWithId[0];
+    if (!comp) {
+      throw new Error("No decomposed components found.");
+    }
+    const id = comp.props.id;
+
+    puckDispatch({
+      type: "insert",
+      destinationIndex: itemSelector.index,
+      destinationZone: itemSelector.zone || rootDroppableId,
+      componentType: comp.type,
+      recordHistory: false,
+      id,
+    });
+    // c. Wait for React to mount the inserted placeholder
+    requestAnimationFrame(() => {
+      // d. Replace placeholder with full decomposed component data
+      const _map = (comp.props?._map || []) as any[];
+      const readOnlyFields = _map.flatMap((item) => item.to);
+      const readOnlyArrayBases = readOnlyFields
+        .filter((field): field is string => typeof field === "string")
+        .map(getArrayBasePath)
+        .filter((base): base is string => base !== null);
+
+      const readOnly = [
+        ...readOnlyFields.map((f) => String(f)),
+        ...readOnlyArrayBases,
+      ].reduce((acc, field) => ({ ...acc, [field]: true }), {} as Record<string, boolean>);
+
       puckDispatch({
-        type: "replaceRoot",
-        root: {
-          title: (root.props as any).title,
-          _name: (root.props as any)._name,
-          _category: (root.props as any)._category,
+        type: "replace",
+        destinationIndex: itemSelector.index,
+        destinationZone: itemSelector.zone || rootDroppableId,
+        data: {
+          ...comp,
+          props: {
+            ...comp.props,
+            id: id,
+          },
+          readOnly: readOnly,
         },
-      } as any),
-    );
+        recordHistory: false,
+      });
+
+      // f. Collect final assigned IDs and update visibility
+      set((s) => ({
+        ...s,
+        state: "remodeling",
+      }));
+      setEditVisibility(get().iframeDoc, {
+        mode: "remodel",
+        editableIds: new Set(editableIds),
+      });
+    });
+
+    // e. Update root metadata
+    puckDispatch({
+      type: "replaceRoot",
+      root: {
+        props: {
+          ...root.props,
+          ...((root.props as GlobalRootProps).title !== undefined && {
+            title: (root.props as GlobalRootProps).title,
+          }),
+          ...((root.props as GlobalRootProps)._name !== undefined && {
+            _name: (root.props as GlobalRootProps)._name,
+          }),
+          ...((root.props as GlobalRootProps)._category !== undefined && {
+            _category: (root.props as GlobalRootProps)._category,
+          }),
+          _versions: versions,
+        },
+      } as Data["root"],
+      recordHistory: false,
+    });
+
+    requestAnimationFrame(() => {
+      puckDispatch({
+        type: "setUi",
+        ui: { itemSelector: null },
+        recordHistory: false,
+      });
+      refreshPermission();
+    });
   },
 
   complete: (appState, setHistories, getItemBySelector) => {
@@ -495,9 +525,7 @@ export const createBuildersSlice = (
     }
 
     const displayName = (
-      appState.data.root?.props as {
-        _name?: string;
-      }
+      appState.data.root?.props as GlobalRootProps
     )?._name?.trim();
 
     // Soft components require a name to generate a registration key
@@ -518,11 +546,8 @@ export const createBuildersSlice = (
       throw new Error("Cannot find item being edited");
     }
 
-    const rootCategory = (
-      appState.data.root?.props as {
-        _category?: string;
-      }
-    )?._category;
+    const rootCategory = (appState.data.root?.props as GlobalRootProps)
+      ?._category;
 
     const rootProps = appState.data.root?.props as BuilderRootConfig;
 
@@ -555,7 +580,7 @@ export const createBuildersSlice = (
     const storedHistories = get().originalHistory;
     setHistories([...storedHistories]);
 
-    const config = { ...(get().softConfig || initialConfig) };
+    const config = { ...get().softConfig };
 
     const mapComponentConfig = get().overrides.mapComponentConfig;
 
@@ -610,13 +635,9 @@ export const createBuildersSlice = (
         ...s,
         softConfig: {
           ...config,
-          root: {
-            ...initialConfig.root,
-          },
           components: nextComponents,
           categories: nextCategories,
         },
-        storedConfig: undefined,
         state: "inspecting", // Temporarily shift state to inspect() before finalizing back to ready
         originalHistory: [],
       };
@@ -645,7 +666,7 @@ export const createBuildersSlice = (
     };
   },
 
-  inspect: (componentName, puckDispatch) => {
+  inspect: (componentName, puckDispatch, selectedItemSelector) => {
     // 1. Enforce correct inspection state
     if (get().state !== "inspecting") {
       throw new Error("Not in inspecting state.");
@@ -658,40 +679,45 @@ export const createBuildersSlice = (
     }
 
     const editableComponentId = get().editingComponentId;
+    const itemSelector = get().itemSelector;
 
-    // 2. Perform the swap inside the editor workspace document data
     requestAnimationFrame(() => {
-      const config = get().softConfig;
-      const newComponent = config.components[componentName];
+      // 2. Replace old item with new.
+      // Check if existing component is a Soft Component.
+      if (
+        editableComponentId &&
+        !Object.keys(get().softComponents).includes(
+          editableComponentId?.split(":")?.[0].split("-")[0],
+        )
+      ) {
+        requestAnimationFrame(() => {
+          puckDispatch({
+            type: "remove",
+            index: itemSelector!.index,
+            zone: itemSelector!.zone,
+            recordHistory: true,
+          });
 
-      // Reconstruct document tree, replacing the temporary seed item with the finished component
-      const reconstructedTree = (data: Data) =>
-        walkTree(data, config, (components) => {
-          return components.map((comp) => {
-            if (comp.props.id === editableComponentId) {
-              // Swap in the newly compiled component type and default versioned props
-              return {
-                type: componentName,
-                props: {
-                  ...newComponent.defaultProps,
-                  id: generateId(componentName),
-                },
-              } as ComponentData;
-            }
-            return comp;
+          puckDispatch({
+            type: "insert",
+            destinationIndex: itemSelector!.index,
+            destinationZone: itemSelector!.zone,
+            componentType: componentName,
+            recordHistory: true,
           });
         });
-
-      puckDispatch({
-        type: "setData",
-        data: (data) => {
-          return reconstructedTree(data);
-        },
-        recordHistory: true, // Record this swap on the standard undo/redo stack
-      });
+      }
 
       // 3. Purge iframe edit overlay boundaries
       clearEditVisibility(get().iframeDoc);
+
+      if (!selectedItemSelector && selector.index !== undefined) {
+        puckDispatch({
+          type: "setUi",
+          ui: { itemSelector: selector as { index: number; zone?: string } },
+          recordHistory: false,
+        });
+      }
 
       // 4. Clear active builder metadata and restore store state to "ready"
       set((s) => ({
@@ -699,6 +725,7 @@ export const createBuildersSlice = (
         state: "ready",
         setItemSelector: undefined,
         setOriginalItem: undefined,
+        itemSelector: null,
         editingComponent: null,
         editingComponentId: null,
         editableComponentIds: new Set(),
@@ -706,8 +733,9 @@ export const createBuildersSlice = (
     });
   },
 
-  cancel: (setHistories) => {
+  cancel: (setHistories, puckDispatch, selectedItemSelector) => {
     const storedHistories = get().originalHistory;
+    const itemSelector = get().itemSelector;
 
     // 1. Lock workspace state to "cancelling" to suppress conflicting visual rendering updates
     set((s) => ({
@@ -722,11 +750,17 @@ export const createBuildersSlice = (
       // 3. Clear visual highlight boundary elements inside the editor iframe
       clearEditVisibility(get().iframeDoc);
 
-      // 4. Restore original soft configurations and reset tracked states
+      if (!selectedItemSelector && itemSelector) {
+        puckDispatch({
+          type: "setUi",
+          ui: { itemSelector: itemSelector },
+          recordHistory: false,
+        });
+      }
+
+      // 4. Restore tracking states
       set((s) => ({
         ...s,
-        softConfig: get().storedConfig || initialConfig,
-        storedConfig: undefined,
         originalHistory: [],
         itemSelector: null,
         originalItem: null,
@@ -734,6 +768,7 @@ export const createBuildersSlice = (
         editingComponent: null,
         editingComponentId: null,
         editableComponentIds: new Set(),
+        editingDependents: new Set(),
       }));
     });
   },
@@ -802,13 +837,18 @@ export const createBuildersSlice = (
     return [newSoftComponentConfig, version];
   },
 
-  decompose: (componentData) => {
+  decompose: (componentData, keepMapField) => {
     if (!componentData?.type || !componentData?.props.id) {
       throw new Error("Component data must have type and id to decompose.");
     }
 
     // Delegate structural decomposition to dedicated library function
-    return decomposeSoftComponent(componentData, get().softComponents);
+    return decomposeSoftComponent(
+      componentData,
+      get().softComponents,
+      undefined,
+      keepMapField,
+    );
   },
 
   demolish: (componentName, data, puckDispatch) => {
@@ -838,7 +878,14 @@ export const createBuildersSlice = (
     }));
   },
 
-  setVersion: (componentName, newVersion, currentProps, puckDispatch) => {
+  setVersion: (
+    componentName,
+    newVersion,
+    currentProps,
+    puckDispatch,
+    getItemBySelector,
+    getSelectorForId,
+  ) => {
     if (get().state !== "remodeling") {
       throw new Error("Can only switch versions during remodeling.");
     }
@@ -872,14 +919,105 @@ export const createBuildersSlice = (
       get().customFields,
     );
 
-    // 3. Swap the active remodeling workspace content in-place with the selected version's elements
-    puckDispatch({
-      type: "setData",
-      data: (previous) => ({
-        ...previous,
-        root: { ...root, props: { ...root.props, _versions: versions } },
-        content: content || [],
-      }),
+    const editableIds = get().editableComponentIds;
+    if (!editableIds || editableIds.size === 0) return;
+
+    const firstId = Array.from(editableIds)[0];
+    const itemSelector = getSelectorForId(firstId);
+    if (!itemSelector) return;
+
+    // 3. Swap the active remodeling workspace content using atomic actions
+    requestAnimationFrame(() => {
+      // Remove all currently editing items
+      const countToRemove = Array.from(editableIds).filter(
+        (id) => getSelectorForId(id)?.zone === itemSelector.zone,
+      ).length;
+      for (let i = 0; i < countToRemove; i++) {
+        puckDispatch({
+          type: "remove",
+          index: itemSelector.index,
+          zone: itemSelector.zone,
+          recordHistory: false,
+        });
+      }
+
+      // Insert new version's decomposed element (top-level only)
+      const newContent = content || [];
+      const comp = newContent[0];
+      if (comp) {
+        puckDispatch({
+          type: "insert",
+          destinationIndex: itemSelector.index,
+          destinationZone: itemSelector.zone,
+          componentType: comp.type,
+          recordHistory: false,
+        });
+      }
+
+      requestAnimationFrame(() => {
+        if (comp) {
+          const insertedItem = getItemBySelector({
+            index: itemSelector.index,
+            zone: itemSelector.zone,
+          });
+
+          if (insertedItem) {
+            puckDispatch({
+              type: "replace",
+              destinationIndex: itemSelector.index,
+              destinationZone: itemSelector.zone,
+              data: {
+                ...comp,
+                props: {
+                  ...comp.props,
+                  id: insertedItem.props.id,
+                },
+              },
+              recordHistory: false,
+            });
+          }
+        }
+
+        puckDispatch({
+          type: "replaceRoot",
+          root: {
+            props: {
+              ...root.props,
+              _versions: versions,
+            },
+          } as Data["root"],
+          recordHistory: false,
+        });
+
+        requestAnimationFrame(() => {
+          const newEditableIds = new Set<string>();
+
+          if (comp) {
+            const finalItem = getItemBySelector({
+              index: itemSelector.index,
+              zone: itemSelector.zone,
+            });
+
+            if (finalItem) {
+              walkTree(
+                { root: {}, content: [finalItem] },
+                { components: get().softConfig.components },
+                (components) => {
+                  components.forEach((c) => newEditableIds.add(c.props.id));
+                  return components;
+                },
+              );
+            }
+          }
+
+          set((s) => ({ ...s, editableComponentIds: newEditableIds }));
+
+          setEditVisibility(get().iframeDoc, {
+            mode: "remodel",
+            editableIds: newEditableIds,
+          });
+        });
+      });
     });
   },
 });

@@ -1,0 +1,32 @@
+# Custom Components
+
+When building for Soft Config, your React components should be "pure" recipients of props. Avoid internal state that relies on hardcoded data, as these values will be injected by the engine.
+
+## Best Practices
+
+### 1. Slot Definitions
+Always use the `Slot` component from `@measured/puck` for children. Soft Config identifies these slots to allow nested dynamic components.
+
+```tsx
+import { Slot } from "@measured/puck";
+
+export const Card = ({ title, content }) => (
+  <div className="card">
+    <h3>{title}</h3>
+    <Slot name="content" />
+  </div>
+);
+```
+
+### 2. Prop Typing
+Use TypeScript to define your props. This ensures that when you map dynamic data in the editor, you are targeting existing props.
+
+```tsx
+interface ButtonProps {
+  label: string;
+  count?: number;
+}
+```
+
+### 3. Resolving Fields
+If your component needs to fetch data based on a prop (e.g., fetching a product by ID), use Puck's `resolveFields` or handle the data fetching in a wrapper, then pass the final data as props. Soft Config works best when the props passed to the component are ready for rendering.

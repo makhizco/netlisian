@@ -1,3 +1,4 @@
+"use client";
 import type { Field, Fields } from "@measured/puck";
 
 export type BuiltInSoftFieldType =

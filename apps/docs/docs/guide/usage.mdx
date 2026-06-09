@@ -1,0 +1,107 @@
+# Usage & Examples
+
+This guide covers how to define and use dynamic fields within Soft Components.
+
+## Built-in Field Types
+
+Soft Components support the following built-in field types from Puck:
+
+- `text`: Single-line text input.
+- `textarea`: Multi-line text area.
+- `number`: Numeric input.
+- `select`: Dropdown with options.
+- `radio`: Radio group with options.
+- `array`: Managed list of items with sub-fields.
+- `object`: Nested configuration object.
+
+## Array Fields
+
+Array fields allow you to manage lists of data directly within your Soft Component. Each item in the array can have its own set of sub-fields.
+
+### Definition Example
+
+```typescript
+const itemsField = {
+  name: "gallery",
+  type: "array",
+  subFields: [
+    { name: "image", type: "text" },
+    { name: "caption", type: "text" }
+  ],
+  subFieldSettings: {
+    image: { label: "Image URL" },
+    caption: { label: "Image Caption" }
+  },
+  getItemSummary: (item) => item.caption || "Gallery Image"
+};
+```
+
+### Mapping with Arrays
+
+When mapping an array field to a component prop, the mapping logic uses `[]` notation to signify iteration.
+
+- `gallery[]`: Represents every item in the gallery.
+- `gallery[].image`: Represents the image property of each gallery item.
+
+## Custom Fields
+
+Custom fields allow you to extend the Soft Component editor with specialized UI components while maintaining type-safe data returns.
+
+### Defining a Custom Field
+
+To use a custom field, you must define it in the `CustomFields` record and assign it a `returnType`.
+
+```typescript
+import { CustomFields } from "@netlisian/soft-config";
+
+const myCustomFields: CustomFields = {
+  "color-picker": {
+    field: {
+      type: "custom",
+      render: ({ value, onChange }) => (
+        <input type="color" value={value} onChange={(e) => onChange(e.target.value)} />
+      )
+    },
+    returnType: "string"
+  }
+};
+```
+
+### Using Custom Fields in a Soft Component
+
+Once defined, you can reference the custom field by its type in your field settings.
+
+```typescript
+const colorField = {
+  name: "brandColor",
+  type: "color-picker" // References the key in CustomFields
+};
+```
+
+## Advanced Examples
+
+### Nested Object Structure
+
+You can nest objects and arrays recursively. The mapping system will automatically generate dot-notated paths for selection in the editor.
+
+```typescript
+const settings = {
+  name: "settings",
+  type: "object",
+  subFields: [
+    { name: "theme", type: "select" },
+    { name: "features", type: "array" }
+  ],
+  subFieldSettings: {
+    theme: { options: [{ label: "Dark", value: "dark" }] },
+    features: {
+      subFields: [{ name: "id", type: "text" }]
+    }
+  }
+};
+```
+
+In the editor, this generates paths like:
+- `settings.theme`
+- `settings.features[]`
+- `settings.features[].id`

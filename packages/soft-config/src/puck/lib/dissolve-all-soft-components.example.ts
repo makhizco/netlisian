@@ -1,3 +1,4 @@
+"use client";
 /**
  * EXAMPLE: Reverse Topological Dissolution in Action
  * 

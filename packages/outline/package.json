@@ -1,0 +1,47 @@
+{
+  "name": "@netlisian/outline",
+  "version": "0.1.0",
+  "author": "Netlisian",
+  "private": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./dist/index.css": "./dist/index.css"
+  },
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint \"**/*.ts*\"",
+    "build": "rm -rf dist && tsup",
+    "dev": "tsup index.ts --format esm,cjs --watch --dts --out-dir dist --external react --external react-dom"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@netlisian/eslint-config": "workspace:*",
+    "@netlisian/tsconfig": "workspace:*",
+    "@types/react": "^18.0.0 || ^19.0.0",
+    "@types/react-dom": "^18.0.0 || ^19.0.0",
+    "eslint": "^9.36.0",
+    "postcss": "^8.5.6",
+    "postcss-modules": "^6.0.1",
+    "tsup": "^8.0.2",
+    "typescript": "5.9.3",
+    "typescript-plugin-css-modules": "^5.1.0"
+  },
+  "dependencies": {
+    "@tanstack/react-virtual": "^3.13.26",
+    "classnames": "^2.5.1",
+    "lucide-react": "^0.475.0",
+    "zustand": "^5.0.3"
+  },
+  "peerDependencies": {
+    "@measured/puck": "0.20.x",
+    "react": ">=18.0.0 <20.3.0"
+  }
+}

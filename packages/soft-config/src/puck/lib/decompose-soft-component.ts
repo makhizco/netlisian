@@ -1,4 +1,4 @@
-import { ComponentData } from "@measured/puck";
+import { DefaultComponentProps, ComponentData  } from "@measured/puck";
 import { SoftComponents } from "../types/SoftComponent";
 import { subComponentDecomposer } from "./builder/sub-component-decomposer";
 import { resolveSoftComponentData } from "./builder/resolve-soft-component-data";
@@ -20,13 +20,14 @@ import { resolveSoftComponentData } from "./builder/resolve-soft-component-data"
 export function decomposeSoftComponent(
   componentData: ComponentData,
   softComponents: SoftComponents,
-  fieldSettings?: Record<string, any>
+  fieldSettings?: DefaultComponentProps,
+  keepMapField?: boolean
 ): ComponentData[] {
   if (!componentData?.type || !componentData?.props.id) {
     throw new Error("Component data must have type and id to decompose.");
   }
 
-  const version = (componentData.props as any)?.version || "1.0.0";
+  const version = (componentData.props as DefaultComponentProps)?.version as string || "1.0.0";
   const softComponent = softComponents[componentData.type]?.versions[version];
 
   if (!softComponent) {
@@ -41,7 +42,7 @@ export function decomposeSoftComponent(
   let resolvedComponentData = componentData;
   if (fieldSettings && componentData.props?._map?.length) {
     const resolvedProps = resolveSoftComponentData(
-      componentData.props as any,
+      componentData.props as DefaultComponentProps & { id: string },
       fieldSettings
     );
     resolvedComponentData = {
@@ -53,7 +54,11 @@ export function decomposeSoftComponent(
   // Decompose into direct sub-components (one level only)
   const decomposedComponentData: ComponentData[] = softComponent.components.map(
     (softSubComponent) => {
-      return subComponentDecomposer(resolvedComponentData, softSubComponent);
+      return subComponentDecomposer(
+        resolvedComponentData,
+        softSubComponent,
+        keepMapField
+      );
     }
   );
 

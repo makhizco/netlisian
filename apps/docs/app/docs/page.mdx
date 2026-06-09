@@ -1,0 +1,21 @@
+# Introduction
+
+Welcome to the **Netlisian** documentation.
+
+Netlisian is a composable web architecture that bridges the gap between design systems and content editing. It provides a Figma-like component model for React applications, allowing developers to build strictly typed, visually editable experiences.
+
+## The Ecosystem
+
+Netlisian is composed of two distinct layers:
+
+1. **The Open Source Engine:** A set of MIT-licensed primitives (`soft-config`, `tailwind-browser`) that developers can use to build their own headless page builders and configuration tools.
+2. **The Netlisian Platform:** A managed infrastructure layer currently in development. It extends the engine with Cloud Storage, Integrated Databases, and Secure Authorization, alongside an AI-powered Page Builder and a Figma-like Community for sharing and remixing resources.
+
+## Open Source
+
+These packages form the foundation of the Netlisian ecosystem and are available for you to use in any project.
+
+| Package | License | Description |
+| --- | --- | --- |
+| **[@netlisian/soft-config](/docs/open-source/soft-config)** | MIT | A runtime engine for **Composable Components**. It enables Figma-like variant logic, prop mapping, and "soft" hydration for React components. |
+| **[@netlisian/tailwind-browser](/docs/open-source/tailwind)** | MIT | A specialized compiler for generating **Tailwind CSS in the browser**. Essential for building live-editing experiences where styles must update instantly without a build step. |

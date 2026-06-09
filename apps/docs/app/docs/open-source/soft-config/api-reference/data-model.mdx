@@ -1,0 +1,82 @@
+# Data Model
+
+Soft Config treats components as a composite of static fields and dynamic "mappings". This allows components to be reconfigured at runtime without changing the underlying code.
+
+## Types
+
+### `SoftComponent`
+
+The primary unit of configuration. It defines the dynamic fields, default properties, and the sub-component tree.
+
+```typescript
+type SoftComponent = {
+  fields: Fields;                // Custom fields added in the editor
+  fieldSettings?: Record<string, any>;
+  defaultProps: DefaultComponentProps; // Initial state
+  components: SoftSubComponent;  // The nested component tree/mappings
+  slots: {
+    [slot: string]: DefaultComponentProps; // Slot-specific defaults
+  };
+};
+```
+
+## Examples
+
+### 1. Simple Button
+
+A button might have a static `hardConfig` with a `label` and `onClick`. The `SoftComponent` allows a user to "map" a dynamic value to that label.
+
+**Soft Config Data:**
+```json
+{
+  "fields": {
+    "variant": { "type": "select", "options": ["primary", "secondary"] }
+  },
+  "defaultProps": {
+    "variant": "primary"
+  },
+  "components": [
+    {
+      "type": "Button",
+      "map": [
+        { "from": "user.name", "to": "label" }
+      ],
+      "enabledSlots": []
+    }
+  ]
+}
+```
+
+### 2. Complex Card
+
+A card component might contain slots for a `Header` and `Footer`. The `SoftComponent` defines which slots are enabled and how they should be populated.
+
+**Soft Config Data:**
+```json
+{
+  "fields": {
+    "title": { "type": "text" }
+  },
+  "defaultProps": {},
+  "components": [
+    {
+      "type": "Card",
+      "map": [
+        { "from": "title", "to": "headerText" }
+      ],
+      "enabledSlots": [
+        { "slot": "header", "name": "Card Header" },
+        { "slot": "content", "name": "Main Content" }
+      ],
+      "components": {
+        "header": [
+          {
+            "type": "Heading",
+            "map": [{ "from": "title", "to": "text" }]
+          }
+        ]
+      }
+    }
+  ]
+}
+```

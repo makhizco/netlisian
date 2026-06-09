@@ -1,3 +1,4 @@
+"use client";
 import { Data, Config } from "@measured/puck";
 import { SoftComponents } from "../types/SoftComponent";
 import {
@@ -33,10 +34,9 @@ export const resolveSoftConfig = (
   if (process.env.NODE_ENV === "development") {
     const validation = validateOnlyHardComponents(dissolved, softComponents);
     if (!validation.isValid) {
-      console.warn(
-        "Warning: Soft components still present after dissolution:",
-        validation.softComponentsFound
-      );
+      alert(
+        "Warning: Soft components still present after dissolution:" + " " + String(validation.softComponentsFound
+      ));
     }
   }
   

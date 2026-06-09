@@ -1,3 +1,4 @@
+"use client";
 import { ComponentData, ComponentDataOptionalId } from "@measured/puck";
 
 export const stripIdFromProps = (

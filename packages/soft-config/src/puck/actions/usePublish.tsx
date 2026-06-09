@@ -1,3 +1,4 @@
+"use client";
 import { createUsePuck, Data } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";

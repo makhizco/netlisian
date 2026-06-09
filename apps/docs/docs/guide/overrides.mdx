@@ -1,0 +1,72 @@
+# Overrides
+
+Overrides allow you to customize the core editor UI components in Puck. In Soft Config, we provide several specialized overrides that handle persistence, component lifecycle, and custom labeling.
+
+## Header Override
+
+The `Header` override adds persistence actions to the top of the editor, allowing you to import and export your component configurations as JSON files.
+
+### Usage
+
+```typescript
+import { Header } from "@netlisian/soft-config/overrides";
+
+// In your Puck overrides
+overrides: {
+  header: (props) => <Header {...props} />,
+}
+```
+
+### Features
+- **Export JSON**: Downloads the current configuration state as a file.
+- **Import JSON**: Uploads and applies a configuration file to the editor.
+
+## ActionBar Override
+
+The `ActionBar` override is critical for the Soft Component workflow. It adds actions to the component bar for transforming components.
+
+### Usage
+
+```typescript
+import { ActionBar } from "@netlisian/soft-config/overrides";
+
+// In your Puck overrides
+overrides: {
+  actionBar: (props) => <ActionBar {...props} />,
+}
+```
+
+### Actions
+- **Build**: Converts a static component into a Soft Component.
+- **Remodel**: Opens the schema editor for an existing Soft Component.
+- **Decompose**: Breaks a Soft Component back into its underlying primitive sub-components.
+
+## DrawerItem Override
+
+The `DrawerItem` override customizes how components appear in the left-hand drawer (component picker).
+
+### Usage
+
+```typescript
+import { DrawerItem } from "@netlisian/soft-config/overrides";
+
+// In your Puck overrides
+overrides: {
+  drawerItem: (props) => <DrawerItem {...props} />,
+}
+```
+
+## Map Override
+
+The `Map` override is a specialized component used for rendering interactive map data within the editor.
+
+### Usage
+
+```typescript
+import { Map } from "@netlisian/soft-config/overrides";
+
+// In your Puck overrides
+overrides: {
+  map: (props) => <Map {...props} />,
+}
+```

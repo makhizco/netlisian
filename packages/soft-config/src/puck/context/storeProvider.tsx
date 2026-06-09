@@ -1,4 +1,5 @@
 "use client";
+"use client";
 
 import { Config } from "@measured/puck";
 import { ReactNode, useEffect, useMemo, useState } from "react";
@@ -27,6 +28,7 @@ import type { StoreApi } from "zustand";
  * @param props.value - Optional external store API.
  * @param props.onActions - Callback triggered on Puck actions.
  * @param props.useVersioning - Flag to enable or disable versioning (defaults to false).
+ * @param props.contentAreaNames - Optional list of data paths mapping where soft components can be built or remodeled.
  */
 export const SoftConfigProvider = ({
   children,
@@ -37,6 +39,7 @@ export const SoftConfigProvider = ({
   value,
   onActions,
   useVersioning = false,
+  contentAreaNames,
 }: {
   children: (softConfig: Config) => ReactNode;
   hardConfig: Config;
@@ -46,6 +49,7 @@ export const SoftConfigProvider = ({
   value?: StoreApi<AppStore>;
   onActions?: OnActionsCallback;
   useVersioning?: boolean;
+  contentAreaNames?: string[];
 }) => {
   const store = useMemo(
     () =>
@@ -57,6 +61,7 @@ export const SoftConfigProvider = ({
         onActions,
         useVersioning,
         customFields,
+        contentAreaNames,
       ),
     [value],
   );

@@ -1,3 +1,4 @@
+"use client";
 import { Overrides } from "../types/Overrides";
 import { BuilderRootConfig } from "../types/BuilderConfig";
 import { Status } from "../store";

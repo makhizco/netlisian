@@ -1,9 +1,12 @@
+"use client";
 "use client"
 
 import { ComponentData, createUsePuck, walkTree } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { useActionEvent } from "../hooks/useActionEvent";
+import { getPropertyByPath } from "../lib/get-prop-by-path";
+import { setPropertyByPath } from "../lib/set-prop-by-path";
 
 const useCustomPuck = createUsePuck();
 
@@ -15,6 +18,7 @@ export const useDecompose = () => {
   const status = useSoftConfig((s) => s.state);
   const softComponents = useSoftConfig((s) => s.softComponents);
   const config = useSoftConfig((s) => s.softConfig);
+  const contentAreaNames = useSoftConfig((s) => s.contentAreaNames);
   const { triggerAction } = useActionEvent();
 
   const handleDecompose = (componentData?: ComponentData) => {
@@ -44,14 +48,27 @@ export const useDecompose = () => {
       }
 
       // Walk Tree and replace the component with decomposed components
-      const newData = walkTree(appState.data, config, (components) => {
-        const index = components.findIndex((c) => c.props.id === target.props.id);
+      let newData = { ...appState.data };
+      const targetAreas = contentAreaNames && contentAreaNames.length > 0
+        ? contentAreaNames
+        : ["content"];
 
-        if (index !== -1) {
-          components.splice(index, 1, ...decomposedComponents);
-        }
+      targetAreas.forEach((path) => {
+        const contentArray = getPropertyByPath(newData, path) || [];
+        const walkedData = walkTree(
+          { content: contentArray, root: newData.root || {} }, 
+          config, 
+          (components) => {
+            const index = components.findIndex((c) => c.props.id === target.props.id);
 
-        return components;
+            if (index !== -1) {
+              components.splice(index, 1, ...decomposedComponents);
+            }
+
+            return components;
+          }
+        );
+        setPropertyByPath(newData, path, walkedData.content);
       });
 
       dispatch({
@@ -66,7 +83,7 @@ export const useDecompose = () => {
         },
       });
     } catch (error) {
-      console.error("Failed to decompose:", error);
+      alert("Failed to decompose:" + " " + error);
       notify.error(
         "Failed to decompose: " +
           (error instanceof Error ? error.message : String(error))

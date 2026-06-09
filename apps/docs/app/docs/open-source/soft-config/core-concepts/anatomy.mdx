@@ -1,0 +1,46 @@
+# Anatomy of a Soft Component
+
+A Soft Component is not a single piece of code, but a multi-layer structure that bridges static components and dynamic configurations.
+
+## The Three Layers
+
+### 1. The Hard Component (React)
+This is your standard React component. It defines how things look and how they behave using standard props.
+
+```tsx
+// Hard Component
+export const Button = ({ label, variant }) => (
+  <button className={variant}>{label}</button>
+);
+```
+
+### 2. The Hard Config (Metadata)
+This layer describes the component to the editor. It defines the fields available for manual entry.
+
+```tsx
+// Hard Config
+export const config = {
+  components: {
+    Button: {
+      fields: {
+        variant: { type: "select", options: ["primary", "secondary"] }
+      }
+    }
+  }
+};
+```
+
+### 3. The Soft Component (Dynamic Mapping)
+This is the runtime layer. It stores which fields are "soft" (mapped to dynamic data) vs "hard" (static values).
+
+*   **Fixed Props**: Values that are hardcoded for this specific soft variant.
+*   **Mappings**: Logic that pipes data from the page context (e.g., `user.name`) into the component props (e.g., `label`).
+*   **Slots**: Configuration for nested children.
+
+## Relationship
+
+When the editor renders a Soft Component, it:
+1. Takes the **Hard Component**.
+2. Applies the **Fixed Props** from the Soft Config.
+3. Evaluates the **Mappings** against the current page state and overrides the props.
+4. Recursively resolves any **Slots**.

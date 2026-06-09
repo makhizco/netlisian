@@ -1,0 +1,47 @@
+# Config Object
+
+Soft Config uses a `BuilderConfig` structure that extends the standard Puck configuration to support dynamic references and soft components.
+
+## `BuilderRootConfig`
+
+The root configuration define the "global" fields available to the entire page. These are the primary source for "From" options in mappings.
+
+```typescript
+type BuilderRootConfig = {
+  _fields?: { label: string; value: string }[]; // Dynamic fields from the backend
+  _fieldSettings?: Record<string, any>;
+  [key: string]: any;
+};
+```
+
+## `BuilderComponentConfig`
+
+Each component in the `softConfig` has additional metadata starting with an underscore (`_`) to store mapping data and versioning information.
+
+```typescript
+type BuilderComponentConfig = {
+  _map?: any[]; // The dynamic mapping logic
+  _version?: string; // The active version of the soft component
+  _versions?: string[]; // Available versions
+  _isSoft?: boolean; // Flag identifying it as a soft component
+};
+```
+
+## Registry Structure
+
+The registry of soft components (`softComponents`) is a record of these configurations, keyed by component name.
+
+```json
+{
+  "HeroButton": {
+    "defaultVersion": "1.0.0",
+    "versions": {
+      "1.0.0": {
+        "type": "Button",
+        "map": [{ "from": "title", "to": "label" }],
+        "defaultProps": { "variant": "primary" }
+      }
+    }
+  }
+}
+```

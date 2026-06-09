@@ -1,3 +1,4 @@
+"use client";
 import { createUsePuck } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
@@ -35,7 +36,7 @@ export const useDemolish = () => {
         },
       });
     } catch (error) {
-      console.error("Failed to demolish:", error);
+      alert("Failed to demolish:" + " " + error);
       notify.error(
         "Failed to demolish: " +
           (error instanceof Error ? error.message : String(error))

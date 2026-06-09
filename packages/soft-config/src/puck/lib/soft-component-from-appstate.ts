@@ -1,4 +1,4 @@
-import { AppState, Field, Config, Fields, ComponentData } from "@measured/puck";
+import { DefaultComponentProps, AppState, Field, Config, Fields, ComponentData } from "@measured/puck";
 import { SoftComponent, SoftSubComponent } from "../types/SoftComponent";
 import { BuilderRootConfig } from "../types/BuilderConfig";
 import {
@@ -16,11 +16,13 @@ import {
   resolveCustomFieldSchema,
 } from "./custom-fields";
 import type { CustomFields } from "../types/SoftFields";
+import { MapEntry } from "../types/Mapping";
+
 
 const getSubComponents = (
   content: AppState["data"]["content"],
   componentConfigs: Config["components"],
-  fieldSettings: Record<string, any>,
+  fieldSettings: DefaultComponentProps,
   slots: SoftComponent["slots"]
 ): SoftComponent["components"] => {
   if (!content || !Array.isArray(content)) return [];
@@ -53,9 +55,9 @@ const getSubComponents = (
 
     const map = componentProps.props?._map || [];
     const mappedPaths = new Set<string>();
-    map.forEach((item: any) => {
+    map.forEach((item: MapEntry) => {
       const to = Array.isArray(item.to) ? item.to : [item.to];
-      to.forEach((path: string) => {
+      to.forEach((path: string | undefined) => {
         if (path) {
           if (isArrayMappingPath(path)) {
             const basePath = getArrayBasePath(path);
@@ -70,21 +72,20 @@ const getSubComponents = (
     const fixedProps = Object.entries({
       ...componentConfig?.defaultProps,
       ...componentProps.props,
-    } as Record<string, any>).reduce((acc, [key, value]) => {
+    } as DefaultComponentProps).reduce((acc, [key, value]) => {
       if (!TECHNICAL_KEYS.has(key) && !mappedPaths.has(key)) {
         acc[key] = value;
       }
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as DefaultComponentProps);
 
     (componentProps.props._slot || []).forEach(
       (s: { slot: string; name: string }) => {
-        if (s.slot)
-        {
+        if (s.slot) {
           const slotComponentProps = componentProps.props[s.slot] ||
-          componentConfig?.defaultProps?.[s.slot]
-          
-          slots[s.name || `${componentProps.props.id}-${s.slot}`] =
+            componentConfig?.defaultProps?.[s.slot];
+
+          (slots as Record<string, any>)[s.name || `${componentProps.props.id}-${s.slot}`] =
             stripIdFromProps(slotComponentProps,
               Object.keys(componentConfigs)
             );
@@ -199,7 +200,7 @@ const softFieldsToPuckFields = (
 };
 
 export const softComponentFromAppState = (
-  appState: AppState<any>,
+  appState: AppState,
   configComponents: Config["components"],
   editedItem: ComponentData,
   metadata: {
@@ -210,11 +211,11 @@ export const softComponentFromAppState = (
 ): [SoftComponent, string] => {
   const rootProps = appState.data.root?.props || {};
 
-  const fields = (rootProps._fields || []) as BuilderRootConfig["_fields"];
-  const field_settings =
-    (rootProps._fieldSettings as BuilderRootConfig["_fieldSettings"]) || {};
+  const fields = ((rootProps as Record<string, any>)._fields || []) as BuilderRootConfig["_fields"];
+  const fieldSettings =
+    ((rootProps as Record<string, any>)._fieldSettings as BuilderRootConfig["_fieldSettings"]) || {};
   const normalizedFieldSettings: BuilderRootConfig["_fieldSettings"] = {
-    ...field_settings,
+    ...fieldSettings,
   };
 
   (fields || []).forEach((field) => {
@@ -240,9 +241,9 @@ export const softComponentFromAppState = (
       customFieldReturnType: customReturnType,
       ...(schema
         ? {
-            subFields: schema.subFields,
-            subFieldSettings: schema.subFieldSettings,
-          }
+          subFields: schema.subFields,
+          subFieldSettings: schema.subFieldSettings,
+        }
         : {}),
     };
   });
@@ -261,10 +262,10 @@ export const softComponentFromAppState = (
     .filter((key) => key.startsWith("_") && !builtInRootProps.has(key))
     .reduce(
       (acc, key) => {
-        acc[key] = rootProps[key];
+        acc[key] = (rootProps as Record<string, any>)[key];
         return acc;
       },
-      {} as Record<string, any>
+      {} as DefaultComponentProps
     );
 
   const slots: SoftComponent["slots"] = {};
@@ -291,16 +292,16 @@ export const softComponentFromAppState = (
             normalizedFieldSettings[field].defaultValue !== undefined
               ? normalizedFieldSettings[field].defaultValue
               : buildArrayDefaultValue(
-                  normalizedFieldSettings[field].subFields,
-                  normalizedFieldSettings[field].subFieldSettings
-                );
+                normalizedFieldSettings[field].subFields,
+                normalizedFieldSettings[field].subFieldSettings
+              );
           return acc;
         }
 
         acc[field] = normalizedFieldSettings[field].defaultValue;
         return acc;
       },
-      {} as Record<string, any>
+      {} as DefaultComponentProps
     ),
     ...slots,
   };
@@ -322,6 +323,6 @@ export const softComponentFromAppState = (
       components,
       slots,
     },
-    rootProps._version || "1.0.0",
+    (rootProps as Record<string, any>)._version || "1.0.0",
   ];
 };

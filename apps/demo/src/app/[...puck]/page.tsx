@@ -34,7 +34,11 @@ export default async function PuckPage({
   const { puck = [] } = await params;
   const { isEdit, path } = resolvePuckPath(puck);
 
-  return <PuckEditor isEdit={isEdit} path={path} />;
+  return (
+    <>
+      <PuckEditor isEdit={isEdit} path={path} />
+    </>
+  );
 }
 
 export const dynamic = "force-dynamic";

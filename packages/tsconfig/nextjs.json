@@ -12,7 +12,7 @@
     "moduleResolution": "Bundler",
     "noEmit": true,
     "resolveJsonModule": true,
-    "target": "es5"
+    "target": "es2019"
   },
   "include": ["src", "next-env.d.ts"],
   "exclude": ["node_modules"]

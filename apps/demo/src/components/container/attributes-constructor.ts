@@ -1,5 +1,4 @@
-import React from "react";
-import { Attribute, AttributeValue } from "../types/BaseFields";
+import { Attribute, AttributeValue } from "./base";
 
 export const attributesConstructor = (
   properties: Attribute[],
@@ -11,12 +10,11 @@ export const attributesConstructor = (
 
       if (valueType === "function") {
         // TODO: Handle function type
-      } else if (valueType === "key-value") {
+      } else if (valueType === "key-value" || valueType === "object") {
         let parsedValue;
         try {
           parsedValue = JSON.parse(JSON.stringify(value as string));
         } catch (e) {
-          console.log("Failed to parse JSON value:", e);
           parsedValue = [];
         }
         acc[key] = (
@@ -34,5 +32,5 @@ export const attributesConstructor = (
 
       return acc;
     },
-    {} as { [key: string]: any }
+    {} as { [key: string]: string | number | boolean | { [key: string]: string } | undefined }
   );

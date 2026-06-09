@@ -1,3 +1,4 @@
+"use client";
 import { createUsePuck } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
@@ -8,6 +9,8 @@ const useCustomPuck = createUsePuck();
 export const useCancel = () => {
   const cancel = useSoftConfig((s) => s.builder.cancel);
   const setHistories = useCustomPuck((s) => s.history.setHistories);
+  const puckDispatch = useCustomPuck((s) => s.dispatch);
+  const selectedItemSelector = useCustomPuck((s) => s.appState.ui.itemSelector);
   const status = useSoftConfig((s) => s.state);
   const { triggerAction } = useActionEvent();
 
@@ -18,14 +21,14 @@ export const useCancel = () => {
     }
 
     try {
-      cancel(setHistories);
+      cancel(setHistories, puckDispatch, selectedItemSelector);
       
       void triggerAction({
         type: "cancel",
         payload: {},
       });
     } catch (error) {
-      console.error("Failed to cancel:", error);
+      alert("Failed to cancel:" + " " + error);
       notify.error(
         "Failed to cancel: " +
           (error instanceof Error ? error.message : String(error))

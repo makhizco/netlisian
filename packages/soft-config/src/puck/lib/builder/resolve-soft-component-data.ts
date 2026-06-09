@@ -1,4 +1,5 @@
-import { DefaultComponentProps } from "@measured/puck";
+"use client";
+
 import { applyMapping } from "../apply-mapping";
 import type { MapEntry } from "../../types/Mapping";
 
@@ -8,7 +9,8 @@ export const resolveSoftComponentData = (
     _map?: MapEntry[];
     id: string;
   },
-  _fieldSettings: Record<string, any> = {}
+  _fieldSettings: Record<string, any> = {},
+  keepMapField?: boolean
 ): {
   [x: string]: any;
   id: string;
@@ -23,5 +25,11 @@ export const resolveSoftComponentData = (
     "propsFirst"
   );
 
+  if (keepMapField) {
+    return {
+      ...newProps as typeof props,
+      _map: map,
+    }
+  }
   return newProps as typeof props;
 };

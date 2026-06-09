@@ -1,3 +1,4 @@
+"use client";
 import { AutoField, Field, Fields } from "@measured/puck";
 import {
   buildArrayDefaultItemProps,

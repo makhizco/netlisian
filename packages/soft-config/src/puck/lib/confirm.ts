@@ -1,3 +1,4 @@
+"use client";
 // Confirmation dialog handler
 type ConfirmHandler = (message: string) => Promise<boolean> | boolean;
 
@@ -23,7 +24,7 @@ export const confirm = async (message: string): Promise<boolean> => {
     const result = confirmHandler(message);
     return result instanceof Promise ? await result : result;
   } catch (error) {
-    console.error("Confirm handler error:", error);
+    alert("Confirm handler error:" + " " + error);
     return false;
   }
 };

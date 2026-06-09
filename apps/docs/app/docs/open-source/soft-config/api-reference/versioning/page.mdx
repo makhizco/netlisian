@@ -1,0 +1,26 @@
+# Versioning
+
+Soft Config supports multi-versioning for components, allowing you to deploy changes to a component definition without breaking existing pages that use older versions.
+
+## How it works
+
+When `useVersioning` is enabled in the `SoftConfigProvider`:
+
+1.  Each soft component is stored with a `defaultVersion`.
+2.  The `versions` object contains the specific configurations for each version.
+3.  When a component is used on a page, the page data stores the specific version ID it was created with.
+
+## Configuration
+
+```tsx
+<SoftConfigProvider useVersioning={true}>
+  {/* ... */}
+</SoftConfigProvider>
+```
+
+## Immutable Versions
+
+It is a best practice to treat old versions as immutable. If a component needs a structural change:
+1.  Create a new version (e.g., `2.0.0`).
+2.  Set the `defaultVersion` to the new version for future uses.
+3.  Existing instances on old pages will continue to use the old version until manually upgraded in the editor.

@@ -1,0 +1,93 @@
+{
+  "_comment": "Card soft component fixture — demonstrates nested container composition (2 levels deep).",
+  "_notes": [
+    "Nested components: soft component components[] can nest container nodes arbitrarily deep.",
+    "Each container can have a components.slotItem[] array with more containers or text leaves.",
+    "Multiple text nodes in the same slotItem[] each map a different soft prop.",
+    "fixedProps.element controls the rendered HTML tag (div, section, article, etc.).",
+    "fixedProps.values.className is the static/default class; CVA can override it at runtime."
+  ],
+  "name": "Card",
+  "defaultVersion": "1.0.0",
+  "versions": {
+    "1.0.0": {
+      "name": "Card",
+      "fields": {
+        "title": { "type": "text", "label": "Title" },
+        "body": { "type": "textarea", "label": "Body" }
+      },
+      "fieldSettings": {
+        "title": { "defaultValue": "Card Title" },
+        "body": { "defaultValue": "Card body text goes here." }
+      },
+      "defaultProps": {
+        "title": "Card Title",
+        "body": "Card body text goes here."
+      },
+      "rootProps": {},
+      "components": [
+        {
+          "_comment": "Outer card shell — a styled div wrapping the content.",
+          "type": "container",
+          "map": [],
+          "fixedProps": {
+            "element": "div",
+            "attributes": [{ "key": "className", "valueType": "string" }],
+            "values": { "className": "rounded-xl border bg-card p-6 shadow-sm" }
+          },
+          "components": {
+            "slotItem": [
+              {
+                "_comment": "Inner content area — holds both text nodes side-by-side.",
+                "type": "container",
+                "map": [],
+                "fixedProps": {
+                  "element": "div",
+                  "attributes": [{ "key": "className", "valueType": "string" }],
+                  "values": { "className": "flex flex-col gap-2" }
+                },
+                "components": {
+                  "slotItem": [
+                    {
+                      "_comment": "Title text — maps 'title' soft prop → 'text' base prop.",
+                      "type": "text",
+                      "map": [
+                        {
+                          "mode": "simple",
+                          "from": "title",
+                          "to": "text",
+                          "unmappedArrayItemDefaultValues": {}
+                        }
+                      ],
+                      "fixedProps": {},
+                      "components": {},
+                      "enabledSlots": []
+                    },
+                    {
+                      "_comment": "Body text — maps 'body' soft prop → 'text' base prop.",
+                      "type": "text",
+                      "map": [
+                        {
+                          "mode": "simple",
+                          "from": "body",
+                          "to": "text",
+                          "unmappedArrayItemDefaultValues": {}
+                        }
+                      ],
+                      "fixedProps": {},
+                      "components": {},
+                      "enabledSlots": []
+                    }
+                  ]
+                },
+                "enabledSlots": []
+              }
+            ]
+          },
+          "enabledSlots": []
+        }
+      ],
+      "slots": {}
+    }
+  }
+}

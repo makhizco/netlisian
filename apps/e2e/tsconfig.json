@@ -1,0 +1,17 @@
+{
+  "exclude": ["node_modules"],
+  "extends": "@netlisian/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["src", "e2e", "next-env.d.ts", ".next/types/**/*.ts"]
+}

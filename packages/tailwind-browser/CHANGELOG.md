@@ -1,5 +1,11 @@
 # @netlisian/tailwind
 
+## 0.2.0
+
+### Minor Changes
+
+- Fixed bugs with regards to exports
+
 ## 0.1.6
 
 ### Patch Changes

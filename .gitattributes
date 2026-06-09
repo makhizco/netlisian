@@ -1,0 +1,23 @@
+# Auto-detect text files and normalize line endings in the repo (LF stored)
+* text=auto
+
+# Enforce LF for common text files
+*.sh    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.js    text eol=lf
+*.ts    text eol=lf
+*.tsx   text eol=lf
+
+# Keep Windows scripts CRLF on checkout
+*.bat   text eol=crlf
+*.ps1   text eol=crlf
+
+# Mark binaries
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.zip   binary

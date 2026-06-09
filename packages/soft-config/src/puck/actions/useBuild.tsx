@@ -1,3 +1,4 @@
+"use client";
 import { createUsePuck } from "@measured/puck";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
@@ -34,7 +35,7 @@ export const useBuild = (
         });
       }
     } catch (error) {
-      console.error("Failed to build:", error);
+      alert("Failed to build:" + " " + error);
       notify.error(
         "Failed to build: " +
           (error instanceof Error ? error.message : String(error))

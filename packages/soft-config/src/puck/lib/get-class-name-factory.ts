@@ -1,3 +1,4 @@
+"use client";
 import classnames from "classnames";
 
 type OptionsObj = Record<string, any>;

@@ -1,3 +1,4 @@
+"use client";
 import type { PuckAction, PuckApi } from "@measured/puck";
 import { notify } from "./notify";
 

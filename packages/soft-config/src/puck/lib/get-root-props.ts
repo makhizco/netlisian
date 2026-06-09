@@ -1,3 +1,4 @@
+"use client";
 import { AppState, Field } from "@measured/puck";
 import { BuilderRootConfig } from "../types/BuilderConfig";
 

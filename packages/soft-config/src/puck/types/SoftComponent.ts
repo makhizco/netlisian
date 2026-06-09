@@ -1,6 +1,12 @@
-import { DefaultComponentProps, Fields } from "@measured/puck";
+"use client";
+import { ArrayField, Field, ComponentDataOptionalId, Fields, DefaultComponentProps } from "@measured/puck";
 import { BuilderComponentConfig } from "./BuilderConfig";
 import type { SoftFieldSettings } from "./SoftFields";
+
+
+export interface ArrayFieldExtended extends ArrayField {
+  arrayFields: Record<string, Field>;
+}
 
 export type SoftSubComponent = {
   type: string;

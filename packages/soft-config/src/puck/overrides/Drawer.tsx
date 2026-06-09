@@ -1,5 +1,7 @@
+"use client";
 import React, { useState } from "react";
 import { createUsePuck, Drawer as PuckDrawer, Config } from "@measured/puck";
+const useCustomPuck = createUsePuck();
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { DrawerItem } from "./DrawerItem";
 import getClassNameFactory from "../lib/get-class-name-factory";
@@ -8,7 +10,7 @@ import styles from "./Drawer.module.css";
 const getClassName = getClassNameFactory("Drawer", styles);
 // Separate factory for the category wrapper -> .Drawer-category + .Drawer-category--isExpanded
 const getCategoryClassName = getClassNameFactory("Drawer-category", styles);
-const usePuck = createUsePuck();
+
 
 type GetPermissions = (params: { type: string }) => { insert: boolean };
 
@@ -78,10 +80,8 @@ const CategorySection = ({
  *   overrides={{ drawer: Drawer }}
  */
 export const Drawer = (_props: { children?: React.ReactNode }) => {
-  const config = usePuck((s) => s.config) as Config & {
-    categories?: Record<string, Category>;
-  };
-  const getPermissions = usePuck((s) => s.getPermissions);
+  const config = useCustomPuck((s) => s.config) as unknown as Config & { categories?: Record<string, Category> };
+  const getPermissions = useCustomPuck((s) => s.getPermissions) as any;
 
   const categories = config.categories ?? {};
 
@@ -138,7 +138,7 @@ export const Drawer = (_props: { children?: React.ReactNode }) => {
           id={id}
           title={cat.title ?? id}
           componentKeys={(cat.components ?? []).filter(
-            (k) => k in config.components
+            (k: string) => k in config.components
           )}
           getPermissions={getPermissions}
           expanded={expanded[id] ?? true}

@@ -1,3 +1,4 @@
+import { DefaultComponentProps } from "@measured/puck";
 import { create, StoreApi } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type {
@@ -5,9 +6,12 @@ import type {
   History,
   ComponentConfig,
   Config,
-  DefaultComponentProps,
+  
   PuckAction,
+  OnAction,
 } from "@measured/puck";
+
+import { rootActionHandler } from "../lib/root-action-handler";
 
 import { BuildersSlice, createBuildersSlice } from "./slices/builder";
 import { SoftComponent, SoftComponents } from "../types/SoftComponent";
@@ -27,6 +31,7 @@ export type Status =
   | "remodeling"
   | "ready"
   | "cancelling"
+  | "assessing"
   | "inspecting";
 
 export type AppStore = {
@@ -248,6 +253,23 @@ export type AppStore = {
    * Always returns true when `state === "ready"` (no restrictions apply).
    */
   validateAction: (action: PuckAction, previousAction?: PuckAction) => boolean;
+
+  /** Names of the content areas where soft components can be built. */
+  contentAreaNames?: string[];
+
+  /** Setter for the content area names */
+  setContentAreaNames: (names?: string[]) => void;
+
+  /** Access to the puck dispatch function, stored during edits. */
+  puckDispatch?: ((action: PuckAction) => void) | null;
+
+  /** Setter for the puck dispatch function */
+  setPuckDispatch: (dispatch: ((action: PuckAction) => void) | null) => void;
+
+  /**
+   * Optional root action handler injected via the store creation.
+   */
+  rootActionHandler?: OnAction;
 };
 
 export type AppStoreApi = StoreApi<AppStore>;
@@ -259,6 +281,7 @@ export const createSoftConfigStore = (
   onActions?: OnActionsCallback,
   showVersionFields = true,
   customFields: CustomFields = {},
+  contentAreaNames?: string[],
 ) => {
   // Strip any soft components that clash with hard config entries so they
   // don't accidentally override non-editable base components.
@@ -301,6 +324,11 @@ export const createSoftConfigStore = (
       softComponents: hydratedSoftComponents,
       dependencyGraph: initialDependencyGraph,
       showVersionFields,
+      contentAreaNames,
+      setContentAreaNames: (names) => set({ contentAreaNames: names }),
+      puckDispatch: null,
+      setPuckDispatch: (dispatch) => set({ puckDispatch: dispatch }),
+      rootActionHandler: rootActionHandler(set, get),
 
       // ─── Initial softConfig ─────────────────────────────────────────────────
 
@@ -684,7 +712,7 @@ export const createSoftConfigStore = (
 
       // ─── Builder Slice ────────────────────────────────────────────────────────
 
-      builder: createBuildersSlice(set, get, hardConfig),
+      builder: createBuildersSlice(set, get),
 
       // ─── Dependency Graph ─────────────────────────────────────────────────────
 

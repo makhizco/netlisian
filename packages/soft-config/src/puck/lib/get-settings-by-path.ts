@@ -1,3 +1,4 @@
+"use client";
 export function getFieldSettingsByPath(fieldSettings: {
   [x: string]: any;
 }, path: string): any {

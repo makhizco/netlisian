@@ -1,23 +1,115 @@
 "use client";
 
-import { initTailwind } from "@netlisian/tailwind";
-import React, { useState, useEffect } from "react";
+import config from "@/src/config";
 import {
-  SoftConfigProvider,
-  Header,
+  AppState,
+  Config,
+  Puck,
+  PuckAction,
+  Render,
+} from "@measured/puck";
+import { notFound } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import {
   ActionBar,
-  ComponentItem,
-  setNotificationHandler,
-  setConfirmHandler,
+  createActionCallback,
+  DrawerItem,
+  HeaderActions,
+  SoftConfigProvider,
+  useSoftConfigStore,
 } from "@netlisian/softconfig/puck";
-// @ts-ignore - allow side-effect CSS import without type declarations
 import "@measured/puck/puck.css";
-import { config } from "../../config";
-
-import { Data, Puck, Render } from "@measured/puck";
+import "@netlisian/softconfig/puck/index.css";
+import { MutableRefObject, useCallback, useRef, useEffect } from "react";
+import type { TailwindProcessor } from "@netlisian/tailwind";
+import { IframeOverride } from "./iframe";
+import { softConfigOverrides } from "../../puck/overrides/softconfig";
 import { useDemoData } from "../../lib/use-demo-data";
 import { toast } from "sonner";
-import { notFound } from "next/navigation";
+import { Data } from "@measured/puck";
+
+interface PuckInnerProps {
+  softConfig: Config;
+  processorRef: MutableRefObject<TailwindProcessor | null>;
+  data: Partial<Data>;
+  resolvedData: Partial<Data> | undefined;
+  styles: string | undefined;
+  saveData: any;
+  isEdit: boolean;
+  storeRef?: React.MutableRefObject<any>;
+}
+
+const PuckInner = ({ softConfig, processorRef, data, resolvedData, styles, saveData, isEdit, storeRef }: PuckInnerProps) => {
+  const store = useSoftConfigStore();
+
+  useEffect(() => {
+    if (storeRef) storeRef.current = store;
+  }, [store, storeRef]);
+
+  const onAction = useCallback(
+    (action: PuckAction, appState: AppState, previousState: AppState) => {
+      const { state, validateAction, undoFn } = store.getState();
+
+      // Create the action guard using softconfig's validation and undo functions
+      // Perform validation and undo if necessary
+      const actionValidator = createActionCallback(validateAction, undoFn);
+
+      if (state !== "ready") {
+        actionValidator(action);
+      } else {
+        console.log(101, action);
+      }
+    },
+    [store],
+  );
+
+  if (!isEdit) {
+    return (
+      <>
+        {styles && (
+          <style
+            id="static-tailwind-styles"
+            dangerouslySetInnerHTML={{ __html: styles }}
+          />
+        )}
+        <Render data={resolvedData!} config={softConfig as any} />
+      </>
+    );
+  }
+
+  return (
+    <Puck
+      config={softConfig}
+      data={data as Data}
+      onAction={onAction}
+      onPublish={async (publishedData) => {
+        const generatedCSS = processorRef.current?.getCss() || "";
+        const softComponents = store.getState().softComponents;
+        try {
+          await saveData?.(
+            publishedData,
+            softComponents || {},
+            generatedCSS,
+            softConfig,
+          );
+          toast.success("Page published with styles!");
+        } catch (err) {
+          console.error("Failed to save published data", err);
+          toast.error("Failed to publish page");
+        }
+      }}
+      overrides={{
+        actionBar: ActionBar,
+        headerActions: HeaderActions,
+        drawerItem: DrawerItem,
+        iframe: IframeOverride((processor) => {
+          processorRef.current = processor;
+        }),
+      }}
+    >
+    </Puck>
+  );
+};
 
 export default function PuckEditor({
   path,
@@ -26,144 +118,83 @@ export default function PuckEditor({
   path: string;
   isEdit: boolean;
 }) {
+  // Refs
+  const processorRef = useRef<TailwindProcessor | null>(null);
+  const storeRef = useRef<any>(null);
+
   const {
     data,
     resolvedData,
-    softComponents: initialSoftComponents,
+    styles,
+    softComponents,
     saveData,
+    saveSoftComponents,
   } = useDemoData({
     path,
     isEdit,
-    // metadata,
   });
 
-  // Set up custom notification handler using sonner
-  useEffect(() => {
-    setNotificationHandler((message, type) => {
-      if (type === "error") {
-        toast.error(message);
-      } else {
-        toast.success(message);
-      }
-    });
+  if (!isEdit && !data) {
+    return notFound();
+  }
 
-    // Set up custom confirmation handler
-    // You can use any custom dialog library here
-    setConfirmHandler(async (message) => {
-      // Example: Use native browser confirm (default)
-      return window.confirm(message);
-
-      // Or use a custom async dialog:
-      // return new Promise((resolve) => {
-      //   customDialog.show({
-      //     message,
-      //     onConfirm: () => resolve(true),
-      //     onCancel: () => resolve(false),
-      //   });
-      // });
-    });
-  }, []);
-
-  if (!isEdit) {
-    if (!data) {
-      return notFound();
-    }
-
-    if (data && !resolvedData) {
-      return (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            minHeight: "60vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "column",
-            gap: 12,
-            color: "#111",
-            padding: 16,
-          }}
-        >
-          <svg
-            width="56"
-            height="56"
-            viewBox="0 0 50 50"
-            aria-hidden="true"
-            style={{ animation: "nl-spin 900ms linear infinite" }}
-          >
-            <circle cx="25" cy="25" r="20" fill="none" stroke="#e6e6e6" strokeWidth="4" />
-            <path
-              d="M45 25a20 20 0 0 1-20 20"
-              fill="none"
-              stroke="#2563eb"
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-          </svg>
-
-          <div style={{ marginTop: 8, fontSize: 16 }}>Loading content…</div>
-
-          {/* Local keyframes so we don't rely on external CSS */}
-          <style>{`@keyframes nl-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-        </div>
-      );
-    }
-    initTailwind(document).catch(console.error);
+  if (!isEdit && data && !resolvedData) {
     return (
-      <>
-
-        <Render data={resolvedData!} config={config} />
-      </>
+      <div
+        role="status"
+        aria-live="polite"
+        className="flex min-h-[90vh] flex-col items-center justify-center gap-3 p-4 text-slate-900"
+      >
+        <Loader2 className="animate-spin" size={24} />
+        <p className="text-sm">Preparing your page...</p>
+      </div>
     );
   }
 
+  const handleSoftActions = async (event: any) => {
+    const eventType = event.type;
+    
+    const doSave = () => {
+      setTimeout(() => {
+        if (storeRef.current) {
+          const storeState = storeRef.current.getState();
+          if (storeState && storeState.softComponents) {
+            saveSoftComponents(storeState.softComponents);
+          }
+        }
+      }, 0);
+    };
+
+    if (eventType === "demolish") {
+      toast.success(`Soft component deleted: ${event.payload?.id}`);
+      doSave();
+    } else if (eventType === "deleteVersion") {
+      toast.success(`Deleted ${event.payload?.id || "component"}@${event.payload?.version || "unknown"}`);
+      doSave();
+    } else if (eventType === "complete") {
+      toast.success(`Soft component ready: ${event.payload?.id}@${event.payload?.version || "unknown"}`);
+      doSave();
+    } else if (eventType === "inspect") {
+      toast.message(`Inspecting soft component: ${event.payload?.id}${event.payload?.version ? "@" + event.payload.version : ""}`);
+    }
+  };
+
   return (
-    <SoftConfigProvider
-      hardConfig={config}
-      softComponents={initialSoftComponents || {}}
-    >
-      {(softConfig, softComponents) => (
-        <Puck
-          data={data}
-          config={softConfig}
-          overrides={{
-            iframe: (props) => {
-              const [twInit, setTwInit] = useState(false);
-
-              if (props.document) {
-                props.document.body.style.color = "black";
-                props.document.body.style.backgroundColor = "white";
-                if (!twInit) {
-                  setTimeout(
-                    () => initTailwind(props.document).catch(console.error),
-                    500
-                  );
-                  // initTailwind(props.document).catch(console.error);
-                  setTwInit(true);
-                }
-              }
-
-              return props.children as any;
-            },
-
-            headerActions: Header,
-            actionBar: ActionBar,
-            drawerItem: ComponentItem,
-          }}
-          iframe={{
-            waitForStyles: true,
-          }}
-          onPublish={(data) => {
-            // Persist page data and current soft components to local storage
-            try {
-              saveData?.(data, softComponents || {});
-            } catch (err) {
-              console.error("Failed to save published data", err);
-            }
-          }}
-        />
-      )}
-    </SoftConfigProvider>
+    <div className="text-foreground bg-background">
+      <SoftConfigProvider hardConfig={config} softComponents={softComponents} overrides={softConfigOverrides} onActions={handleSoftActions}>
+        {(softConfig) => (
+          <PuckInner 
+            storeRef={storeRef}
+            softConfig={softConfig} 
+            processorRef={processorRef} 
+            data={data}
+            resolvedData={resolvedData}
+            styles={styles}
+            saveData={saveData}
+            isEdit={isEdit}
+          />
+        )}
+      </SoftConfigProvider>
+    </div>
   );
 }

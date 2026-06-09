@@ -1,0 +1,42 @@
+# Functions
+
+The Soft Config API provides several utility functions for manipulating and resolving dynamic components.
+
+## `resolveSoftConfig`
+
+The most important utility for production rendering. It takes a Puck `Data` object containing "soft" component references and recursively "dissolves" them into their constituent "hard" components and props.
+
+### Signature
+
+```typescript
+function resolveSoftConfig(
+  data: Data,
+  softComponents: SoftComponents,
+  config: Config
+): Data;
+```
+
+### Usage
+
+Use this function before rendering your page to ensure that only standard React components (hard components) are present in the component tree.
+
+```tsx
+import { resolveSoftConfig } from "@netlisian/softconfig/puck";
+import { Render } from "@measured/puck";
+import { config, softComponents } from "./my-config";
+
+export function Page({ data }) {
+  // 1. Resolve soft components to their hard equivalents
+  const resolvedData = resolveSoftConfig(data, softComponents, config);
+
+  // 2. Render as a normal Puck page
+  return <Render config={config} data={resolvedData} />;
+}
+```
+
+### How it works
+
+1. **Decomposition**: It identifies all components in the `Data` object that are registered as "Soft Components".
+2. **Prop Mapping**: It evaluates the `_map` logic for each component, injecting values from the root state into the component props.
+3. **Recursive Resolution**: It repeats this process for all nested children and slots until the entire tree consists only of "Hard" components defined in your static `config`.
+4. **Validation**: In development, it checks if any soft references remain and warns if the dissolution was incomplete.

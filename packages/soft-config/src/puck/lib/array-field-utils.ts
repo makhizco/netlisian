@@ -1,3 +1,4 @@
+"use client";
 import { getFieldSettingsByPath } from "./get-settings-by-path";
 import type { SoftFieldDefinition, SoftFieldSettings } from "../types/SoftFields";
 
@@ -125,8 +126,7 @@ export const isArrayMappingPath = (path: string): boolean => {
   return typeof path === "string" && /^[^.]+\[\]\.[^.]+$/.test(path);
 };
 
-// Back-compat alias for older imports.
-export const isArrayItemMappingPath = isArrayMappingPath;
+
 
 export const getArrayBasePath = (arrayPath: string): string | null => {
   if (!isArrayMappingPath(arrayPath)) return null;

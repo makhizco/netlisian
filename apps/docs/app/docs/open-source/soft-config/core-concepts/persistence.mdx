@@ -1,0 +1,33 @@
+# Persistence
+
+Soft Config is designed to be headless and backend-agnostic. You are responsible for saving and loading the `softComponents` registry.
+
+## Workflow
+
+1. **Load**: Fetch the `softComponents` JSON from your database on page load and pass it to the `SoftConfigProvider`.
+2. **Edit**: Use the editor to create or modify soft components.
+3. **Capture**: Subscribe to actions via `onActions` or a custom override to detect when the configuration changes.
+4. **Save**: Send the updated `softComponents` map back to your API.
+
+## Example with an API
+
+```tsx
+const onActions = async (action) => {
+  if (action.type === 'save-soft-component') {
+    const { name, component } = action.payload;
+    
+    await fetch('/api/components', {
+      method: 'POST',
+      body: JSON.stringify({ name, component })
+    });
+  }
+};
+
+<SoftConfigProvider onActions={onActions}>
+  {/* ... */}
+</SoftConfigProvider>
+```
+
+## Data Isolation
+
+Since `softComponents` are often shared across pages, it is recommended to store them in a central "component library" table in your database, rather than embedding them directly into page data.

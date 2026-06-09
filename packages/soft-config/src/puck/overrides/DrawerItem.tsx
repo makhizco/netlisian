@@ -1,5 +1,7 @@
+"use client";
 import { useState } from "react";
 import { Button, IconButton, createUsePuck } from "@measured/puck";
+const useCustomPuck = createUsePuck();
 import { useDemolish } from "../actions/useDemolish";
 import { useSetDefaultVersion } from "../actions/useSetDefaultVersion";
 import { useSoftConfig } from "../context/useStore";
@@ -12,7 +14,7 @@ import { shallow } from "zustand/shallow";
 import { useActionEvent } from "../hooks/useActionEvent";
 
 const getClassName = getClassNameFactory("DrawerItem", styles);
-const usePuck = createUsePuck();
+
 
 export const DrawerItem = (props: {
   name: string;
@@ -25,7 +27,7 @@ export const DrawerItem = (props: {
   const softComponents = new Set(
     Object.keys(useSoftConfig((s) => s.softComponents, shallow))
   );
-  const getPermissions = usePuck((s) => s.getPermissions);
+  const getPermissions = useCustomPuck((s) => s.getPermissions);
 
   const insertAllowed = getPermissions({ type: props.name }).insert;
 
@@ -144,7 +146,6 @@ export const DrawerItem = (props: {
               <div className={getClassName("settingsButton")}>
                 <IconButton
                   title="Settings"
-                  variant="secondary"
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsEditing(true);
@@ -290,5 +291,4 @@ export const DrawerItem = (props: {
   return <>{props.children}</>;
 };
 
-/** @deprecated Use DrawerItem instead */
-export const ComponentItem = DrawerItem;
+

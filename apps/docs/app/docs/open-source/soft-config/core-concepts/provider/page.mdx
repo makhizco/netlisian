@@ -1,0 +1,36 @@
+# Provider
+
+The `SoftConfigProvider` is the brain of the Soft Config engine. It manages the internal state, dependency tracking, and the decomposition of static components into versioned soft components.
+
+## Props
+
+The `SoftConfigProvider` accepts the following props:
+
+| Prop | Type | Required | Description |
+| --- | --- | --- | --- |
+| `children` | `Function` | Yes | A render function that receives the generated `softConfig`, the `softComponents` map, and utility functions. |
+| `hardConfig` | `Config` | Yes | Your static Puck configuration containing base components and root definition. |
+| `softComponents` | `SoftComponents` | Yes | The map of dynamic component configurations (usually retrieved from a database). |
+| `overrides` | `Overrides` | No | UI and behavior overrides (e.g., the `map` logic). |
+| `onActions` | `Function` | No | Callback triggered when internal actions (like saving/updating) occur. |
+| `useVersioning` | `boolean` | No | Enables version tracking for soft components. Defaults to `false`. |
+| `value` | `StoreApi` | No | An optional external Zustand store to use instead of the internal one. |
+
+## Children Render Function
+
+The `children` prop must be a function. It provides the necessary data to initialize your editor:
+
+```tsx
+<SoftConfigProvider {...props}>
+  {(softConfig, softComponents, setIframeDoc, validateAction) => (
+    <Puck config={softConfig} />
+  )}
+</SoftConfigProvider>
+```
+
+| Argument | Description |
+| --- | --- |
+| `softConfig` | The dynamically generated Puck config containing all "soft" variants of your components. |
+| `softComponents` | The current state of all soft components in the store. |
+| `setIframeDoc` | A function to register the iframe `Document` (required for styling and edit visibility). |
+| `validateAction` | Utility to check if a Puck action is permissible within the current context. |

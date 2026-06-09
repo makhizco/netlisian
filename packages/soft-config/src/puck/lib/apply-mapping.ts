@@ -1,20 +1,8 @@
-/**
- * Shared helper: evaluates `_map` entries and applies mapped values to component props.
- *
- * Used by both the live builder effect (root-config.tsx) and the runtime
- * resolver (resolve-soft-component-data.ts) so the logic stays in one place.
- *
- * Array construction order (for array targets like `items[].imageUrl`):
- *   1. Start from `unmappedArrayItemDefaultValues` on the map entry (initially populated
- *      from the component's `defaultItemProps`). These are the single source of
- *      truth for the item "template".
- *   2. Overlay the mapped value for each array index.
- *   The result is a freshly-constructed array whose length equals the mapped
- *   source array and whose unmapped props come from the defaults above.
- */
+import { DefaultComponentProps } from "@measured/puck";
 
+"use client";
 import equal from "react-fast-compare";
-import { setPropertyByPath } from "./set-prop-by-path";
+import { setImmutablePropertyByPath } from "./set-prop-by-path";
 import {
   getArrayBasePath,
   getArrayItemSubPath,
@@ -26,12 +14,28 @@ import type {
   MapEntry,
 } from "../types/Mapping";
 
-export const resolveValueByPath = (source: any, path: string): any => {
+
+/**
+ * Caches split path segments to optimize repeated deep object lookups
+ * during high-frequency rendering and mapping cycles.
+ */
+const pathSegmentsCache = new Map<string, string[]>();
+
+const getPathSegments = (path: string): string[] => {
+  let segments = pathSegmentsCache.get(path);
+  if (!segments) {
+    segments = path.split(".");
+    pathSegmentsCache.set(path, segments);
+  }
+  return segments;
+};
+
+export const resolveValueByPath = (source: unknown, path: string): unknown => {
   if (!path) return source;
 
-  const segments = path.split(".");
+  const segments = getPathSegments(path);
 
-  const resolveSegments = (current: any, index: number): any => {
+  const resolveSegments = (current: unknown, index: number): unknown => {
     if (current === null || current === undefined) return undefined;
     if (index >= segments.length) return current;
 
@@ -39,34 +43,34 @@ export const resolveValueByPath = (source: any, path: string): any => {
 
     if (segment.endsWith("[]")) {
       const arrayKey = segment.slice(0, -2);
-      const arraySource = arrayKey ? current?.[arrayKey] : current;
+      const arraySource = arrayKey ? (current as DefaultComponentProps)?.[arrayKey] : current;
       const resolvedArray = Array.isArray(arraySource)
         ? arraySource
-        : Array.isArray(arraySource?.defaultValue)
-          ? arraySource.defaultValue
+        : Array.isArray((arraySource as DefaultComponentProps)?.defaultValue)
+          ? (arraySource as DefaultComponentProps).defaultValue
           : undefined;
 
       if (!resolvedArray) return undefined;
       if (index === segments.length - 1) return resolvedArray;
 
-      return resolvedArray.map((item: any) => resolveSegments(item, index + 1));
+      return resolvedArray.map((item: unknown) => resolveSegments(item, index + 1));
     }
 
-    return resolveSegments(current[segment], index + 1);
+    return resolveSegments((current as DefaultComponentProps)[segment], index + 1);
   };
 
   return resolveSegments(source, 0);
 };
 
 const resolveFieldSettingEntryByPath = (
-  settings: Record<string, any>,
+  settings: DefaultComponentProps,
   path: string
-): any => {
+): unknown => {
   if (!path) return undefined;
 
-  const segments = path.split(".");
-  let currentSettings: Record<string, any> | undefined = settings;
-  let currentEntry: any;
+  const segments = getPathSegments(path);
+  let currentSettings: DefaultComponentProps | undefined = settings;
+  let currentEntry: unknown;
 
   for (const segmentWithArraySuffix of segments) {
     const segment = segmentWithArraySuffix.endsWith("[]")
@@ -82,7 +86,7 @@ const resolveFieldSettingEntryByPath = (
       return undefined;
     }
 
-    currentSettings = currentEntry?.subFieldSettings;
+    currentSettings = (currentEntry as DefaultComponentProps)?.subFieldSettings as DefaultComponentProps;
   }
 
   return currentEntry;
@@ -100,17 +104,19 @@ const resolveFieldSettingEntryByPath = (
  * to fieldSettings `defaultValue`.
  */
 export function applyMapping(
-  props: Record<string, any>,
-  fieldSettings: Record<string, any>,
+  props: DefaultComponentProps,
+  fieldSettings: DefaultComponentProps,
   map: MapEntry[],
   resolveInput: "fieldSettings" | "propsFirst" = "fieldSettings",
   options?: ApplyMappingOptions
 ): ApplyMappingResult {
-  const newProps: Record<string, any> = { ...props };
+  let newProps: DefaultComponentProps = props; // Copy-on-write reference
   const sourceProps = options?.sourceProps ?? props;
   const mappedArrayPaths = new Set<string>();
   let changed = false;
-  const changedArrayBases = new Set<string>();
+
+  // Group array mapping rules by their arrayBase to batch processing
+  const arrayRulesMap = new Map<string, Array<{ entry: MapEntry; toPath: string; fromPaths: string[], result: unknown }>>();
 
   for (const entry of map) {
     const { from, to, transform } = entry;
@@ -136,7 +142,7 @@ export function applyMapping(
           setting &&
           Object.prototype.hasOwnProperty.call(setting, "defaultValue")
         ) {
-          return setting.defaultValue;
+          return (setting as Record<string, any>).defaultValue;
         }
         return propVal;
       }
@@ -172,91 +178,32 @@ export function applyMapping(
     if (isSingleArrayTarget) {
       const toPath = toPaths[0] as string;
       const arrayBase = getArrayBasePath(toPath);
-      const subProp = getArrayItemSubPath(toPath) || "";
       if (!arrayBase) continue;
 
-      const defaultArray = Array.isArray(options?.arrayDefaults?.[arrayBase])
-        ? options?.arrayDefaults?.[arrayBase]
-        : [];
-      const currentArrayAtPath = resolveValueByPath(newProps, arrayBase);
-      const currentArray = Array.isArray(currentArrayAtPath)
-        ? currentArrayAtPath
-        : [];
-
-      const isFromArrayPath =
-        typeof fromPaths[0] === "string" && isArrayMappingPath(fromPaths[0]);
-
-      const sourceArray = isFromArrayPath
-        ? Array.isArray(result)
-          ? result
-          : result !== undefined
-            ? [result]
-            : []
-        : Array.isArray(result)
-          ? result
-          : defaultArray.map(() => result);
-
-      let defaults: Record<string, any> =
-        entry.unmappedArrayItemDefaultValues ||
-        entry.defaultOverrides ||
-        {};
-
-      if (typeof defaults === "string") {
-        try {
-          defaults = JSON.parse(defaults);
-        } catch (e) {
-          defaults = {};
-        }
+      let rules = arrayRulesMap.get(arrayBase);
+      if (!rules) {
+        rules = [];
+        arrayRulesMap.set(arrayBase, rules);
       }
-
-      const targetLength = sourceArray.length;
-
-      const constructed = Array.from({ length: targetLength }).map((_, idx) => {
-        const mappedValue = sourceArray[idx];
-        const defaultItem =
-          defaultArray[idx] && typeof defaultArray[idx] === "object"
-            ? defaultArray[idx]
-            : {};
-        const currentItem =
-          currentArray[idx] && typeof currentArray[idx] === "object"
-            ? currentArray[idx]
-            : {};
-        const item: Record<string, any> = {
-          ...defaultItem,
-          ...defaults,
-          ...currentItem,
-        };
-
-        if (subProp && mappedValue !== undefined) {
-          setPropertyByPath(item, subProp, mappedValue);
-        }
-
-        return item;
-      });
-
-      // Multiple `_map` rows can target the same array base. Build the final
-      // array from the current props so sibling rows compose instead of
-      // overwriting each other and re-triggering no-op replace dispatches.
-      const originalArray = resolveValueByPath(newProps, arrayBase);
-      if (!equal(originalArray, constructed)) {
-        setPropertyByPath(newProps, arrayBase, constructed);
-        changedArrayBases.add(arrayBase);
-      }
-
+      rules.push({ entry, toPath, fromPaths, result });
       mappedArrayPaths.add(arrayBase);
-    } else if (toPaths.length === 1 && Array.isArray(result) && toPaths[0].includes("array")) {
+      continue;
+    } 
+    
+    // Process non-array targets immediately using copy-on-write
+    if (toPaths.length === 1 && Array.isArray(result) && toPaths[0].includes("array")) {
       const toPath = toPaths[0];
       const original = resolveValueByPath(newProps, toPath);
       if (!equal(original, result)) {
-        setPropertyByPath(newProps, toPath, result);
+        newProps = setImmutablePropertyByPath(newProps, toPath, result);
         changed = true;
       }
     } else if (Array.isArray(result) && toPaths.length > 1) {
-      result.forEach((val: any, idx: number) => {
+      result.forEach((val: unknown, idx: number) => {
         if (toPaths[idx]) {
           const orig = resolveValueByPath(newProps, toPaths[idx]);
           if (!equal(orig, val)) {
-            setPropertyByPath(newProps, toPaths[idx], val);
+            newProps = setImmutablePropertyByPath(newProps, toPaths[idx], val);
             changed = true;
           }
         }
@@ -266,18 +213,105 @@ export function applyMapping(
       const originalValue = resolveValueByPath(newProps, toPaths[0]);
 
       if (!equal(originalValue, finalValue)) {
-        setPropertyByPath(newProps, toPaths[0], finalValue);
+        newProps = setImmutablePropertyByPath(newProps, toPaths[0], finalValue);
         changed = true;
       }
     }
   }
 
-  // Only report a change when the final array value differs from the input.
-  // This prevents the builder root effect from dispatching replace actions for
-  // transient intermediate states produced while composing multiple array maps.
-  const hasNetArrayChanges = Array.from(changedArrayBases).some((arrayBase) =>
-    !equal(resolveValueByPath(props, arrayBase), resolveValueByPath(newProps, arrayBase))
-  );
+  /**
+   * Batch process all array-targeted mappings.
+   * By grouping rules by their base array path, we ensure that multiple mappings
+   * targeting the same array construct a single, cohesive updated array instead of
+   * overwriting each other or triggering redundant render cycles.
+   */
+  for (const [arrayBase, rules] of arrayRulesMap.entries()) {
+    const defaultArray = Array.isArray(options?.arrayDefaults?.[arrayBase])
+      ? options?.arrayDefaults?.[arrayBase]
+      : [];
+    const currentArrayAtPath = resolveValueByPath(newProps, arrayBase);
+    const currentArray = Array.isArray(currentArrayAtPath) ? currentArrayAtPath : [];
 
-  return { newProps, mappedArrayPaths, changed: changed || hasNetArrayChanges };
+    let targetLength = 0;
+
+    // Resolve source arrays for each rule mapped to this base
+    const ruleSourceArrays = rules.map(({ entry, fromPaths, result }) => {
+      const isFromArrayPath = typeof fromPaths[0] === "string" && isArrayMappingPath(fromPaths[0]);
+      
+      const sourceArray = isFromArrayPath
+        ? Array.isArray(result)
+          ? result
+          : result !== undefined
+            ? [result]
+            : []
+        : Array.isArray(result)
+          ? result
+          : defaultArray.map(() => result);
+          
+      targetLength = Math.max(targetLength, sourceArray.length);
+      return sourceArray;
+    });
+
+    const constructed = Array.from({ length: targetLength }).map((_, idx) => {
+      const defaultItem = defaultArray[idx] && typeof defaultArray[idx] === "object" ? defaultArray[idx] : {};
+      const currentItem = currentArray[idx] && typeof currentArray[idx] === "object" ? currentArray[idx] : {};
+      
+      // Combine all defaults from the batched rules
+      let mergedDefaults: DefaultComponentProps = {};
+      for (const rule of rules) {
+        let ruleDefaults = rule.entry.unmappedArrayItemDefaultValues || rule.entry.defaultOverrides || {};
+        if (typeof ruleDefaults === "string") {
+          try { ruleDefaults = JSON.parse(ruleDefaults); } catch (e) {}
+        }
+        mergedDefaults = { ...mergedDefaults, ...(ruleDefaults as DefaultComponentProps) };
+      }
+      
+      const baseItem = { ...(defaultItem as DefaultComponentProps), ...mergedDefaults };
+      let newItem: DefaultComponentProps | undefined = undefined;
+      
+      // Check base defaults against currentItem
+      for (const key of Object.keys(baseItem)) {
+        if (!(key in currentItem) && baseItem[key] !== undefined) {
+          if (!newItem) newItem = { ...currentItem };
+          if (newItem) {
+            newItem[key] = baseItem[key];
+          }
+        }
+      }
+      
+      // Apply mapped properties from all rules
+      for (let i = 0; i < rules.length; i++) {
+        const { toPath } = rules[i];
+        const subProp = getArrayItemSubPath(toPath) || "";
+        const mappedValue = ruleSourceArrays[i][idx];
+        
+        if (subProp && mappedValue !== undefined) {
+          const existingValue = resolveValueByPath(newItem || currentItem, subProp);
+          if (!equal(existingValue, mappedValue)) {
+            newItem = setImmutablePropertyByPath(newItem || currentItem, subProp, mappedValue);
+          }
+        }
+      }
+      
+      return newItem !== undefined ? newItem : currentItem;
+    });
+
+    // Verify if the final constructed array structurally differs from currentArray
+    let arrayChanged = currentArray.length !== constructed.length;
+    if (!arrayChanged) {
+      for (let i = 0; i < currentArray.length; i++) {
+        if (currentArray[i] !== constructed[i]) {
+          arrayChanged = true;
+          break;
+        }
+      }
+    }
+
+    if (arrayChanged) {
+      newProps = setImmutablePropertyByPath(newProps, arrayBase, constructed);
+      changed = true;
+    }
+  }
+
+  return { newProps, mappedArrayPaths, changed };
 }

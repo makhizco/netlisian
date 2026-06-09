@@ -1,0 +1,55 @@
+# Hooks
+
+Soft Config provides a set of hooks for interacting with the editor's lifecycle and triggering state transitions.
+
+## Action Hooks
+
+These hooks are primarily used within `overrides` or custom UI components to trigger structural changes to the configuration.
+
+### `useComplete`
+
+Finalizes the current editing session (e.g., exiting "Build" or "Remodel" mode).
+
+```tsx
+const complete = useComplete();
+// ...
+<button onClick={complete}>Done</button>
+```
+
+### `useBuild`
+
+Transitions the editor into "Build" mode, allowing the user to create new soft components from hard components.
+
+### `useRemodel`
+
+Transitions the editor into "Remodel" mode, allowing the user to edit an existing soft component definition.
+
+### `useDecompose`
+
+Decomposes a selected component instance into a new soft component. This is the core "Save to Library" action.
+
+### `useDemolish`
+
+Removes a soft component configuration and its versions from the registry.
+
+### `useInspect`
+
+Transitions the editor into "Inspection" mode to view the underlying structure of a component without changing it.
+
+## Event Hooks
+
+### `useActionEvent`
+
+Allows you to subscribe to specific actions occurring within the Puck editor or the Soft Config engine.
+
+```tsx
+import { useActionEvent } from "@netlisian/softconfig/puck";
+
+function MyLogger() {
+  useActionEvent((payload) => {
+    console.log("Action triggered:", payload.type, payload.data);
+  });
+
+  return null;
+}
+```

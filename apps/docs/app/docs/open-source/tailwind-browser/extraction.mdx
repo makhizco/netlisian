@@ -1,0 +1,36 @@
+# Style Extraction
+
+To avoid a "Flash of Unstyled Content" (FOUC) when rendering pages in production, you should extract the generated CSS and store it alongside your page data.
+
+## Process
+
+1.  **Develop**: Use the `TailwindProcessor` in your editor to see live styles.
+2.  **Extract**: Call `processor.extract()` to get the raw CSS generated for the current components.
+3.  **Save**: Store this CSS string in your database.
+4.  **Production**: In your production frontend, inject the CSS into a static `<style>` tag. No browser-side compiler is needed for pure viewing.
+
+## Example
+
+```tsx
+const handleSave = async () => {
+  const css = await processor.current.extract();
+  
+  await savePage({
+    data: puckData,
+    css: css
+  });
+};
+```
+
+On the frontend:
+
+```tsx
+export function Page({ data, css }) {
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+      <Render config={config} data={data} />
+    </>
+  );
+}
+```

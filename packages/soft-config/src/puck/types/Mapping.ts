@@ -1,3 +1,4 @@
+"use client";
 import type { Field } from "@measured/puck";
 
 export type MapEntry = {

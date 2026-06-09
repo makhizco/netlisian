@@ -1,0 +1,20 @@
+.multipageOverrides :global([class*="_DraggableComponent--isSelected"]) {
+  display: none !important;
+}
+
+.multipageOverrides :global([class*="_DraggableComponent--hover"]) {
+  display: none !important;
+}
+
+.multipageOverrides :global(#preview-frame > div) {
+  height: 100% !important;
+}
+
+.multipageOverrides :global(#puck-preview) {
+  overflow: hidden !important;
+}
+
+.multipageOverrides :global([class*="_PuckCanvas--"]) {
+  padding: 0;
+  overflow: hidden;
+}

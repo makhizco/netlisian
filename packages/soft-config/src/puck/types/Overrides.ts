@@ -1,9 +1,10 @@
+"use client";
 import { ReactElement, ReactNode } from "react";
 import { BuilderComponentConfig, BuilderRootConfig } from "./BuilderConfig";
-import {
+import { DefaultComponentProps,
   AsFieldProps,
   ComponentConfig,
-  DefaultComponentProps,
+  
   Field,
   Metadata,
   ResolveDataTrigger,
@@ -69,11 +70,12 @@ export type Overrides = {
       editingComponent?: string;
     },
   ) => {
-    props:
-    | RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>
-    | Promise<RootData<AsFieldProps<WithChildren<BuilderRootConfig>>>>;
-    readOnly: Readonly<Record<string, boolean>> | undefined;
-  };
+    props?: Partial<AsFieldProps<WithChildren<BuilderRootConfig>>>;
+    readOnly?: Readonly<Record<string, boolean>>;
+  } | Promise<{
+    props?: Partial<AsFieldProps<WithChildren<BuilderRootConfig>>>;
+    readOnly?: Readonly<Record<string, boolean>>;
+  }>;
   mapComponentConfig?: (
     componentName: string,
     defaultConfig: ComponentConfig,

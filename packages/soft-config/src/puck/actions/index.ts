@@ -1,3 +1,4 @@
+"use client";
 export { useBuild } from "./useBuild";
 export { useRemodel } from "./useRemodel";
 export { useComplete } from "./useComplete";

@@ -1,6 +1,9 @@
-import { AppState, ComponentData, Config, Fields } from "@measured/puck";
-import { SoftSubComponent } from "../types/SoftComponent";
-import { VersionedSoftComponent } from "../types/SoftComponent";
+import { DefaultComponentProps, AppState, ComponentData, Config, Fields  } from "@measured/puck";
+import {
+  SoftComponent,
+  VersionedSoftComponent,
+  SoftSubComponent,
+} from "../types/SoftComponent";
 import { generateId } from "./generate-id";
 import { BuilderRootConfig } from "../types/BuilderConfig";
 import { setPropertyByPath } from "./set-prop-by-path";
@@ -185,7 +188,7 @@ const puckFieldsToSoftFields = (
 const reconstructComponents = (
   subComponents: SoftSubComponent,
   componentConfigs: Config["components"],
-  softComponentProps: Record<string, any>
+  softComponentProps: DefaultComponentProps
 ): ComponentData[] => {
   return subComponents.map((subComponent) => {
     const componentConfig = componentConfigs[subComponent.type];

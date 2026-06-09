@@ -1,5 +1,7 @@
+"use client";
 import React, { useMemo } from "react";
 import { ActionBar, createUsePuck } from "@measured/puck";
+const useCustomPuck = createUsePuck();
 import { useBuild } from "../actions/useBuild";
 import { useRemodel } from "../actions/useRemodel";
 import { useDecompose } from "../actions/useDecompose";
@@ -12,7 +14,7 @@ import { componentLabelFromName, componentNameFromLabel } from "../lib/component
 
 
 const getClassName = getClassNameFactory("ActionBar", styles);
-const usePuck = createUsePuck();
+
 
 export const ActionBarOverride = (props: {
   label?: string;
@@ -25,10 +27,11 @@ export const ActionBarOverride = (props: {
   const overrides = useSoftConfig((s) => s.overrides);
   const softComponents = useSoftConfig((s) => s.softComponents, shallow);
   const editableIds = useSoftConfig((s) => s.editableComponentIds);
-  const selectedItem = usePuck((s) => s.selectedItem);
-  const rootProps = usePuck((s) => s.appState.data.root.props);
+  const selectedItem = useCustomPuck((s) => s.selectedItem);
+  const appState = useCustomPuck((s) => s.appState);
+  const rootProps = appState.data.root.props;
   const status = useSoftConfig((s) => s.state);
-  const itemSelector = usePuck((s) => s.appState.ui.itemSelector);
+  const itemSelector = appState.ui.itemSelector;
   const softKeys = Object.keys(softComponents);
 
   const key = useMemo(() => {

@@ -1,3 +1,4 @@
+"use client";
 import { ComponentData } from "@measured/puck";
 import { SoftSubComponent } from "../../types/SoftComponent";
 import { generateId } from "../generate-id";
@@ -5,7 +6,8 @@ import { applyMapping } from "../apply-mapping";
 
 export const subComponentDecomposer = (
   componentRootData: ComponentData,
-  softSubComponent: SoftSubComponent[number]
+  softSubComponent: SoftSubComponent[number],
+  keepMapField?: boolean,
 ): ComponentData => {
   const resolvedProps = {
     ...softSubComponent.fixedProps,
@@ -19,7 +21,7 @@ export const subComponentDecomposer = (
       "propsFirst",
       {
         sourceProps: componentRootData.props || {},
-      }
+      },
     );
 
     Object.assign(resolvedProps, newProps);
@@ -35,9 +37,9 @@ export const subComponentDecomposer = (
   Object.entries(softSubComponent.components).forEach(
     ([slotKey, subComponents]) => {
       resolvedProps[slotKey] = subComponents.map((subComponent) =>
-        subComponentDecomposer(componentRootData, subComponent)
+        subComponentDecomposer(componentRootData, subComponent, keepMapField),
       );
-    }
+    },
   );
 
   const accItem: ComponentData = {
@@ -45,6 +47,7 @@ export const subComponentDecomposer = (
     props: {
       ...resolvedProps,
       id: generateId(softSubComponent.type),
+      ...(keepMapField ? { _map: softSubComponent.map } : {}),
     },
   };
 
