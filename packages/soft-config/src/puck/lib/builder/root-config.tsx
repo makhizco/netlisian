@@ -15,7 +15,7 @@ import {
   walkTree,
   WithChildren,
   WithId,
-} from "@measured/puck";
+} from "@puckeditor/core";
 import { BuilderRootConfig } from "../../types/BuilderConfig";
 import getFieldSettings from "../get-field-settings";
 import { useSoftConfig } from "../../context/useStore";

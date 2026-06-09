@@ -1,5 +1,5 @@
 "use client";
-import { ComponentData, Config, walkTree } from "@measured/puck";
+import { ComponentData, Config, walkTree } from "@puckeditor/core";
 
 /**
  * Collects all component IDs that should be editable during building/remodeling.

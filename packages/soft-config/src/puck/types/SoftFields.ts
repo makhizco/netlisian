@@ -1,5 +1,5 @@
 "use client";
-import type { Field, Fields } from "@measured/puck";
+import type { Field, Fields } from "@puckeditor/core";
 
 export type BuiltInSoftFieldType =
   | "text"
@@ -46,7 +46,7 @@ interface SharedFieldSettings<TSubFieldSettings> {
 }
 
 export interface SoftFieldSettingsEntry
-  extends SharedFieldSettings<SoftFieldSettings> {}
+  extends SharedFieldSettings<SoftFieldSettings> { }
 
 export type SoftFieldSettings = Record<
   string,

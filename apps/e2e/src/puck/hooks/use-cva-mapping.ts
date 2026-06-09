@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { twMerge } from "tailwind-merge";
-import { Field } from "@measured/puck";
+import { Field } from "@puckeditor/core";
 import { SoftFieldSettings, SoftFieldDefinition } from "@netlisian/softconfig/puck";
 
 export interface CvaVariant {

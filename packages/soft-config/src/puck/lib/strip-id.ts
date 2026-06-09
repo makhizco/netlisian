@@ -1,5 +1,5 @@
 "use client";
-import { ComponentData, ComponentDataOptionalId } from "@measured/puck";
+import { ComponentData, ComponentDataOptionalId } from "@puckeditor/core";
 
 export const stripIdFromProps = (
   components: ComponentData[],

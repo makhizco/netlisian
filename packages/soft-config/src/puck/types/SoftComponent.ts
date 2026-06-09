@@ -1,5 +1,5 @@
 "use client";
-import { ArrayField, Field, ComponentDataOptionalId, Fields, DefaultComponentProps } from "@measured/puck";
+import { ArrayField, Field, ComponentDataOptionalId, Fields, DefaultComponentProps } from "@puckeditor/core";
 import { BuilderComponentConfig } from "./BuilderConfig";
 import type { SoftFieldSettings } from "./SoftFields";
 

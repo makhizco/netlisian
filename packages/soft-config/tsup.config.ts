@@ -12,7 +12,7 @@ export default defineConfig({
     js: "'use client'",
   },
   format: ["cjs", "esm"],
-  external: ["react", "react-dom", "@measured/puck"],
+  external: ["react", "react-dom", "@puckeditor/core"],
   esbuildPlugins: [{
     name: "css-module",
     setup(build): void {
@@ -68,6 +68,6 @@ export default defineConfig({
       );
     },
   },
-],
+  ],
   dts: true,
 });

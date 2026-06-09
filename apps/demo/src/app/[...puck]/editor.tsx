@@ -1,15 +1,7 @@
 "use client";
 
 import config from "@/src/config";
-import {
-  AppState,
-  Config,
-  Puck,
-  PuckAction,
-  Render,
-} from "@measured/puck";
-import { notFound } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { AppState, Config, Puck, PuckAction } from "@puckeditor/core";
 import {
   ActionBar,
   createActionCallback,
@@ -18,28 +10,31 @@ import {
   SoftConfigProvider,
   useSoftConfigStore,
 } from "@netlisian/softconfig/puck";
-import "@measured/puck/puck.css";
+import "@puckeditor/core/puck.css";
 import "@netlisian/softconfig/puck/index.css";
 import { MutableRefObject, useCallback, useRef, useEffect } from "react";
 import type { TailwindProcessor } from "@netlisian/tailwind";
 import { IframeOverride } from "./iframe";
 import { softConfigOverrides } from "../../puck/overrides/softconfig";
-import { useDemoData } from "../../lib/use-demo-data";
 import { toast } from "sonner";
-import { Data } from "@measured/puck";
+import { Data } from "@puckeditor/core";
+import Image from "next/image";
 
 interface PuckInnerProps {
   softConfig: Config;
   processorRef: MutableRefObject<TailwindProcessor | null>;
   data: Partial<Data>;
-  resolvedData: Partial<Data> | undefined;
-  styles: string | undefined;
   saveData: any;
-  isEdit: boolean;
   storeRef?: React.MutableRefObject<any>;
 }
 
-const PuckInner = ({ softConfig, processorRef, data, resolvedData, styles, saveData, isEdit, storeRef }: PuckInnerProps) => {
+export const PuckInner = ({
+  softConfig,
+  processorRef,
+  data,
+  saveData,
+  storeRef,
+}: PuckInnerProps) => {
   const store = useSoftConfigStore();
 
   useEffect(() => {
@@ -62,20 +57,6 @@ const PuckInner = ({ softConfig, processorRef, data, resolvedData, styles, saveD
     },
     [store],
   );
-
-  if (!isEdit) {
-    return (
-      <>
-        {styles && (
-          <style
-            id="static-tailwind-styles"
-            dangerouslySetInnerHTML={{ __html: styles }}
-          />
-        )}
-        <Render data={resolvedData!} config={softConfig as any} />
-      </>
-    );
-  }
 
   return (
     <Puck
@@ -106,54 +87,28 @@ const PuckInner = ({ softConfig, processorRef, data, resolvedData, styles, saveD
           processorRef.current = processor;
         }),
       }}
-    >
-    </Puck>
+    ></Puck>
   );
 };
 
 export default function PuckEditor({
-  path,
-  isEdit,
+  saveSoftComponents,
+  softComponents,
+  data,
+  saveData,
 }: {
-  path: string;
-  isEdit: boolean;
+  saveSoftComponents: (softComponents: any) => void;
+  softComponents: any;
+  data: Partial<Data>;
+  saveData: any;
 }) {
   // Refs
   const processorRef = useRef<TailwindProcessor | null>(null);
   const storeRef = useRef<any>(null);
 
-  const {
-    data,
-    resolvedData,
-    styles,
-    softComponents,
-    saveData,
-    saveSoftComponents,
-  } = useDemoData({
-    path,
-    isEdit,
-  });
-
-  if (!isEdit && !data) {
-    return notFound();
-  }
-
-  if (!isEdit && data && !resolvedData) {
-    return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="flex min-h-[90vh] flex-col items-center justify-center gap-3 p-4 text-slate-900"
-      >
-        <Loader2 className="animate-spin" size={24} />
-        <p className="text-sm">Preparing your page...</p>
-      </div>
-    );
-  }
-
   const handleSoftActions = async (event: any) => {
     const eventType = event.type;
-    
+
     const doSave = () => {
       setTimeout(() => {
         if (storeRef.current) {
@@ -169,29 +124,45 @@ export default function PuckEditor({
       toast.success(`Soft component deleted: ${event.payload?.id}`);
       doSave();
     } else if (eventType === "deleteVersion") {
-      toast.success(`Deleted ${event.payload?.id || "component"}@${event.payload?.version || "unknown"}`);
+      toast.success(
+        `Deleted ${event.payload?.id || "component"}@${event.payload?.version || "unknown"}`,
+      );
       doSave();
     } else if (eventType === "complete") {
-      toast.success(`Soft component ready: ${event.payload?.id}@${event.payload?.version || "unknown"}`);
+      toast.success(
+        `Soft component ready: ${event.payload?.id}@${event.payload?.version || "unknown"}`,
+      );
       doSave();
     } else if (eventType === "inspect") {
-      toast.message(`Inspecting soft component: ${event.payload?.id}${event.payload?.version ? "@" + event.payload.version : ""}`);
+      toast.message(
+        `Inspecting soft component: ${event.payload?.id}${event.payload?.version ? "@" + event.payload.version : ""}`,
+      );
     }
   };
 
   return (
     <div className="text-foreground bg-background">
-      <SoftConfigProvider hardConfig={config} softComponents={softComponents} overrides={softConfigOverrides} onActions={handleSoftActions}>
+      <Image
+        width={36}
+        height={36}
+        src="/logo-icon.png"
+        alt="Site Logo"
+        loading="eager"
+        className="z-10 absolute top-4 left-4"
+      />
+      <SoftConfigProvider
+        hardConfig={config}
+        softComponents={softComponents}
+        overrides={softConfigOverrides}
+        onActions={handleSoftActions}
+      >
         {(softConfig) => (
-          <PuckInner 
+          <PuckInner
             storeRef={storeRef}
-            softConfig={softConfig} 
-            processorRef={processorRef} 
+            softConfig={softConfig}
+            processorRef={processorRef}
             data={data}
-            resolvedData={resolvedData}
-            styles={styles}
             saveData={saveData}
-            isEdit={isEdit}
           />
         )}
       </SoftConfigProvider>

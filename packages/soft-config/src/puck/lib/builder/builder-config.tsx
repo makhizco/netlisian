@@ -1,5 +1,11 @@
 "use client";
-import { ComponentConfig, Config, Field, Fields, Label } from "@measured/puck";
+import {
+  ComponentConfig,
+  Config,
+  Field,
+  Fields,
+  Label,
+} from "@puckeditor/core";
 import {
   BuilderConfig,
   BuilderComponentConfig,
@@ -330,7 +336,10 @@ export const buildBaseComponents = (
           const currentReadOnly = [
             ...readOnlyFields.map((f) => String(f)),
             ...readOnlyArrayBases,
-          ].reduce((acc, field) => ({ ...acc, [field]: true }), {} as Record<string, boolean>);
+          ].reduce(
+            (acc, field) => ({ ...acc, [field]: true }),
+            {} as Record<string, boolean>,
+          );
 
           // To ensure we clear readOnly states that were removed, we need to set them to false
           const lastReadOnly = lastData?.readOnly || {};

@@ -1,17 +1,17 @@
 "use client";
-import { DefaultComponentProps,
+import {
+  DefaultComponentProps,
   AppState,
   ComponentConfig,
   Config,
   Data,
-  
   History,
   PuckApi,
   ComponentData,
   walkTree,
   Content,
   RootData,
-} from "@measured/puck";
+} from "@puckeditor/core";
 import { AppStore } from "../";
 
 import { BuilderRootConfig, GlobalRootProps } from "../../types/BuilderConfig";
@@ -459,7 +459,10 @@ export const createBuildersSlice = (
       const readOnly = [
         ...readOnlyFields.map((f) => String(f)),
         ...readOnlyArrayBases,
-      ].reduce((acc, field) => ({ ...acc, [field]: true }), {} as Record<string, boolean>);
+      ].reduce(
+        (acc, field) => ({ ...acc, [field]: true }),
+        {} as Record<string, boolean>,
+      );
 
       puckDispatch({
         type: "replace",

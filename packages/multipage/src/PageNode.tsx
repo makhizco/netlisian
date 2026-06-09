@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { DropZone } from "@measured/puck";
+import { DropZone } from "@puckeditor/core";
 import { Handle, Position, NodeProps, useStore } from "@xyflow/react";
 import { PageItem } from "./MultipageRoot";
 
@@ -16,12 +16,12 @@ export const PageNode = ({ data, selected }: NodeProps) => {
   // In Figma, section labels stay relatively legible at small zoom levels.
   const minScreenSize = 14;
   const fontSize = Math.max(24, minScreenSize / zoom);
-  
+
   // To keep the label just above the section with some padding
   const labelMarginBottom = Math.max(12, 8 / zoom);
 
   return (
-    <div 
+    <div
       style={{ position: "relative" }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -37,7 +37,10 @@ export const PageNode = ({ data, selected }: NodeProps) => {
           left: 0,
           fontSize: `${fontSize}px`,
           fontWeight: 600,
-          color: selected || isHovered ? "var(--puck-color-azure-07)" : "var(--puck-color-grey-04)", // highlight if selected or hovered
+          color:
+            selected || isHovered
+              ? "var(--puck-color-azure-07)"
+              : "var(--puck-color-grey-04)", // highlight if selected or hovered
           fontFamily: "sans-serif",
           display: "flex",
           alignItems: "center",
@@ -71,7 +74,9 @@ export const PageNode = ({ data, selected }: NodeProps) => {
           backgroundColor: "white",
           boxShadow:
             "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-          border: selected ? "2px solid var(--puck-color-azure-07)" : "1px solid var(--puck-color-grey-09)",
+          border: selected
+            ? "2px solid var(--puck-color-azure-07)"
+            : "1px solid var(--puck-color-grey-09)",
           borderRadius: "8px",
           overflow: "hidden",
           display: "flex",

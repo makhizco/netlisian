@@ -1,14 +1,12 @@
 "use client";
-import { createUsePuck } from "@measured/puck";
+import { createUsePuck } from "@puckeditor/core";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { useActionEvent } from "../hooks/useActionEvent";
 
 const useCustomPuck = createUsePuck();
 
-export const useBuild = (
-  name?: string
-) => {
+export const useBuild = (name?: string) => {
   const build = useSoftConfig((s) => s.builder.build);
   const history = useCustomPuck((s) => s.history.histories);
   const selectedItem = useCustomPuck((s) => s.selectedItem);
@@ -25,7 +23,7 @@ export const useBuild = (
 
     try {
       build(history, selectedItem, itemSelector, dispatch, name);
-      
+
       if (selectedItem?.type) {
         void triggerAction({
           type: "build",
@@ -38,7 +36,7 @@ export const useBuild = (
       alert("Failed to build:" + " " + error);
       notify.error(
         "Failed to build: " +
-          (error instanceof Error ? error.message : String(error))
+          (error instanceof Error ? error.message : String(error)),
       );
     }
   };

@@ -1,12 +1,18 @@
-import type { Config, Slot, WithPuckProps } from "@measured/puck";
+import type { Config, Slot, WithPuckProps } from "@puckeditor/core";
 import { Container } from "../components/container";
 import { Text } from "../components/text";
 import { initialData } from "./initial-data";
 import { TextProps } from "../components/text/Text";
 import { ContainerProps } from "../components/container/Container";
 import { Repeat, RepeatProps } from "../components/repeat";
-import { FlatContainer, FlatContainerProps } from "../components/flat-container";
-import { DeepFlatContainer, DeepFlatContainerProps } from "../components/deep-flat-container";
+import {
+  FlatContainer,
+  FlatContainerProps,
+} from "../components/flat-container";
+import {
+  DeepFlatContainer,
+  DeepFlatContainerProps,
+} from "../components/deep-flat-container";
 // import { rootRender } from "./root-render";
 // import React from "react";
 
@@ -33,7 +39,13 @@ export const config: Config<ComponentProps, RootProps> = {
   },
   categories: {
     base: {
-      components: ["text", "container", "repeat", "flatContainer", "deepFlatContainer"],
+      components: [
+        "text",
+        "container",
+        "repeat",
+        "flatContainer",
+        "deepFlatContainer",
+      ],
       title: "Base",
       defaultExpanded: true,
     },

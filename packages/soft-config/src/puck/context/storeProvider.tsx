@@ -1,7 +1,7 @@
 "use client";
 "use client";
 
-import { Config } from "@measured/puck";
+import { Config } from "@puckeditor/core";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { appStoreContext } from "./useStore";
 import { createSoftConfigStore } from "../store";

@@ -1,7 +1,7 @@
 import { Base } from "./base";
 import { ContainerElement } from "./container-elements";
 import { LeafElement } from "./leaf-elements";
-import { Slot } from "@measured/puck";
+import { Slot } from "@puckeditor/core";
 
 type Prettify<T> = {
   [K in keyof T]: T[K];

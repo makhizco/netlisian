@@ -1,6 +1,6 @@
 "use client";
-import { createUsePuck } from "@measured/puck";
-import type { DefaultComponentProps } from "@measured/puck";
+import { createUsePuck } from "@puckeditor/core";
+import type { DefaultComponentProps } from "@puckeditor/core";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { useActionEvent } from "../hooks/useActionEvent";
@@ -73,7 +73,10 @@ export const useRemodel = () => {
       alert("Failed to remodel:" + " " + error);
       notify.error(
         "Failed to remodel: " +
-          (error instanceof Error ? error.message : String(error)) + " " + String( ));
+          (error instanceof Error ? error.message : String(error)) +
+          " " +
+          String(),
+      );
       return null;
     }
   };

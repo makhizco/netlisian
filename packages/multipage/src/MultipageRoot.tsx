@@ -1,5 +1,5 @@
 import React from "react";
-import { createUsePuck } from "@measured/puck";
+import { createUsePuck } from "@puckeditor/core";
 import {
   ReactFlow,
   Background,
@@ -150,7 +150,9 @@ const SlugIdField = ({ value, onChange }: SlugIdFieldProps) => {
           borderRadius: "4px",
           fontSize: "13px",
           fontFamily: "monospace",
-          background: isManual ? "var(--puck-color-white)" : "var(--puck-color-grey-11)",
+          background: isManual
+            ? "var(--puck-color-white)"
+            : "var(--puck-color-grey-11)",
           color: "var(--puck-color-grey-03)",
           outline: "none",
         }}
@@ -306,7 +308,8 @@ export const MultipageRoot = (props: MultipageRootProps) => {
           <div
             style={{
               padding: "40px 60px",
-              backgroundColor: "color-mix(in srgb, var(--puck-color-white) 90%, transparent)",
+              backgroundColor:
+                "color-mix(in srgb, var(--puck-color-white) 90%, transparent)",
               border: "2px dashed var(--puck-color-grey-08)",
               borderRadius: "12px",
               textAlign: "center",
@@ -323,7 +326,13 @@ export const MultipageRoot = (props: MultipageRootProps) => {
             >
               Your workspace is empty
             </h3>
-            <p style={{ margin: 0, color: "var(--puck-color-grey-05)", fontSize: "14px" }}>
+            <p
+              style={{
+                margin: 0,
+                color: "var(--puck-color-grey-05)",
+                fontSize: "14px",
+              }}
+            >
               Add a page from the left sidebar to get started.
             </p>
           </div>
@@ -331,7 +340,9 @@ export const MultipageRoot = (props: MultipageRootProps) => {
       )}
 
       {/* Hidden render slot keeps Puck happy about the root `children` prop */}
-      <div style={{ display: "none" }}>{props[pageName] as React.ReactNode}</div>
+      <div style={{ display: "none" }}>
+        {props[pageName] as React.ReactNode}
+      </div>
       <PageDeletionWatcher pages={pages} />
     </div>
   );

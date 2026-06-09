@@ -16,15 +16,15 @@ The `SoftConfigProvider` takes your static `hardConfig` and any existing `softCo
 
 ```tsx
 import { SoftConfigProvider } from "@netlisian/softconfig/puck";
-import { Puck } from "@measured/puck";
+import { Puck } from "@puckeditor/core";
 
 // Your static component definitions
 const hardConfig = {
   components: {
     Button: {
-      render: ({ label }) => <button>{label}</button>
-    }
-  }
+      render: ({ label }) => <button>{label}</button>,
+    },
+  },
 };
 
 export function Editor({ initialData, softComponents }) {
@@ -35,10 +35,7 @@ export function Editor({ initialData, softComponents }) {
       overrides={{}}
     >
       {(softConfig, components) => (
-        <Puck
-          config={softConfig}
-          data={initialData}
-        />
+        <Puck config={softConfig} data={initialData} />
       )}
     </SoftConfigProvider>
   );

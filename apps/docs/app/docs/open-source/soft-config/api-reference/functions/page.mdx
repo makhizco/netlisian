@@ -12,7 +12,7 @@ The most important utility for production rendering. It takes a Puck `Data` obje
 function resolveSoftConfig(
   data: Data,
   softComponents: SoftComponents,
-  config: Config
+  config: Config,
 ): Data;
 ```
 
@@ -22,7 +22,7 @@ Use this function before rendering your page to ensure that only standard React 
 
 ```tsx
 import { resolveSoftConfig } from "@netlisian/softconfig/puck";
-import { Render } from "@measured/puck";
+import { Render } from "@puckeditor/core";
 import { config, softComponents } from "./my-config";
 
 export function Page({ data }) {

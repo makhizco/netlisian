@@ -1,5 +1,5 @@
 import React from "react";
-import { type Plugin } from "@measured/puck";
+import { type Plugin } from "@puckeditor/core";
 import { MultipageActionBar } from "./MultipageActionBar";
 import { MultipageComponentOverlay } from "./MultipageComponentOverlay";
 import style from "./style.module.css";

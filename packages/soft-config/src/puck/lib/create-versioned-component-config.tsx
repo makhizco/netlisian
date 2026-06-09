@@ -5,7 +5,7 @@ import {
   Config,
   DefaultComponentProps,
   Field,
-} from "@measured/puck";
+} from "@puckeditor/core";
 import type { CustomFields } from "../types/SoftFields";
 import type { Overrides } from "../types/Overrides";
 

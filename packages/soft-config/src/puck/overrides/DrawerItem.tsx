@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Button, IconButton, createUsePuck } from "@measured/puck";
+import { Button, IconButton, createUsePuck } from "@puckeditor/core";
 const useCustomPuck = createUsePuck();
 import { useDemolish } from "../actions/useDemolish";
 import { useSetDefaultVersion } from "../actions/useSetDefaultVersion";
@@ -15,24 +15,23 @@ import { useActionEvent } from "../hooks/useActionEvent";
 
 const getClassName = getClassNameFactory("DrawerItem", styles);
 
-
 export const DrawerItem = (props: {
   name: string;
   label?: string;
   children: React.ReactNode;
 }): React.ReactElement => {
   const componentMeta = useSoftConfig((s) => s.softComponents[props.name]);
-  const displayName =  props.label ||componentMeta?.name || props.name;
+  const displayName = props.label || componentMeta?.name || props.name;
 
   const softComponents = new Set(
-    Object.keys(useSoftConfig((s) => s.softComponents, shallow))
+    Object.keys(useSoftConfig((s) => s.softComponents, shallow)),
   );
   const getPermissions = useCustomPuck((s) => s.getPermissions);
 
   const insertAllowed = getPermissions({ type: props.name }).insert;
 
   const removeSoftComponentVersion = useSoftConfig(
-    (s) => s.removeSoftComponentVersion
+    (s) => s.removeSoftComponentVersion,
   );
 
   const { handleDemolish } = useDemolish();
@@ -44,7 +43,7 @@ export const DrawerItem = (props: {
   const [isHovering, setIsHovering] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState("");
   const [versionsToDelete, setVersionsToDelete] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [migrationTarget, setMigrationTarget] = useState<string>("decompose");
   const useVersioning = useSoftConfig((s) => s.showVersionFields);
@@ -62,7 +61,7 @@ export const DrawerItem = (props: {
         const remaining = versions.filter((v) => !versionsToDelete.has(v));
         if (remaining.length === 0) {
           const shouldDemolish = await confirm(
-            `Deleting all versions will remove "${props.name}" entirely. Continue?`
+            `Deleting all versions will remove "${props.name}" entirely. Continue?`,
           );
           if (shouldDemolish) {
             handleDemolish(props.name);
@@ -107,7 +106,7 @@ export const DrawerItem = (props: {
 
   const handleDemolishClick = async () => {
     const confirmed = await confirm(
-      `Demolish "${displayName}" entirely? This will remove all versions.`
+      `Demolish "${displayName}" entirely? This will remove all versions.`,
     );
     if (confirmed) {
       handleDemolish(props.name);
@@ -165,7 +164,7 @@ export const DrawerItem = (props: {
         <Modal isOpen={isEditing} onClose={handleCancel}>
           <div className={getClassName("modal")}>
             <div className={getClassName("modalHeader")}>
-                <h2 className={getClassName("modalTitle")}>{displayName}</h2>
+              <h2 className={getClassName("modalTitle")}>{displayName}</h2>
               <p className={getClassName("modalSubtitle")}>
                 Component Settings
               </p>
@@ -179,28 +178,61 @@ export const DrawerItem = (props: {
                     <h3 className={getClassName("sectionTitle")}>Versions</h3>
                     <div className={getClassName("versionList")}>
                       {versions.map((version) => {
-                        const isDefault = version === (selectedVersion || defaultVersion);
-                        const isMarkedForDeletion = versionsToDelete.has(version);
+                        const isDefault =
+                          version === (selectedVersion || defaultVersion);
+                        const isMarkedForDeletion =
+                          versionsToDelete.has(version);
 
                         let rowClass = getClassName("versionRow");
-                        if (isDefault) rowClass += " " + getClassName("versionRow--isDefault");
-                        if (isMarkedForDeletion) rowClass += " " + getClassName("versionRow--isMarkedForDeletion");
+                        if (isDefault)
+                          rowClass +=
+                            " " + getClassName("versionRow--isDefault");
+                        if (isMarkedForDeletion)
+                          rowClass +=
+                            " " +
+                            getClassName("versionRow--isMarkedForDeletion");
 
                         return (
                           <div key={version} className={rowClass}>
                             <div className={getClassName("versionInfo")}>
-                              <span className={getClassName("versionNumber")}>Version {version}</span>
-                              {isDefault && <span className={getClassName("defaultBadge")}>Default</span>}
-                              {isMarkedForDeletion && <span className={getClassName("deleteBadge")}>Marked for deletion</span>}
+                              <span className={getClassName("versionNumber")}>
+                                Version {version}
+                              </span>
+                              {isDefault && (
+                                <span className={getClassName("defaultBadge")}>
+                                  Default
+                                </span>
+                              )}
+                              {isMarkedForDeletion && (
+                                <span className={getClassName("deleteBadge")}>
+                                  Marked for deletion
+                                </span>
+                              )}
                             </div>
                             <div className={getClassName("versionActions")}>
                               {!isDefault && !isMarkedForDeletion && (
-                                <Button variant="secondary" onClick={() => setSelectedVersion(version)}>
+                                <Button
+                                  variant="secondary"
+                                  onClick={() => setSelectedVersion(version)}
+                                >
                                   Set as Default
                                 </Button>
                               )}
-                              <Button variant="secondary" onClick={() => toggleVersionForDeletion(version)}>
-                                {isMarkedForDeletion ? <><X size={14} /> Undo</> : <><Trash2 size={14} /> Delete</>}
+                              <Button
+                                variant="secondary"
+                                onClick={() =>
+                                  toggleVersionForDeletion(version)
+                                }
+                              >
+                                {isMarkedForDeletion ? (
+                                  <>
+                                    <X size={14} /> Undo
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 size={14} /> Delete
+                                  </>
+                                )}
                               </Button>
                             </div>
                           </div>
@@ -211,7 +243,9 @@ export const DrawerItem = (props: {
 
                   {versionsToDelete.size > 0 && (
                     <div className={getClassName("section")}>
-                      <h3 className={getClassName("sectionTitle")}>Migration Settings</h3>
+                      <h3 className={getClassName("sectionTitle")}>
+                        Migration Settings
+                      </h3>
                       <div className={getClassName("migrationOptions")}>
                         <div
                           className={getClassName("migrationList")}
@@ -230,12 +264,18 @@ export const DrawerItem = (props: {
                                 aria-checked={isSelected}
                                 className={`${getClassName("migrationOption")} ${
                                   isSelected
-                                    ? getClassName("migrationOption--isSelected")
+                                    ? getClassName(
+                                        "migrationOption--isSelected",
+                                      )
                                     : ""
                                 }`}
                                 onClick={() => setMigrationTarget(target.value)}
                               >
-                                <span className={getClassName("migrationOptionLabel")}>
+                                <span
+                                  className={getClassName(
+                                    "migrationOptionLabel",
+                                  )}
+                                >
                                   {target.label}
                                 </span>
                                 {isSelected && <Check size={14} />}
@@ -245,14 +285,18 @@ export const DrawerItem = (props: {
                         </div>
                       </div>
                       <p className={getClassName("helpText")}>
-                        Choose where to move existing instances of the deleted versions.
+                        Choose where to move existing instances of the deleted
+                        versions.
                       </p>
                     </div>
                   )}
                 </>
               ) : (
                 <div className={getClassName("section")}>
-                  <p>Manage high-level settings for the <strong>{displayName}</strong> component.</p>
+                  <p>
+                    Manage high-level settings for the{" "}
+                    <strong>{displayName}</strong> component.
+                  </p>
                 </div>
               )}
             </div>
@@ -270,14 +314,22 @@ export const DrawerItem = (props: {
                   </Button>
                 )}
                 {useVersioning && (
-                  <Button size="medium" variant="secondary" onClick={handleCancel}>
+                  <Button
+                    size="medium"
+                    variant="secondary"
+                    onClick={handleCancel}
+                  >
                     <X size={16} /> Cancel
                   </Button>
                 )}
               </div>
 
               <div className={getClassName("footerRight")}>
-                <Button size="medium" variant="secondary" onClick={handleDemolishClick}>
+                <Button
+                  size="medium"
+                  variant="secondary"
+                  onClick={handleDemolishClick}
+                >
                   <Trash2 size={16} /> Demolish Component
                 </Button>
               </div>
@@ -290,5 +342,3 @@ export const DrawerItem = (props: {
 
   return <>{props.children}</>;
 };
-
-

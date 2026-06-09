@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useCallback } from "react";
 import { twMerge } from "tailwind-merge";
-import { Field } from "@measured/puck";
+import { Field } from "@puckeditor/core";
 
 /** CVA configuration structure */
 export interface CvaVariant {

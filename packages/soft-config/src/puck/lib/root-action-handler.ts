@@ -1,5 +1,5 @@
 "use client";
-import { DefaultComponentProps, AppState, OnAction, ComponentData } from "@measured/puck";
+import { DefaultComponentProps, AppState, OnAction, ComponentData } from "@puckeditor/core";
 import { AppStore } from "../store";
 import { NodeIndex, ZoneIndex } from "..";
 import { GlobalRootProps } from "../types/BuilderConfig";

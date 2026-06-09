@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Field, DefaultComponentProps, createUsePuck } from "@measured/puck";
+import { Field, DefaultComponentProps, createUsePuck } from "@puckeditor/core";
 import {
   BuilderComponentConfig,
   BuilderRootConfig,
@@ -105,7 +105,9 @@ export const CvaDialog = ({
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col text-slate-950">
         <DialogHeader>
           <DialogTitle>Configure CVA Rules</DialogTitle>
-          <DialogDescription>Define logic for the target property.</DialogDescription>
+          <DialogDescription>
+            Define logic for the target property.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto pr-2 space-y-6 py-4">
@@ -161,7 +163,7 @@ export const CvaDialog = ({
 
             {localConfig.variants.map((variant, vIdx) => {
               const selectedFieldDef = availableTriggerFields?.find(
-                (f) => f.value === variant.fieldId
+                (f) => f.value === variant.fieldId,
               );
               const availableOptions = selectedFieldDef?.options || [];
 
@@ -179,7 +181,9 @@ export const CvaDialog = ({
                     <X className="w-3 h-3" />
                   </Button>
                   <div className="mb-3 pr-8">
-                    <Label className="text-xs mb-1.5 block">Trigger Field</Label>
+                    <Label className="text-xs mb-1.5 block">
+                      Trigger Field
+                    </Label>
                     <Select
                       value={variant.fieldId}
                       onValueChange={(val) => updateVariantField(vIdx, val)}
@@ -215,7 +219,11 @@ export const CvaDialog = ({
                               placeholder="Classes..."
                               value={variant.classes[opt.value] || ""}
                               onChange={(e) =>
-                                updateVariantClass(vIdx, opt.value, e.target.value)
+                                updateVariantClass(
+                                  vIdx,
+                                  opt.value,
+                                  e.target.value,
+                                )
                               }
                             />
                           </div>
@@ -228,12 +236,14 @@ export const CvaDialog = ({
                     </div>
                   )}
                 </div>
-              )
+              );
             })}
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Done</Button>
+          <Button variant="outline" onClick={onClose}>
+            Done
+          </Button>
           <Button onClick={handleSave}>Save Changes</Button>
         </DialogFooter>
       </DialogContent>
@@ -277,7 +287,8 @@ export const QuickAddCvaDialog = ({
         <DialogHeader>
           <DialogTitle>Quick Add CVA</DialogTitle>
           <DialogDescription>
-            Paste your CVA definition code here. It will automatically create root fields and a mapping for this component.
+            Paste your CVA definition code here. It will automatically create
+            root fields and a mapping for this component.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
@@ -290,7 +301,9 @@ export const QuickAddCvaDialog = ({
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button onClick={handleAdd}>Add CVA Prop</Button>
         </DialogFooter>
       </DialogContent>
@@ -308,8 +321,16 @@ export const MapFn = ({
   id,
 }: {
   rootProps: BuilderRootConfig;
-  toOptions: { label: string; value: string; type: Field["type"] | "reference" }[];
-  fromOptions: { label: string; value: string; type: Field["type"] | "reference" }[];
+  toOptions: {
+    label: string;
+    value: string;
+    type: Field["type"] | "reference";
+  }[];
+  fromOptions: {
+    label: string;
+    value: string;
+    type: Field["type"] | "reference";
+  }[];
   props: DefaultComponentProps;
   value: BuilderComponentConfig["_map"];
   onChange: (value: BuilderComponentConfig["_map"]) => void;
@@ -320,10 +341,12 @@ export const MapFn = ({
   // Cast generic value to our richer MappingItem type internally
   const value = React.useMemo(
     () => (rawValue || []).map((item) => item as unknown as MappingItem),
-    [rawValue]
+    [rawValue],
   );
 
-  const [activeDialogIndex, setActiveDialogIndex] = useState<number | null>(null);
+  const [activeDialogIndex, setActiveDialogIndex] = useState<number | null>(
+    null,
+  );
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
 
   useEffect(() => {
@@ -348,12 +371,18 @@ export const MapFn = ({
       }
 
       // Clear numeric array indices (e.g., [0], [1] are invalid; use [] for array mapping)
-      if (typeof patched.from === "string" && hasNumericArrayIndices(patched.from)) {
+      if (
+        typeof patched.from === "string" &&
+        hasNumericArrayIndices(patched.from)
+      ) {
         patched.from = patched.mode === "cva" ? [] : "";
         changed = true;
       }
 
-      if (typeof patched.to === "string" && hasNumericArrayIndices(patched.to)) {
+      if (
+        typeof patched.to === "string" &&
+        hasNumericArrayIndices(patched.to)
+      ) {
         patched.to = "";
         changed = true;
       }
@@ -367,20 +396,21 @@ export const MapFn = ({
   }, [rawValue, onChange]);
 
   // Memoize eligible fields for CVA dialog to avoid recalc on every render
-  const cvaTriggerFields = React.useMemo(() =>
-    getEligibleCvaFields(rootProps._fields, rootProps._fieldSettings),
-    [rootProps]);
+  const cvaTriggerFields = React.useMemo(
+    () => getEligibleCvaFields(rootProps._fields, rootProps._fieldSettings),
+    [rootProps],
+  );
 
   // Stabilize option lists: only update identity when the actual values change
   const resolvedToOptions = React.useMemo(
     () => dedupeOptions(toOptions),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(toOptions.map((o) => o.value))]
+    [JSON.stringify(toOptions.map((o) => o.value))],
   );
 
   const handleUpdate = (index: number, updates: Partial<MappingItem>) => {
     const updatedList = value.map((item, i) =>
-      i === index ? { ...item, ...updates } : item
+      i === index ? { ...item, ...updates } : item,
     );
     if (updatedList)
       onChange(updatedList as unknown as BuilderComponentConfig["_map"]);
@@ -410,7 +440,7 @@ export const MapFn = ({
 
   const handleCvaSave = (index: number, newCvaConfig: CvaConfig) => {
     const usedFields = new Set<string>();
-    newCvaConfig.variants.forEach(v => {
+    newCvaConfig.variants.forEach((v) => {
       if (v.fieldId) usedFields.add(v.fieldId);
     });
 
@@ -418,7 +448,7 @@ export const MapFn = ({
     handleUpdate(index, {
       cva: newCvaConfig,
       from: Array.from(usedFields),
-      transform: buildCvaTransform(newCvaConfig)
+      transform: buildCvaTransform(newCvaConfig),
     });
   };
 
@@ -428,7 +458,12 @@ export const MapFn = ({
       handleUpdate(index, { mode, cva: { base: "", variants: [] }, from: [] });
     } else if (mode === "simple") {
       // Clear CVA specific fields when going back to simple
-      handleUpdate(index, { mode, from: "", cva: undefined, transform: undefined });
+      handleUpdate(index, {
+        mode,
+        from: "",
+        cva: undefined,
+        transform: undefined,
+      });
     } else {
       handleUpdate(index, { mode });
     }
@@ -445,30 +480,32 @@ export const MapFn = ({
 
     const cvaVariants: CvaVariant[] = [];
 
-    Object.entries(variants).forEach(([variantName, variantOptions]: [string, any]) => {
-      const options = Object.entries(variantOptions).map(([optName]) => ({
-        label: optName,
-        value: optName,
-      }));
+    Object.entries(variants).forEach(
+      ([variantName, variantOptions]: [string, any]) => {
+        const options = Object.entries(variantOptions).map(([optName]) => ({
+          label: optName,
+          value: optName,
+        }));
 
-      // Add field to root if it doesn't exist
-      if (!newFields.find((f) => f.name === variantName)) {
-        newFields.push({
-          name: variantName,
-          type: options.length <= 3 ? "radio" : "select",
+        // Add field to root if it doesn't exist
+        if (!newFields.find((f) => f.name === variantName)) {
+          newFields.push({
+            name: variantName,
+            type: options.length <= 3 ? "radio" : "select",
+          });
+          newFieldSettings[variantName] = {
+            options,
+            defaultValue: defaultVariants[variantName] || options[0]?.value,
+          };
+        }
+
+        usedFieldIds.push(variantName);
+        cvaVariants.push({
+          fieldId: variantName,
+          classes: variantOptions,
         });
-        newFieldSettings[variantName] = {
-          options,
-          defaultValue: defaultVariants[variantName] || options[0]?.value,
-        };
-      }
-
-      usedFieldIds.push(variantName);
-      cvaVariants.push({
-        fieldId: variantName,
-        classes: variantOptions,
-      });
-    });
+      },
+    );
 
     const newCvaConfig: CvaConfig = {
       base,
@@ -519,9 +556,11 @@ export const MapFn = ({
           <Accordion type="single" collapsible key={index}>
             <AccordionItem
               value={`item-${index}`}
-              className={cn("border-0", index < value.length - 1 ? "border-b border-slate-200" : "")}
+              className={cn(
+                "border-0",
+                index < value.length - 1 ? "border-b border-slate-200" : "",
+              )}
             >
-
               {/* HEADER */}
               <div className="group flex items-center justify-between px-3 py-2 bg-slate-50 hover:bg-slate-100 transition-colors">
                 <AccordionTrigger className="flex-1 min-w-0 px-0 py-0 hover:no-underline">
@@ -532,12 +571,24 @@ export const MapFn = ({
 
                 {/* ACTION BUTTONS (hover only) */}
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleDuplicate(index, e)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => handleDuplicate(index, e)}
+                  >
                     <Copy className="h-3 w-3 text-slate-400 hover:text-slate-600" />
                   </Button>
 
-                  <Button variant="ghost" size="icon" className="h-6 w-6"
-                    onClick={(e) => { e.stopPropagation(); handleRemove(index); }}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemove(index);
+                    }}
+                  >
                     <Trash2 className="h-3 w-3 text-red-400 hover:text-red-600" />
                   </Button>
                 </div>
@@ -546,7 +597,6 @@ export const MapFn = ({
               {/* CONTENT */}
               <AccordionContent className="px-3 py-3 text-xs bg-white">
                 <div className="space-y-3">
-
                   {/* MODE TOGGLE */}
                   <div className="flex gap-1 bg-slate-100 p-1 rounded-md w-fit">
                     {(["simple", "cva"] as const).map((m) => (
@@ -558,7 +608,7 @@ export const MapFn = ({
                           "px-3 py-1.5 rounded-sm text-[10px] font-medium capitalize transition-all",
                           item.mode === m
                             ? "bg-white text-blue-600 shadow-sm border border-blue-200"
-                            : "text-slate-500 hover:text-slate-700"
+                            : "text-slate-500 hover:text-slate-700",
                         )}
                       >
                         {m}
@@ -568,12 +618,15 @@ export const MapFn = ({
 
                   {item.mode === "simple" && (
                     <div className="flex flex-col gap-3">
-
                       <div className="space-y-1.5 w-full">
-                        <Label className="text-[10px] uppercase text-muted-foreground font-bold">Source Field</Label>
+                        <Label className="text-[10px] uppercase text-muted-foreground font-bold">
+                          Source Field
+                        </Label>
                         <Select
                           value={(item.from as string) || ""}
-                          onValueChange={(val) => handleUpdate(index, { from: val })}
+                          onValueChange={(val) =>
+                            handleUpdate(index, { from: val })
+                          }
                         >
                           <SelectTrigger className="text-xs w-full h-8 bg-white">
                             <SelectValue placeholder="Get Value From" />
@@ -589,8 +642,15 @@ export const MapFn = ({
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label className="text-[10px] uppercase text-muted-foreground font-bold">Target Prop</Label>
-                        <Select value={item.to} onValueChange={(val) => handleUpdate(index, { to: val })}>
+                        <Label className="text-[10px] uppercase text-muted-foreground font-bold">
+                          Target Prop
+                        </Label>
+                        <Select
+                          value={item.to}
+                          onValueChange={(val) =>
+                            handleUpdate(index, { to: val })
+                          }
+                        >
                           <SelectTrigger className="text-xs w-full h-8 bg-white">
                             <SelectValue placeholder="Map To" />
                           </SelectTrigger>
@@ -603,7 +663,6 @@ export const MapFn = ({
                           </SelectContent>
                         </Select>
                       </div>
-
                     </div>
                   )}
 
@@ -624,7 +683,12 @@ export const MapFn = ({
         ))}
 
         {/* Add Mapping */}
-        <div className={cn("grid grid-cols-2 divide-x border-t border-slate-200", value.length === 0 && "border-t-0")}>
+        <div
+          className={cn(
+            "grid grid-cols-2 divide-x border-t border-slate-200",
+            value.length === 0 && "border-t-0",
+          )}
+        >
           <Button
             variant="ghost"
             className="w-full text-xs text-blue-600 h-8 hover:bg-blue-50 rounded-none font-medium"

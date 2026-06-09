@@ -83,7 +83,7 @@ export default function Render(props: any) {
     const defaultPropsStr = JSON.stringify(config.defaultProps, null, 2);
 
     return `
-import { ComponentConfig } from "@measured/puck";
+import { ComponentConfig } from "@puckeditor/core";
 
 export const ${componentName}Config: ComponentConfig = {
   fields: ${fieldsStr},

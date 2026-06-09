@@ -1,4 +1,4 @@
-// import { AutoField, ComponentConfig, Fields, WithId, WithPuckProps, createUsePuck } from "@measured/puck";
+// import { AutoField, ComponentConfig, Fields, WithId, WithPuckProps, createUsePuck } from "@puckeditor/core";
 // import React, { useMemo, useState, useEffect } from "react";
 // import isDeepEqual from "fast-deep-equal";
 // import { ContainerShell } from "../container/useContainerShell";
@@ -335,13 +335,13 @@
 //         label: "Attribute Values",
 //         objectFields: (props.attributes ?? []).reduce(
 //           (
-//             acc: Record<string, import("@measured/puck").Field>,
+//             acc: Record<string, import("@puckeditor/core").Field>,
 //             { key, valueType }: { key: string; valueType: string }
 //           ) => {
 //             if (!key) return acc;
 //             const field = buildAttributeValueField(key, valueType);
 //             if (field !== undefined) {
-//               acc[key] = field as import("@measured/puck").Field;
+//               acc[key] = field as import("@puckeditor/core").Field;
 //             }
 //             return acc;
 //           },

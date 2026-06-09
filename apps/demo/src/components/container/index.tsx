@@ -1,4 +1,4 @@
-import { ComponentConfig, Field, PuckContext } from "@measured/puck";
+import { ComponentConfig, Field, PuckContext } from "@puckeditor/core";
 import { ContainerElement, containerElements } from "./container-elements";
 import { ContainerProps } from "./Container";
 import { LeafElement, leafElements } from "./leaf-elements";

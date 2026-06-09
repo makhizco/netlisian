@@ -1,8 +1,6 @@
-// import "./style.css";
-import PuckEditor from "./editor";
 import { Metadata } from "next";
-import { Data } from "@measured/puck";
 import resolvePuckPath from "../../lib/resolve-puck-path";
+import { ClientPuckPage } from "./client";
 
 export async function generateMetadata({
   params,
@@ -23,22 +21,6 @@ export async function generateMetadata({
   };
 }
 
-export default async function PuckPage({
-  params,
-}: {
-  params: Promise<{ puck: string[] }>;
-  searchParams?: Promise<{
-    prompt?: string;
-  }>;
-}) {
-  const { puck = [] } = await params;
-  const { isEdit, path } = resolvePuckPath(puck);
-
-  return (
-    <>
-      <PuckEditor isEdit={isEdit} path={path} />
-    </>
-  );
+export default function PuckPage() {
+  return <ClientPuckPage />;
 }
-
-export const dynamic = "force-dynamic";

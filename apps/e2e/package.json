@@ -1,20 +1,20 @@
 {
   "name": "@netlisian/e2e",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3003",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start -p 3003",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "benchmark": "mv test-results/benchmark-report.json benchmark-report-previous.json 2>/dev/null || true && playwright test e2e/benchmark.spec.ts --workers=1 && pnpm run benchmark:graph",
     "benchmark:graph": "npx tsx scripts/generate-graph.ts",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
-    "@measured/puck": "^0.20.2",
+    "@puckeditor/core": "^0.21.3",
     "@netlisian/multipage": "workspace:^",
     "@netlisian/outline": "workspace:^",
     "@netlisian/softconfig": "workspace:*",
@@ -31,11 +31,11 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
-    "next": "^15.5.4",
+    "next": "^16.2.6",
     "next-themes": "^0.4.6",
     "postcss": "^8.5.6",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "react-fast-compare": "^3.2.2",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.0.1",
@@ -44,6 +44,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@netlisian/eslint-config": "workspace:*",
     "@netlisian/tsconfig": "workspace:*",
     "@playwright/test": "^1.42.1",
     "@types/node": "^20.11.24",

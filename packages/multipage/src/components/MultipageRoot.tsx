@@ -7,7 +7,7 @@ import {
   type PuckComponent,
   type SlotComponent,
   createUsePuck,
-} from "@measured/puck";
+} from "@puckeditor/core";
 import {
   ReactFlow,
   Background,
@@ -100,7 +100,9 @@ const PageMutationWatcher = ({
     const movedPages: { id: string; oldIndex: number; newIndex: number }[] = [];
 
     currPages.forEach((p, newIndex) => {
-      const oldIndex = prevPages.findIndex((prev, i) => prev.id === p.id && !currIndicesUsed.has(i));
+      const oldIndex = prevPages.findIndex(
+        (prev, i) => prev.id === p.id && !currIndicesUsed.has(i),
+      );
       if (oldIndex !== -1) {
         currIndicesUsed.add(oldIndex);
         if (oldIndex !== newIndex) {
@@ -237,11 +239,16 @@ export const MultipageRoot: PuckComponent<MultipageRootProps> = ({
 
     setNodes((prevNodes) =>
       validPages.map((page, i) => {
-        const slot = (page as PageItem & Record<string, SlotComponent>)[pageName];
-        const position = { x: (i % cols) * 900, y: Math.floor(i / cols) * 1200 };
+        const slot = (page as PageItem & Record<string, SlotComponent>)[
+          pageName
+        ];
+        const position = {
+          x: (i % cols) * 900,
+          y: Math.floor(i / cols) * 1200,
+        };
 
         const existingNode = prevNodes.find((n) => n.id === page.id);
-        
+
         // Reconcile: If the node exists and its rendered data hasn't fundamentally changed,
         // reuse the exact same node object reference. This allows React Flow to bail out
         // of re-rendering this specific PageNode, even though the collection changed.

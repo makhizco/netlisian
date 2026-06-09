@@ -1,16 +1,16 @@
 {
   "name": "@netlisian/docs",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "private": true,
   "scripts": {
     "build": "next build",
     "start": "next start ",
     "dev": "next dev -p 3001",
-    "lint": "next lint",
+    "lint": "eslint .",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf .next"
   },
   "dependencies": {
-    "@measured/puck": "^0.20.2",
+    "@puckeditor/core": "^0.21.3",
     "@netlisian/softconfig": "workspace:*",
     "@netlisian/tailwind": "workspace:*",
     "@netlisian/utils": "workspace:*",
@@ -24,13 +24,13 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
-    "next": "^15.5.4",
+    "next": "^16.2.6",
     "nextra": "^4.6.1",
     "nextra-theme-docs": "^4.6.1",
     "pagefind": "^1.4.0",
     "postcss": "^8.5.6",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.8"
@@ -38,7 +38,7 @@
   "devDependencies": {
     "@netlisian/eslint-config": "workspace:*",
     "@netlisian/tsconfig": "workspace:*",
-    "@next/eslint-plugin-next": "^14.1.5",
+    "@next/eslint-plugin-next": "^16.2.6",
     "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20.11.24",
     "@types/react": "^19.2.0",

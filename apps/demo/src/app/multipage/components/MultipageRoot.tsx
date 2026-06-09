@@ -8,7 +8,7 @@ import {
   type SlotComponent,
   type Field,
   createUsePuck,
-} from "@measured/puck";
+} from "@puckeditor/core";
 import {
   ReactFlow,
   Background,

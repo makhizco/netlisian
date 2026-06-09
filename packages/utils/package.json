@@ -19,7 +19,7 @@
     "@netlisian/tsconfig": "workspace:*",
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.19",
-    "eslint": "^9.36.0",
+    "eslint": "~8.57.1",
     "@netlisian/eslint-config": "workspace:*",
     "tsup": "^8.0.2",
     "typescript": "5.9.3"

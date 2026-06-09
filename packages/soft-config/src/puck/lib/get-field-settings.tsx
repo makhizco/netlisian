@@ -1,5 +1,5 @@
 "use client";
-import { AutoField, Field, Fields } from "@measured/puck";
+import { AutoField, Field, Fields } from "@puckeditor/core";
 import {
   buildArrayDefaultItemProps,
   getArrayItemSummary,
@@ -20,13 +20,16 @@ import type {
 const buildPuckField = (
   field: SoftFieldDefinition,
   fieldSettings?: SoftFieldSettings[string],
-  customFields?: CustomFields
+  customFields?: CustomFields,
 ): Field => {
   const customFieldDefinition = resolveCustomFieldDefinition(
     field.type,
-    customFields
+    customFields,
   );
-  const customReturnType = resolveCustomFieldReturnType(field.type, customFields);
+  const customReturnType = resolveCustomFieldReturnType(
+    field.type,
+    customFields,
+  );
 
   if (customFieldDefinition && customReturnType) {
     return {
@@ -69,9 +72,12 @@ const buildPuckField = (
         arrayFields: buildDefaultEditorFields(
           subFields,
           subFieldSettings,
-          customFields
+          customFields,
         ),
-        defaultItemProps: buildArrayDefaultItemProps(subFields, subFieldSettings),
+        defaultItemProps: buildArrayDefaultItemProps(
+          subFields,
+          subFieldSettings,
+        ),
         getItemSummary(item, index) {
           return getArrayItemSummary(item, index, fieldSettings);
         },
@@ -84,7 +90,7 @@ const buildPuckField = (
         objectFields: buildDefaultEditorFields(
           fieldSettings?.subFields || [],
           fieldSettings?.subFieldSettings || {},
-          customFields
+          customFields,
         ),
       };
     default:
@@ -95,13 +101,13 @@ const buildPuckField = (
 const buildDefaultEditorFields = (
   fields: SoftFieldDefinition[] = [],
   fieldSettings: SoftFieldSettings = {},
-  customFields?: CustomFields
+  customFields?: CustomFields,
 ): Fields => {
   return fields.reduce((acc, field) => {
     acc[field.name] = buildPuckField(
       field,
       fieldSettings[field.name],
-      customFields
+      customFields,
     );
     return acc;
   }, {} as Fields);
@@ -111,13 +117,11 @@ const getFieldSettings = (
   _fields?: SoftFieldDefinition[],
   _fieldSettings?: SoftFieldSettings,
   customFields?: CustomFields,
-  deep?: boolean
+  deep?: boolean,
 ): Fields => {
   const customTypeOptions = getCustomFieldTypeOptions(customFields);
 
-  return (
-    (_fields || [])
-  ).reduce((fields, field) => {
+  return (_fields || []).reduce((fields, field) => {
     const fieldSettings: Fields = {
       // placeholder: { type: "text", label: "Placeholder" },
     };
@@ -125,11 +129,11 @@ const getFieldSettings = (
     const currentFieldSettings = _fieldSettings?.[field.name];
     const customFieldDefinition = resolveCustomFieldDefinition(
       field.type,
-      customFields
+      customFields,
     );
     const customReturnType = resolveCustomFieldReturnType(
       field.type,
-      customFields
+      customFields,
     );
     const resolvedType = field.type;
     const customSchema = resolveCustomFieldSchema(field.type, customFields);
@@ -207,24 +211,24 @@ const getFieldSettings = (
           };
         }
 
-          fieldSettings.options = {
-            type: "array",
-            label: "Options",
-            defaultItemProps: {
-              label: "New Option",
-              value: "new",
+        fieldSettings.options = {
+          type: "array",
+          label: "Options",
+          defaultItemProps: {
+            label: "New Option",
+            value: "new",
+          },
+          arrayFields: {
+            label: { type: "text", label: "Label" },
+            value: {
+              type: "text",
+              label: "Value",
             },
-            arrayFields: {
-              label: { type: "text", label: "Label" },
-              value: {
-                type: "text",
-                label: "Value",
-              },
-            },
-            getItemSummary(item, index) {
-              return item.label || `Option ${(index || 0) + 1}`;
-            },
-          };
+          },
+          getItemSummary(item, index) {
+            return item.label || `Option ${(index || 0) + 1}`;
+          },
+        };
 
         break;
       }
@@ -308,7 +312,7 @@ const getFieldSettings = (
                   resolvedSubFields,
                   resolvedSubFieldSettings,
                   customFields,
-                  true
+                  true,
                 )
               : {},
           };
@@ -321,11 +325,11 @@ const getFieldSettings = (
               arrayFields: buildDefaultEditorFields(
                 resolvedSubFields,
                 resolvedSubFieldSettings,
-                customFields
+                customFields,
               ),
               defaultItemProps: buildArrayDefaultItemProps(
                 resolvedSubFields,
-                resolvedSubFieldSettings
+                resolvedSubFieldSettings,
               ),
               getItemSummary(item, index) {
                 return getArrayItemSummary(item, index, currentFieldSettings);

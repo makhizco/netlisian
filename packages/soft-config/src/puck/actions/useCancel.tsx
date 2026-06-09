@@ -1,5 +1,5 @@
 "use client";
-import { createUsePuck } from "@measured/puck";
+import { createUsePuck } from "@puckeditor/core";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { useActionEvent } from "../hooks/useActionEvent";
@@ -22,7 +22,7 @@ export const useCancel = () => {
 
     try {
       cancel(setHistories, puckDispatch, selectedItemSelector);
-      
+
       void triggerAction({
         type: "cancel",
         payload: {},
@@ -31,7 +31,7 @@ export const useCancel = () => {
       alert("Failed to cancel:" + " " + error);
       notify.error(
         "Failed to cancel: " +
-          (error instanceof Error ? error.message : String(error))
+          (error instanceof Error ? error.message : String(error)),
       );
     }
   };

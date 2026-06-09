@@ -1,4 +1,4 @@
-import { Data } from "@measured/puck";
+import { Data } from "@puckeditor/core";
 import { PageItem } from "./MultipageRoot";
 
 /**
@@ -59,7 +59,7 @@ export const puckDataToCollection = (
   originalCollection: Record<string, Data>
 ): Record<string, Data> => {
   const changedPages: Record<string, Data> = {};
-  
+
   // Extract pages from root props if available
   const pagesList: PageItem[] = (newData.root?.props as any)?.pages || [];
 

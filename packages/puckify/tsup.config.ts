@@ -14,7 +14,7 @@ export default defineConfig({
   external: [
     "react",
     "react-dom",
-    "@measured/puck",
+    "@puckeditor/core",
   ],
   dts: {
     resolve: true,

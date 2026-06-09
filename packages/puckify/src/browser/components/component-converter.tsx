@@ -10,7 +10,7 @@ export function ComponentConverter() {
   const [result, setResult] = useState<ConversionResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [outputFormat, setOutputFormat] = useState<"json" | "typescript">(
-    "json"
+    "json",
   );
 
   const handleConvert = async () => {
@@ -42,7 +42,13 @@ export function ComponentConverter() {
       console.error("Conversion error:", error);
       setResult({
         success: false,
-        component: { name: "", filePath: "", props: [], isDefaultExport: false, source: sourceCode },
+        component: {
+          name: "",
+          filePath: "",
+          props: [],
+          isDefaultExport: false,
+          source: sourceCode,
+        },
         puckConfig: { fields: {}, defaultProps: {}, render: "" },
         warnings: [],
         errors: [
@@ -117,7 +123,9 @@ export function ComponentConverter() {
         {result && (
           <div className="mt-6 rounded-lg bg-white p-6 shadow">
             <h3 className="mb-4 text-lg font-semibold">
-              {result.success ? "✅ Conversion Successful" : "❌ Conversion Failed"}
+              {result.success
+                ? "✅ Conversion Successful"
+                : "❌ Conversion Failed"}
             </h3>
 
             {result.component.name && (
@@ -133,7 +141,8 @@ export function ComponentConverter() {
                 <ul className="mt-2 space-y-1 text-gray-600">
                   {result.component.props.map((prop) => (
                     <li key={prop.name}>
-                      - {prop.name}: <code className="text-blue-600">{prop.type}</code>{" "}
+                      - {prop.name}:{" "}
+                      <code className="text-blue-600">{prop.type}</code>{" "}
                       {prop.required && <span className="text-red-600">*</span>}
                     </li>
                   ))}
@@ -172,21 +181,17 @@ export function ComponentConverter() {
 // Simplified component parsing for browser environment
 function parseSimpleComponent(code: string) {
   const componentNameMatch = code.match(
-    /(?:export\s+(?:default\s+)?)?(?:function|const)\s+(\w+)/
+    /(?:export\s+(?:default\s+)?)?(?:function|const)\s+(\w+)/,
   );
   const componentName = componentNameMatch?.[1] || "Component";
 
   // Extract props interface/type
-  const propsMatch = code.match(
-    /(?:interface|type)\s+\w*Props\s*\{([^}]*)\}/s
-  );
+  const propsMatch = code.match(/(?:interface|type)\s+\w*Props\s*\{([^}]*)\}/s);
   const props = [];
 
   if (propsMatch) {
     const propsContent = propsMatch[1];
-    const propMatches = propsContent.matchAll(
-      /(\w+)\s*\??:\s*([^;]+);/g
-    );
+    const propMatches = propsContent.matchAll(/(\w+)\s*\??:\s*([^;]+);/g);
 
     for (const match of propMatches) {
       props.push({
@@ -245,7 +250,7 @@ function generatePuckConfig(component: any) {
 function generateTypeScriptCode(result: any): string {
   const { component, puckConfig } = result;
 
-  return `import { ComponentConfig } from "@measured/puck";
+  return `import { ComponentConfig } from "@puckeditor/core";
 
 export const ${component.name}Config: ComponentConfig = {
   fields: ${JSON.stringify(puckConfig.fields, null, 2)},

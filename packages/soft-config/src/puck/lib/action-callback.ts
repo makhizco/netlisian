@@ -1,5 +1,5 @@
 "use client";
-import type { PuckAction, PuckApi } from "@measured/puck";
+import type { PuckAction, PuckApi } from "@puckeditor/core";
 import { notify } from "./notify";
 
 /**

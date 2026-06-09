@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../components/base/select";
-import { Field, DefaultComponentProps, createUsePuck } from "@measured/puck";
+import { Field, DefaultComponentProps, createUsePuck } from "@puckeditor/core";
 import {
   BuilderComponentConfig,
   BuilderRootConfig,

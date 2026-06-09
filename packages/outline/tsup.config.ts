@@ -9,7 +9,7 @@ export default defineConfig({
   format: ["cjs", "esm"],
   entry: ["index.ts"],
   outDir: "dist",
-  external: ["react", "react-dom", "@measured/puck", "@puckeditor/core"],
+  external: ["react", "react-dom", "@puckeditor/core", "@puckeditor/core"],
   esbuildPlugins: [
     {
       name: "css-module",
@@ -44,9 +44,8 @@ export default defineConfig({
 
             return {
               pluginData: { css: result.css },
-              contents: `import "${
-                pluginData.pathDir
-              }"; export default ${JSON.stringify(cssModule)}`,
+              contents: `import "${pluginData.pathDir
+                }"; export default ${JSON.stringify(cssModule)}`,
             };
           }
         );

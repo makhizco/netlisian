@@ -1,4 +1,10 @@
-import { ComponentConfig, Field, Fields, WithId, WithPuckProps } from "@measured/puck";
+import {
+  ComponentConfig,
+  Field,
+  Fields,
+  WithId,
+  WithPuckProps,
+} from "@puckeditor/core";
 import React from "react";
 import isEqual from "react-fast-compare";
 import { RepeatItem, RepeatProps } from "./Repeat";
@@ -7,7 +13,10 @@ import { getRepeatComponentRegistry } from "./registry";
 export type RepeatRenderProps = WithId<WithPuckProps<RepeatProps>> & {
   _map?: unknown;
 };
-export type ComponentRegistry = Record<string, ComponentConfig<Record<string, unknown>>>;
+export type ComponentRegistry = Record<
+  string,
+  ComponentConfig<Record<string, unknown>>
+>;
 
 const FALLBACK_CATEGORY = "Other Components";
 
@@ -20,7 +29,7 @@ export const getComponentRegistry = (): ComponentRegistry => {
  * Prevents rendering issues when registry contains schema-only entries without render functions.
  */
 export const isComponentReady = (
-  comp: ComponentConfig<Record<string, unknown>> | undefined
+  comp: ComponentConfig<Record<string, unknown>> | undefined,
 ): boolean => {
   return Boolean(comp && typeof comp.render === "function");
 };
@@ -37,28 +46,30 @@ export const filterRepeatableFields = (fields: Fields = {}): Fields =>
         k !== "_map" &&
         k !== "_slotEnabled" &&
         v.type !== "slot" &&
-        v.type !== "custom"
-    )
+        v.type !== "custom",
+    ),
   ) as Fields;
 
 export const buildDefaultItemProps = (
   defaultProps: Record<string, unknown> = {},
-  repeatableFields: Fields = {}
+  repeatableFields: Fields = {},
 ): RepeatItem | undefined => {
   const allowed = new Set(Object.keys(repeatableFields));
   const item = Object.fromEntries(
-    Object.entries(defaultProps).filter(([key]) => allowed.has(key))
+    Object.entries(defaultProps).filter(([key]) => allowed.has(key)),
   );
 
   return Object.keys(item).length ? item : undefined;
 };
 
-export const stableGetItemSummary = (_item: RepeatItem, index?: number): string =>
-  `Item ${(index || 0) + 1}`;
+export const stableGetItemSummary = (
+  _item: RepeatItem,
+  index?: number,
+): string => `Item ${(index || 0) + 1}`;
 
 export const createItemsField = (
   arrayFields: Fields = {},
-  defaultItemProps?: RepeatItem
+  defaultItemProps?: RepeatItem,
 ): NonNullable<Fields<RepeatProps>["items"]> => {
   const field: NonNullable<Fields<RepeatProps>["items"]> = {
     type: "array",
@@ -99,12 +110,16 @@ const RepeatItemView = React.memo(
       id: itemId,
     } as Parameters<typeof selectedComponent.render>[0];
 
-    return <React.Fragment key={itemId}>{selectedComponent.render(mergedProps)}</React.Fragment>;
+    return (
+      <React.Fragment key={itemId}>
+        {selectedComponent.render(mergedProps)}
+      </React.Fragment>
+    );
   },
   (prev, next) =>
     prev.itemId === next.itemId &&
     isEqual(prev.item, next.item) &&
-    isEqual(prev.parentProps, next.parentProps)
+    isEqual(prev.parentProps, next.parentProps),
 );
 
 export const RepeatContent = React.memo(
@@ -147,14 +162,15 @@ export const RepeatContent = React.memo(
 
     const childFields = (selectedComponent.fields || {}) as Fields;
     const hasSlots = Object.values(childFields).some(
-      (fieldConfig) => fieldConfig.type === "slot"
+      (fieldConfig) => fieldConfig.type === "slot",
     );
 
     if (hasSlots) {
       return (
         <div className="grid gap-4 rounded-md border border-dashed border-red-500 bg-red-50 p-4 text-sm text-red-500">
-          <strong>Configuration Error:</strong> Components with slots enabled are
-          not allowed in the Repeat component. Please select a simpler component.
+          <strong>Configuration Error:</strong> Components with slots enabled
+          are not allowed in the Repeat component. Please select a simpler
+          component.
         </div>
       );
     }
@@ -162,7 +178,8 @@ export const RepeatContent = React.memo(
     return (
       <div className="grid gap-4">
         {items.map((item: RepeatItem, index: number) => {
-          const itemId: string = (item.id as string) || `${id}-${selectedKey}-${index}`;
+          const itemId: string =
+            (item.id as string) || `${id}-${selectedKey}-${index}`;
 
           return (
             <RepeatItemView
@@ -181,7 +198,7 @@ export const RepeatContent = React.memo(
   (prevProps, nextProps) =>
     prevProps.component === nextProps.component &&
     isEqual(prevProps.items, nextProps.items) &&
-    isEqual(prevProps._map, nextProps._map)
+    isEqual(prevProps._map, nextProps._map),
 );
 
 export const filterClasses = (rawClasses: string) => {
@@ -210,7 +227,9 @@ export const filterClasses = (rawClasses: string) => {
       const gridMatch = c.match(/^(?:([a-z0-9-]+):)?grid-cols-(\d+)$/);
       if (gridMatch) {
         const [, prefix, cols] = gridMatch;
-        const colSpan = prefix ? `${prefix}:col-span-${cols}` : `col-span-${cols}`;
+        const colSpan = prefix
+          ? `${prefix}:col-span-${cols}`
+          : `col-span-${cols}`;
         return `${c} ${colSpan}`;
       }
       return c;

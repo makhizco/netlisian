@@ -1,4 +1,4 @@
-import { ComponentData, Content, Data } from "@measured/puck";
+import { ComponentData, Content, Data } from "@puckeditor/core";
 import { PageItem } from "./MultipageRoot";
 
 /**

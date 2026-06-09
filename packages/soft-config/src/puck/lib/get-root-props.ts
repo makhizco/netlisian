@@ -1,5 +1,5 @@
 "use client";
-import { AppState, Field } from "@measured/puck";
+import { AppState, Field } from "@puckeditor/core";
 import { BuilderRootConfig } from "../types/BuilderConfig";
 
 export const getRootProps = (appState: AppState): BuilderRootConfig =>

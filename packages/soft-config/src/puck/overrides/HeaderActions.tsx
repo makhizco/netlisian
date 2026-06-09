@@ -1,13 +1,11 @@
 "use client";
-import { Button, Data, Overrides, createUsePuck } from "@measured/puck";
+import { Button, Data, Overrides, createUsePuck } from "@puckeditor/core";
 const useCustomPuck = createUsePuck();
 import { useComplete } from "../actions/useComplete";
 import { useCancel } from "../actions/useCancel";
 import { useSoftConfig } from "../context/useStore";
 import { inspect } from "util";
 import { notify } from "../lib/notify";
-
-
 
 export const HeaderActions: Overrides["headerActions"] = ({ children }) => {
   const { handleComplete } = useComplete();
@@ -28,7 +26,11 @@ export const HeaderActions: Overrides["headerActions"] = ({ children }) => {
               const completedComponent = handleComplete();
               if (completedComponent) {
                 try {
-                  inspect(completedComponent.id, dispatch, selectedItemSelector);
+                  inspect(
+                    completedComponent.id,
+                    dispatch,
+                    selectedItemSelector,
+                  );
                 } catch (error) {
                   notify.error(
                     "Failed to inspect after completion: " +

@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Button, Data, createUsePuck } from "@measured/puck";
+import { Button, Data, createUsePuck } from "@puckeditor/core";
 import { useComplete } from "../actions/useComplete";
 import { useCancel } from "../actions/useCancel";
 import { useInspect } from "../actions/useInspect";

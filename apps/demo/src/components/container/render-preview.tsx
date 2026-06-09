@@ -1,5 +1,5 @@
 import React from "react";
-import { PuckContext } from "@measured/puck";
+import { PuckContext } from "@puckeditor/core";
 import { ContainerElement } from "./container-elements";
 import { LeafElement } from "./leaf-elements";
 import { isLeafElement } from "./is-leaf-element";
@@ -65,7 +65,7 @@ export const renderPreview = ({
                   {},
                   ...(slot?.style ?? [])
                     .filter((s: any) => s.key && typeof s.value === "string")
-                    .map((s: any) => ({ [s.key]: s.value }))
+                    .map((s: any) => ({ [s.key]: s.value })),
                 )
               : {}),
           }}

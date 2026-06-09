@@ -1,5 +1,18 @@
-import { AutoField, ComponentConfig, Fields, WithId, WithPuckProps, createUsePuck } from "@measured/puck";
-import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import {
+  AutoField,
+  ComponentConfig,
+  Fields,
+  WithId,
+  WithPuckProps,
+  createUsePuck,
+} from "@puckeditor/core";
+import React, {
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import isDeepEqual from "fast-deep-equal";
 
 export type RepeatItem = Record<string, unknown>;
@@ -30,11 +43,13 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 const getComponentLabel = (key: string, comp?: ComponentConfig) =>
-  (typeof comp?.label === "string" && comp.label.trim()) ? comp.label : key;
+  typeof comp?.label === "string" && comp.label.trim() ? comp.label : key;
 
 const filterRepeatableFields = (fields: Fields = {}): Fields =>
   Object.fromEntries(
-    Object.entries(fields).filter(([k, v]) => k !== "id" && k !== "editMode" && v.type !== "slot")
+    Object.entries(fields).filter(
+      ([k, v]) => k !== "id" && k !== "editMode" && v.type !== "slot",
+    ),
   );
 
 /**
@@ -43,7 +58,7 @@ const filterRepeatableFields = (fields: Fields = {}): Fields =>
  */
 const calculateChangedItems = (
   currentItems: RepeatItem[],
-  previousItems: RepeatItem[] | undefined
+  previousItems: RepeatItem[] | undefined,
 ): Record<string, boolean> => {
   const changed: Record<string, boolean> = {};
 
@@ -82,7 +97,9 @@ const useRepeatRegistry = () => {
     const catMap = new Map<string, string>();
 
     Object.entries(config.categories || {}).forEach(([catKey, cat]) => {
-      (cat.components || []).forEach(compKey => catMap.set(compKey, cat.title || catKey));
+      (cat.components || []).forEach((compKey) =>
+        catMap.set(compKey, cat.title || catKey),
+      );
     });
 
     Object.entries(config.components).forEach(([key, comp]) => {
@@ -110,7 +127,9 @@ const ComponentPickerField = ({ value, onChange, id }: CustomFieldProps) => {
     const filtered: Record<string, { key: string; label: string }[]> = {};
 
     Object.entries(groupedOptions).forEach(([cat, opts]) => {
-      const matches = opts.filter((o) => o.label.toLowerCase().includes(lowerQuery));
+      const matches = opts.filter((o) =>
+        o.label.toLowerCase().includes(lowerQuery),
+      );
       if (matches.length > 0) filtered[cat] = matches;
     });
 
@@ -125,9 +144,13 @@ const ComponentPickerField = ({ value, onChange, id }: CustomFieldProps) => {
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         style={{
-          width: "100%", padding: "8px", borderRadius: "6px",
-          border: "1px solid #e4e4e7", background: "#f4f4f5",
-          fontSize: "13px", color: "#09090b"
+          width: "100%",
+          padding: "8px",
+          borderRadius: "6px",
+          border: "1px solid #e4e4e7",
+          background: "#f4f4f5",
+          fontSize: "13px",
+          color: "#09090b",
         }}
       />
       <select
@@ -136,16 +159,25 @@ const ComponentPickerField = ({ value, onChange, id }: CustomFieldProps) => {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{
-          width: "100%", padding: "8px", borderRadius: "6px",
-          border: "1px solid #e4e4e7", background: "#fff",
-          fontSize: "14px", color: "#09090b", cursor: "pointer",
+          width: "100%",
+          padding: "8px",
+          borderRadius: "6px",
+          border: "1px solid #e4e4e7",
+          background: "#fff",
+          fontSize: "14px",
+          color: "#09090b",
+          cursor: "pointer",
         }}
       >
-        <option value="" disabled>Select a component</option>
+        <option value="" disabled>
+          Select a component
+        </option>
         {Object.entries(filteredGroups).map(([category, options]) => (
           <optgroup key={category} label={category}>
             {options.map((opt) => (
-              <option key={opt.key} value={opt.key}>{opt.label}</option>
+              <option key={opt.key} value={opt.key}>
+                {opt.label}
+              </option>
             ))}
           </optgroup>
         ))}
@@ -157,10 +189,14 @@ const ComponentPickerField = ({ value, onChange, id }: CustomFieldProps) => {
 // --- 3. Optimized Items Field ---
 const RepeatItemsField = ({ value, onChange, id }: CustomFieldProps) => {
   const { components } = useRepeatRegistry();
-  const selectedKey = useCustomPuck((s) => s.selectedItem?.props?.component as string | undefined);
+  const selectedKey = useCustomPuck(
+    (s) => s.selectedItem?.props?.component as string | undefined,
+  );
   const appState = useCustomPuck((s) => s.appState);
   const [repeatableFields, setRepeatableFields] = useState<Fields>({});
-  const [previousItems, setPreviousItems] = useState<RepeatItem[] | undefined>();
+  const [previousItems, setPreviousItems] = useState<
+    RepeatItem[] | undefined
+  >();
   const selectedComponent = selectedKey ? components[selectedKey] : undefined;
 
   // FIX: Just pass the object reference directly to useDebounce without stringifying
@@ -185,18 +221,28 @@ const RepeatItemsField = ({ value, onChange, id }: CustomFieldProps) => {
         if (selectedComponent.resolveFields && debouncedFirstItem) {
           const resolved = await selectedComponent.resolveFields(
             { props: debouncedFirstItem },
-            { appState, fields: (selectedComponent.fields || {}) as Fields, changed: changedItems } as any
+            {
+              appState,
+              fields: (selectedComponent.fields || {}) as Fields,
+              changed: changedItems,
+            } as any,
           );
           if (isMounted) setRepeatableFields(filterRepeatableFields(resolved));
         } else {
-          if (isMounted) setRepeatableFields(filterRepeatableFields(selectedComponent.fields as Fields));
+          if (isMounted)
+            setRepeatableFields(
+              filterRepeatableFields(selectedComponent.fields as Fields),
+            );
         }
 
         // Store current items as previous for next comparison
         if (isMounted) setPreviousItems(currentItems);
       } catch (error) {
         console.error("Failed to resolve fields:", error);
-        if (isMounted) setRepeatableFields(filterRepeatableFields(selectedComponent.fields as Fields));
+        if (isMounted)
+          setRepeatableFields(
+            filterRepeatableFields(selectedComponent.fields as Fields),
+          );
       }
     };
 
@@ -208,7 +254,11 @@ const RepeatItemsField = ({ value, onChange, id }: CustomFieldProps) => {
   }, [selectedComponent, debouncedFirstItem]); // Depend safely on the debounced object
 
   if (!selectedKey || !selectedComponent) {
-    return <div style={{ fontSize: "14px", color: "#71717a" }}>Select a component to configure items.</div>;
+    return (
+      <div style={{ fontSize: "14px", color: "#71717a" }}>
+        Select a component to configure items.
+      </div>
+    );
   }
 
   return (
@@ -220,7 +270,7 @@ const RepeatItemsField = ({ value, onChange, id }: CustomFieldProps) => {
         type: "array",
         arrayFields: repeatableFields,
         defaultItemProps: Object.fromEntries(
-          Object.entries(selectedComponent.defaultProps || {})
+          Object.entries(selectedComponent.defaultProps || {}),
         ),
       }}
     />
@@ -228,71 +278,104 @@ const RepeatItemsField = ({ value, onChange, id }: CustomFieldProps) => {
 };
 
 // --- 4. Renderer ---
-const RepeatRenderer = React.memo(({ component: selectedKey, items, puck, id }: WithId<WithPuckProps<RepeatProps>>) => {
-  const { components } = useRepeatRegistry();
+const RepeatRenderer = React.memo(
+  ({
+    component: selectedKey,
+    items,
+    puck,
+    id,
+  }: WithId<WithPuckProps<RepeatProps>>) => {
+    const { components } = useRepeatRegistry();
 
-  if (!selectedKey || !items?.length) return <div style={{ fontSize: "14px", color: "#71717a" }}>Select a valid component to render items.</div>;
+    if (!selectedKey || !items?.length)
+      return (
+        <div style={{ fontSize: "14px", color: "#71717a" }}>
+          Select a valid component to render items.
+        </div>
+      );
 
-  const selectedComponent = components?.[selectedKey];
-  if (!selectedComponent?.render) return <div style={{ fontSize: "14px", color: "#71717a" }}>Select a valid component to render items.</div>;
+    const selectedComponent = components?.[selectedKey];
+    if (!selectedComponent?.render)
+      return (
+        <div style={{ fontSize: "14px", color: "#71717a" }}>
+          Select a valid component to render items.
+        </div>
+      );
 
-  const childFields = (selectedComponent.fields || {}) as Fields;
-  const hasSlots = Object.values(childFields).some((fieldConfig) => fieldConfig.type === "slot");
-
-  if (hasSlots) {
-    return (
-      <div style={{ fontSize: "14px", color: "#ef4444", background: "#fef2f2", padding: "1rem", border: "1px dashed #ef4444", borderRadius: "0.375rem" }}>
-        <strong>Configuration Error:</strong> Components with slots enabled are not allowed in the Repeat component. Please select a simpler component.
-      </div>
+    const childFields = (selectedComponent.fields || {}) as Fields;
+    const hasSlots = Object.values(childFields).some(
+      (fieldConfig) => fieldConfig.type === "slot",
     );
-  }
 
-  return (items.map((item: RepeatItem, index: number) => {
-    const itemId:string = item.id || `${id}-${selectedKey}-${index}`;
-    const mergedProps: WithId<WithPuckProps<RepeatProps>> = {
-      ...(selectedComponent.defaultProps || {}),
-      ...item,
-      puck: {
+    if (hasSlots) {
+      return (
+        <div
+          style={{
+            fontSize: "14px",
+            color: "#ef4444",
+            background: "#fef2f2",
+            padding: "1rem",
+            border: "1px dashed #ef4444",
+            borderRadius: "0.375rem",
+          }}
+        >
+          <strong>Configuration Error:</strong> Components with slots enabled
+          are not allowed in the Repeat component. Please select a simpler
+          component.
+        </div>
+      );
+    }
+
+    return items.map((item: RepeatItem, index: number) => {
+      const itemId: string = item.id || `${id}-${selectedKey}-${index}`;
+      const mergedProps: WithId<WithPuckProps<RepeatProps>> = {
+        ...(selectedComponent.defaultProps || {}),
+        ...item,
+        puck: {
+          id: itemId,
+          dragRef: undefined,
+        },
         id: itemId,
-        dragRef: undefined
-      },
-      id: itemId,
-    }; // Cast needed for Puck's prop merging
-    return <React.Fragment key={
-      itemId
-    }>{selectedComponent.render(mergedProps)}</React.Fragment>;
-  })
-  );
-});
+      }; // Cast needed for Puck's prop merging
+      return (
+        <React.Fragment key={itemId}>
+          {selectedComponent.render(mergedProps)}
+        </React.Fragment>
+      );
+    });
+  },
+);
 
 const filterClasses = (rawClasses: string) => {
   const blocklist = [
-    /^(?:[a-z0-9-]+:)?m[xytrbl]?-/,     // Margins
-    /^(?:[a-z0-9-]+:)?p[xytrbl]?-/,     // Padding
-    /^(?:[a-z0-9-]+:)?w-/,              // Widths
-    /^(?:[a-z0-9-]+:)?h-/,              // Heights
-    /^(?:[a-z0-9-]+:)?max-/,            // Max constraints
-    /^(?:[a-z0-9-]+:)?min-/,            // Min constraints
-    /^(?:[a-z0-9-]+:)?gap-/,            // Gaps
-    /^(?:[a-z0-9-]+:)?inset-/,          // Insets
+    /^(?:[a-z0-9-]+:)?m[xytrbl]?-/, // Margins
+    /^(?:[a-z0-9-]+:)?p[xytrbl]?-/, // Padding
+    /^(?:[a-z0-9-]+:)?w-/, // Widths
+    /^(?:[a-z0-9-]+:)?h-/, // Heights
+    /^(?:[a-z0-9-]+:)?max-/, // Max constraints
+    /^(?:[a-z0-9-]+:)?min-/, // Min constraints
+    /^(?:[a-z0-9-]+:)?gap-/, // Gaps
+    /^(?:[a-z0-9-]+:)?inset-/, // Insets
     /^(?:[a-z0-9-]+:)?(top|bottom|left|right)-/,
-    /^(?:[a-z0-9-]+:)?z-/,              // Z-index
+    /^(?:[a-z0-9-]+:)?z-/, // Z-index
     /^(?:[a-z0-9-]+:)?flex-(?:1|auto|none|grow|shrink)/,
-    /^(?:[a-z0-9-]+:)?col-span-/,       // Avoid duplicating spans if already there
+    /^(?:[a-z0-9-]+:)?col-span-/, // Avoid duplicating spans if already there
   ];
 
   return rawClasses
     .split(" ")
-    .filter(c => {
+    .filter((c) => {
       if (c.startsWith("_Drop")) return false;
-      return !blocklist.some(regex => regex.test(c));
+      return !blocklist.some((regex) => regex.test(c));
     })
-    .map(c => {
+    .map((c) => {
       // Special Handling: Grid inheritance
       const gridMatch = c.match(/^(?:([a-z0-9-]+):)?grid-cols-(\d+)$/);
       if (gridMatch) {
         const [full, prefix, cols] = gridMatch;
-        const colSpan = prefix ? `${prefix}:col-span-${cols}` : `col-span-${cols}`;
+        const colSpan = prefix
+          ? `${prefix}:col-span-${cols}`
+          : `col-span-${cols}`;
         return `${c} ${colSpan}`;
       }
       return c;
@@ -306,41 +389,53 @@ export const Repeat: ComponentConfig<RepeatProps> = {
   inline: true,
   fields: {
     component: {
-      type: "custom", label: "Component",
-      render: ({ value, onChange, id }) => <ComponentPickerField value={value || ""} onChange={onChange} id={id} />,
+      type: "custom",
+      label: "Component",
+      render: ({ value, onChange, id }) => (
+        <ComponentPickerField value={value || ""} onChange={onChange} id={id} />
+      ),
     },
     items: {
-      type: "custom", label: "Items",
-      render: ({ value, onChange, id }) => <RepeatItemsField value={value || []} onChange={onChange} id={id} />,
-    }
+      type: "custom",
+      label: "Items",
+      render: ({ value, onChange, id }) => (
+        <RepeatItemsField value={value || []} onChange={onChange} id={id} />
+      ),
+    },
   },
   render: (props) => {
-    const isSelected = useCustomPuck(s => s.selectedItem?.props.id) === props.id;
+    const isSelected =
+      useCustomPuck((s) => s.selectedItem?.props.id) === props.id;
     const localRef = useRef<HTMLDivElement>(null);
     const [parentClasses, setParentClasses] = useState("");
 
-    const setMergedRef = useCallback((node: HTMLDivElement | null) => {
-      localRef.current = node;
+    const setMergedRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        localRef.current = node;
 
-      if (typeof props.puck.dragRef === 'function') {
-        props.puck.dragRef(node);
-      }
-    }, [props.puck.dragRef]);
+        if (typeof props.puck.dragRef === "function") {
+          props.puck.dragRef(node);
+        }
+      },
+      [props.puck.dragRef],
+    );
 
     useEffect(() => {
       if (localRef.current?.parentElement) {
         const parentNode = localRef.current.parentElement;
-        const classList = filterClasses(parentNode.className)
+        const classList = filterClasses(parentNode.className);
 
-        setParentClasses(classList);     
+        setParentClasses(classList);
       }
     }, [localRef.current]);
 
-    return <div
-      ref={setMergedRef}
-      className={
-        isSelected ? parentClasses : "contents!"
-      }
-    ><RepeatRenderer {...props} /></div>
-  }
+    return (
+      <div
+        ref={setMergedRef}
+        className={isSelected ? parentClasses : "contents!"}
+      >
+        <RepeatRenderer {...props} />
+      </div>
+    );
+  },
 };

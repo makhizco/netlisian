@@ -1,4 +1,4 @@
-import { DefaultComponentProps } from "@measured/puck";
+import { DefaultComponentProps } from "@puckeditor/core";
 
 "use client";
 import equal from "react-fast-compare";
@@ -188,8 +188,8 @@ export function applyMapping(
       rules.push({ entry, toPath, fromPaths, result });
       mappedArrayPaths.add(arrayBase);
       continue;
-    } 
-    
+    }
+
     // Process non-array targets immediately using copy-on-write
     if (toPaths.length === 1 && Array.isArray(result) && toPaths[0].includes("array")) {
       const toPath = toPaths[0];
@@ -237,7 +237,7 @@ export function applyMapping(
     // Resolve source arrays for each rule mapped to this base
     const ruleSourceArrays = rules.map(({ entry, fromPaths, result }) => {
       const isFromArrayPath = typeof fromPaths[0] === "string" && isArrayMappingPath(fromPaths[0]);
-      
+
       const sourceArray = isFromArrayPath
         ? Array.isArray(result)
           ? result
@@ -247,7 +247,7 @@ export function applyMapping(
         : Array.isArray(result)
           ? result
           : defaultArray.map(() => result);
-          
+
       targetLength = Math.max(targetLength, sourceArray.length);
       return sourceArray;
     });
@@ -255,20 +255,20 @@ export function applyMapping(
     const constructed = Array.from({ length: targetLength }).map((_, idx) => {
       const defaultItem = defaultArray[idx] && typeof defaultArray[idx] === "object" ? defaultArray[idx] : {};
       const currentItem = currentArray[idx] && typeof currentArray[idx] === "object" ? currentArray[idx] : {};
-      
+
       // Combine all defaults from the batched rules
       let mergedDefaults: DefaultComponentProps = {};
       for (const rule of rules) {
         let ruleDefaults = rule.entry.unmappedArrayItemDefaultValues || rule.entry.defaultOverrides || {};
         if (typeof ruleDefaults === "string") {
-          try { ruleDefaults = JSON.parse(ruleDefaults); } catch (e) {}
+          try { ruleDefaults = JSON.parse(ruleDefaults); } catch (e) { }
         }
         mergedDefaults = { ...mergedDefaults, ...(ruleDefaults as DefaultComponentProps) };
       }
-      
+
       const baseItem = { ...(defaultItem as DefaultComponentProps), ...mergedDefaults };
       let newItem: DefaultComponentProps | undefined = undefined;
-      
+
       // Check base defaults against currentItem
       for (const key of Object.keys(baseItem)) {
         if (!(key in currentItem) && baseItem[key] !== undefined) {
@@ -278,13 +278,13 @@ export function applyMapping(
           }
         }
       }
-      
+
       // Apply mapped properties from all rules
       for (let i = 0; i < rules.length; i++) {
         const { toPath } = rules[i];
         const subProp = getArrayItemSubPath(toPath) || "";
         const mappedValue = ruleSourceArrays[i][idx];
-        
+
         if (subProp && mappedValue !== undefined) {
           const existingValue = resolveValueByPath(newItem || currentItem, subProp);
           if (!equal(existingValue, mappedValue)) {
@@ -292,7 +292,7 @@ export function applyMapping(
           }
         }
       }
-      
+
       return newItem !== undefined ? newItem : currentItem;
     });
 

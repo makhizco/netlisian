@@ -1,5 +1,5 @@
 "use client";
-import { Data, Config } from "@measured/puck";
+import { Data, Config } from "@puckeditor/core";
 import { SoftComponents } from "../types/SoftComponent";
 import {
   dissolveAllSoftComponents,
@@ -27,19 +27,19 @@ export const resolveSoftConfig = (
   data: Data,
   softComponents: SoftComponents,
   config: Config
-): Data => {  
+): Data => {
   const dissolved = dissolveAllSoftComponents(data, softComponents, config);
-  
+
   // Validate that only hard components remain (development check)
   if (process.env.NODE_ENV === "development") {
     const validation = validateOnlyHardComponents(dissolved, softComponents);
     if (!validation.isValid) {
       alert(
         "Warning: Soft components still present after dissolution:" + " " + String(validation.softComponentsFound
-      ));
+        ));
     }
   }
-  
+
   return dissolved;
 };
 

@@ -1,6 +1,6 @@
 "use client";
 import React, { useMemo } from "react";
-import { ActionBar, createUsePuck } from "@measured/puck";
+import { ActionBar, createUsePuck } from "@puckeditor/core";
 const useCustomPuck = createUsePuck();
 import { useBuild } from "../actions/useBuild";
 import { useRemodel } from "../actions/useRemodel";
@@ -10,18 +10,21 @@ import { Combine, ComponentIcon, EditIcon } from "lucide-react";
 import getClassNameFactory from "../lib/get-class-name-factory";
 import styles from "./ActionBar.module.css";
 import { shallow } from "zustand/shallow";
-import { componentLabelFromName, componentNameFromLabel } from "../lib/component-key";
-
+import {
+  componentLabelFromName,
+  componentNameFromLabel,
+} from "../lib/component-key";
 
 const getClassName = getClassNameFactory("ActionBar", styles);
-
 
 export const ActionBarOverride = (props: {
   label?: string;
   parentAction?: React.ReactNode;
   children?: React.ReactNode;
 }) => {
-  const { handleBuild } = useBuild(props.label ? props.label + " Soft Component" : "New Soft Component");
+  const { handleBuild } = useBuild(
+    props.label ? props.label + " Soft Component" : "New Soft Component",
+  );
   const { handleRemodel } = useRemodel();
   const { handleDecompose } = useDecompose();
   const overrides = useSoftConfig((s) => s.overrides);
@@ -46,23 +49,21 @@ export const ActionBarOverride = (props: {
       existingKeys: softKeys,
       state: status,
     });
-  }, [
-    props.label,
-    overrides,
-    selectedItem?.type,
-    softKeys,
-    status,
-    rootProps,
-  ]);
+  }, [props.label, overrides, selectedItem?.type, softKeys, status, rootProps]);
 
   const isSoftComponent = softKeys.includes(key!);
   const selectedId = selectedItem?.props?.id;
   const parentId = itemSelector?.zone?.split(":")[0];
-  const isEditable = Boolean(selectedId && (editableIds.has(selectedId) || (parentId && editableIds.has(parentId))));
+  const isEditable = Boolean(
+    selectedId &&
+    (editableIds.has(selectedId) || (parentId && editableIds.has(parentId))),
+  );
 
   const label = useMemo(() => {
     if (isSoftComponent) {
-      return softComponents[key!]?.name || componentLabelFromName(key!, overrides);
+      return (
+        softComponents[key!]?.name || componentLabelFromName(key!, overrides)
+      );
     }
     return props.label || "";
   }, [isSoftComponent, key, props.label, overrides, softComponents]);
@@ -74,7 +75,6 @@ export const ActionBarOverride = (props: {
           {props.parentAction}
           <ActionBar.Label label={label} />
         </ActionBar.Group>
-
 
         <ActionBar.Group>
           {status === "ready" ? (
@@ -103,7 +103,7 @@ export const ActionBarOverride = (props: {
             )
           ) : null}
 
-          {status !== "ready" && !isEditable ? null : (props.children)}
+          {status !== "ready" && !isEditable ? null : props.children}
         </ActionBar.Group>
       </ActionBar>
     </div>

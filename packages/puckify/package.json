@@ -57,7 +57,7 @@
     "@types/react": "^18.0.0 || ^19.0.0",
     "@types/react-dom": "^18.0.0 || ^19.0.0",
     "@types/yargs": "^17.0.35",
-    "eslint": "^9.36.0",
+    "eslint": "~8.57.1",
     "tsup": "^8.0.2",
     "typescript": "5.9.3"
   },
@@ -73,7 +73,7 @@
     "yargs": "^17.7.2"
   },
   "peerDependencies": {
-    "@measured/puck": "0.20.x",
+    "@puckeditor/core": "0.21.x",
     "react": ">=18.0.0 <20.3.0"
   }
 }

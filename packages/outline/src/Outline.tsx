@@ -1,5 +1,5 @@
 import { buildLayerTree, LayerTree } from "./LayerTree";
-import { ComponentData, createUsePuck, Data } from "@measured/puck";
+import { ComponentData, createUsePuck, Data } from "@puckeditor/core";
 import { useMemo } from "react";
 import { findZonesForArea } from "./data/find-zones-for-area";
 
@@ -48,10 +48,7 @@ export const Outline = () => {
         ]
     : null;
 
-  const rootZones = useMemo(
-    () => findZonesForArea(zones, "root"),
-    [zones],
-  );
+  const rootZones = useMemo(() => findZonesForArea(zones, "root"), [zones]);
 
   const selectedPathIds = useMemo(() => {
     const selectedPath = selectedId ? nodes[selectedId]?.path : null;

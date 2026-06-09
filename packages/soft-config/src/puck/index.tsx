@@ -1,5 +1,5 @@
 "use client";
-import { ComponentData } from "@measured/puck";
+import { ComponentData } from "@puckeditor/core";
 
 // export store
 export * from "./store";

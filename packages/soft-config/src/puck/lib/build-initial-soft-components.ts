@@ -1,4 +1,4 @@
-import { Config, ComponentConfig } from "@measured/puck";
+import { Config, ComponentConfig } from "@puckeditor/core";
 import { SoftComponents, SoftSubComponent, VersionedSoftComponent } from "../types/SoftComponent";
 import { Overrides } from "../types/Overrides";
 import type { CustomFields } from "../types/SoftFields";
@@ -318,12 +318,12 @@ export function buildInitialSoftComponents(
     return componentConfigs;
   } catch (error) {
     console.error("Error building soft components:", error);
-    
+
     // Fallback to simple build without dependency ordering
     console.warn("Falling back to unordered component building");
-    
+
     const componentConfigs: Record<string, ComponentConfig> = {};
-    
+
     for (const [name, comp] of Object.entries(hydratedSoftComponents)) {
       const defaultVersion =
         comp.defaultVersion || Object.keys(comp.versions || {}).pop();
@@ -346,7 +346,7 @@ export function buildInitialSoftComponents(
         hydratedSoftComponents,
         versionedComponent.defaultProps,
         showVersioning,
-        customFields,        overrides,      );
+        customFields, overrides,);
 
       componentConfigs[name] = newSoftComponentConfig;
     }

@@ -1,5 +1,5 @@
 "use client";
-import type { Field } from "@measured/puck";
+import type { Field } from "@puckeditor/core";
 import type { MappingOption } from "../../types/Mapping";
 import type {
   CustomFields,
@@ -77,12 +77,12 @@ export function generateFieldOptions(
       if (fld.type === "slot") return;
       if (key === "_map") return;
       if (key === "_slotEnabled") return;
-      
+
       const path = prefix ? `${prefix}.${key}` : key;
       if (fld.type === "object" && fld.objectFields) {
         recurse(fld.objectFields, path);
       } else if (fld.type === "array" && fld.arrayFields) {
-        recurse(fld.arrayFields, 
+        recurse(fld.arrayFields,
           path + "[]"
         );
       } else {

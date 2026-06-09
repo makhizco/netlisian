@@ -8,7 +8,7 @@ import {
   PuckAction,
   Render,
   createUsePuck,
-} from "@measured/puck";
+} from "@puckeditor/core";
 
 const useCustomPuck = createUsePuck();
 import { notFound } from "next/navigation";
@@ -21,7 +21,7 @@ import {
   SoftConfigProvider,
   useSoftConfigStore,
 } from "@netlisian/softconfig/puck";
-import "@measured/puck/puck.css";
+import "@puckeditor/core/puck.css";
 import "@netlisian/softconfig/puck/index.css";
 import { MutableRefObject, useCallback, useRef, useEffect } from "react";
 import type { TailwindProcessor } from "@netlisian/tailwind";
@@ -29,7 +29,7 @@ import { IframeOverride } from "./iframe";
 import { softConfigOverrides } from "@/src/puck/overrides/softconfig";
 import { useDemoData } from "@/src/lib/use-demo-data";
 import { toast } from "sonner";
-import { Data } from "@measured/puck";
+import { Data } from "@puckeditor/core";
 
 // Extend window interface
 declare global {
@@ -53,8 +53,8 @@ interface PuckInnerProps {
 
 // A helper component to expose puck state to window
 const PuckExposer = () => {
-  const appState = useCustomPuck(s => s.appState);
-  const dispatch = useCustomPuck(s => s.dispatch);
+  const appState = useCustomPuck((s) => s.appState);
+  const dispatch = useCustomPuck((s) => s.dispatch);
   useEffect(() => {
     window.puckDispatch = dispatch;
     window.puckState = appState;
@@ -62,7 +62,16 @@ const PuckExposer = () => {
   return null;
 };
 
-const PuckInner = ({ softConfig, processorRef, data, resolvedData, styles, saveData, isEdit, storeRef }: PuckInnerProps) => {
+const PuckInner = ({
+  softConfig,
+  processorRef,
+  data,
+  resolvedData,
+  styles,
+  saveData,
+  isEdit,
+  storeRef,
+}: PuckInnerProps) => {
   const store = useSoftConfigStore();
 
   useEffect(() => {
@@ -126,7 +135,10 @@ const PuckInner = ({ softConfig, processorRef, data, resolvedData, styles, saveD
 
 const LocalHeaderActions = ({ children }: { children?: React.ReactNode }) => {
   const hasPuck = useCustomPuck((s) => !!s);
-  console.log("PUCK CONTEXT IN LOCAL HEADER ACTIONS:", hasPuck ? "FOUND" : "NOT FOUND");
+  console.log(
+    "PUCK CONTEXT IN LOCAL HEADER ACTIONS:",
+    hasPuck ? "FOUND" : "NOT FOUND",
+  );
   return <div>{children}</div>;
 };
 
@@ -175,12 +187,17 @@ export default function PuckEditor({
 
   return (
     <div className="text-foreground bg-background">
-      <SoftConfigProvider hardConfig={config as any} softComponents={softComponents} overrides={softConfigOverrides} onActions={handleSoftActions}>
+      <SoftConfigProvider
+        hardConfig={config as any}
+        softComponents={softComponents}
+        overrides={softConfigOverrides}
+        onActions={handleSoftActions}
+      >
         {(softConfig: any) => (
-          <PuckInner 
+          <PuckInner
             storeRef={storeRef}
-            softConfig={softConfig} 
-            processorRef={processorRef} 
+            softConfig={softConfig}
+            processorRef={processorRef}
             data={data}
             resolvedData={resolvedData}
             styles={styles}

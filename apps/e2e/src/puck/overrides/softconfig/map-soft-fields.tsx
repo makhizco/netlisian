@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../components/base/select";
-import { Field, DefaultComponentProps, createUsePuck } from "@measured/puck";
+import { Field, DefaultComponentProps, createUsePuck } from "@puckeditor/core";
 const useCustomPuck = createUsePuck();
 import {
   BuilderComponentConfig,
@@ -46,8 +46,6 @@ import {
   type FieldOption,
 } from "../../hooks/use-cva-mapping";
 const rootDroppableId = "root:default-zone";
-
-
 
 export {
   buildCvaTransform,

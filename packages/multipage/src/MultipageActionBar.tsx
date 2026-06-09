@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { createUsePuck, ActionBar } from "@measured/puck";
+import { createUsePuck, ActionBar } from "@puckeditor/core";
 import { createPortal } from "react-dom";
 import { ArrowUp, ArrowDown } from "lucide-react";
 
@@ -150,4 +150,3 @@ export const MultipageActionBar = ({
     </>
   );
 };
-

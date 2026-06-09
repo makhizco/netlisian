@@ -1,4 +1,4 @@
-import { Data } from "@measured/puck";
+import { Data } from "@puckeditor/core";
 
 /**
  * Converts a collection of page Data into a single Data document for Puck.

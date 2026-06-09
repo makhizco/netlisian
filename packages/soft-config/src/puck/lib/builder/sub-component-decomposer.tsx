@@ -1,5 +1,5 @@
 "use client";
-import { ComponentData } from "@measured/puck";
+import { ComponentData } from "@puckeditor/core";
 import { SoftSubComponent } from "../../types/SoftComponent";
 import { generateId } from "../generate-id";
 import { applyMapping } from "../apply-mapping";

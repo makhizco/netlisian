@@ -1,5 +1,12 @@
 # @netlisian/docs
 
+## 0.0.12
+
+### Patch Changes
+
+- Updated dependencies
+  - @netlisian/softconfig@0.2.0
+
 ## 0.0.11
 
 ### Patch Changes

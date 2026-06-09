@@ -1,4 +1,4 @@
-import { DefaultComponentProps, AppState, ComponentData, Config, Fields  } from "@measured/puck";
+import { DefaultComponentProps, AppState, ComponentData, Config, Fields } from "@puckeditor/core";
 import {
   SoftComponent,
   VersionedSoftComponent,
@@ -37,9 +37,9 @@ const mergeFieldSettings = (
       subFieldSettings:
         current.subFieldSettings || value?.subFieldSettings
           ? mergeFieldSettings(
-              current.subFieldSettings || {},
-              value?.subFieldSettings || {}
-            )
+            current.subFieldSettings || {},
+            value?.subFieldSettings || {}
+          )
           : undefined,
     };
 
@@ -97,9 +97,9 @@ const puckFieldsToSoftFields = (
         customFieldReturnType,
         ...(customSchema
           ? {
-              subFields: customSchema.subFields,
-              subFieldSettings: customSchema.subFieldSettings,
-            }
+            subFields: customSchema.subFields,
+            subFieldSettings: customSchema.subFieldSettings,
+          }
           : {}),
       };
 

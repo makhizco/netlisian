@@ -1,4 +1,4 @@
-import { ComponentData, Config, Data } from "@measured/puck";
+import { ComponentData, Config, Data } from "@puckeditor/core";
 import { SoftComponents } from "../types/SoftComponent";
 import { decomposeSoftComponent, isSoftComponent } from "./decompose-soft-component";
 
@@ -89,7 +89,7 @@ function reverseTopologicalSort(
 
   // Calculate depth (distance from leaf components)
   const depths = new Map<string, number>();
-  
+
   function calculateDepth(componentName: string): number {
     if (depths.has(componentName)) {
       return depths.get(componentName)!;
@@ -145,7 +145,7 @@ function dissolveComponentRecursively(
   fieldSettings?: Record<string, any>
 ): ComponentData[] {
   const MAX_DEPTH = 50; // Prevent infinite recursion
-  
+
   if (depth > MAX_DEPTH) {
     console.error(
       `Maximum dissolution depth (${MAX_DEPTH}) exceeded for component ${componentData.type}. Possible circular dependency.`
@@ -174,7 +174,7 @@ function dissolveComponentRecursively(
 
   // Recursively dissolve each decomposed component
   const fullyDissolved: ComponentData[] = [];
-  
+
   for (const component of decomposed) {
     const dissolved = dissolveComponentRecursively(
       component,

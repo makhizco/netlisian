@@ -1,4 +1,4 @@
-import { createUsePuck } from "@measured/puck";
+import { createUsePuck } from "@puckeditor/core";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { useEffect } from "react";
@@ -8,8 +8,6 @@ import type { CompletedComponentResult } from "../store/slices/builder";
 const useCustomPuck = createUsePuck();
 
 // depricated - will be removed in favor of more generic useActionEvent for handling all action types including "inspect"
-
-
 
 /** * Custom hook to handle inspecting a completed component in the Puck editor.
  * @deprecated This hook is deprecated
@@ -43,7 +41,7 @@ export const useInspect = (component: CompletedComponentResult | null) => {
       console.error("Failed to inspect:", error);
       notify.error(
         "Failed to inspect: " +
-          (error instanceof Error ? error.message : String(error))
+          (error instanceof Error ? error.message : String(error)),
       );
     }
   }, [status, component, inspect, dispatch, triggerAction]);

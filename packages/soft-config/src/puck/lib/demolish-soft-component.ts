@@ -1,5 +1,5 @@
 "use client";
-import { ComponentData, Config, Data, walkTree } from "@measured/puck";
+import { ComponentData, Config, Data, walkTree } from "@puckeditor/core";
 import { SoftComponents } from "../types/SoftComponent";
 import { decomposeSoftComponent } from "./decompose-soft-component";
 

@@ -1,7 +1,7 @@
 import React, { useMemo, memo } from "react";
 import equal from "react-fast-compare";
 import { SoftComponent, SoftSubComponent } from "../../types/SoftComponent";
-import { Config, WithId, WithPuckProps } from "@measured/puck";
+import { Config, WithId, WithPuckProps } from "@puckeditor/core";
 import { applyMapping } from "../../lib/apply-mapping";
 import { ErrorBoundary } from "../error-boundary";
 

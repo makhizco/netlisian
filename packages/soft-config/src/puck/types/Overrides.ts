@@ -1,16 +1,17 @@
 "use client";
 import { ReactElement, ReactNode } from "react";
 import { BuilderComponentConfig, BuilderRootConfig } from "./BuilderConfig";
-import { DefaultComponentProps,
+import {
+  DefaultComponentProps,
   AsFieldProps,
   ComponentConfig,
-  
+
   Field,
   Metadata,
   ResolveDataTrigger,
   RootData,
   WithChildren,
-} from "@measured/puck";
+} from "@puckeditor/core";
 import { VersionedSoftComponent } from "./SoftComponent";
 import { OnActionsCallback } from "./ActionEvents";
 import type { MappingOption } from "./Mapping";

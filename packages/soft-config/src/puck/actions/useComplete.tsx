@@ -1,4 +1,4 @@
-import { createUsePuck } from "@measured/puck";
+import { createUsePuck } from "@puckeditor/core";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { useState, useCallback } from "react";
@@ -13,7 +13,8 @@ export const useComplete = () => {
   const setHistories = useCustomPuck((s) => s.history.setHistories);
   const getItemBySelector = useCustomPuck((s) => s.getItemBySelector);
   const status = useSoftConfig((s) => s.state);
-  const [newComponent, setNewComponent] = useState<CompletedComponentResult | null>(null);
+  const [newComponent, setNewComponent] =
+    useState<CompletedComponentResult | null>(null);
   const { triggerAction } = useActionEvent();
 
   const handleComplete = useCallback(() => {
@@ -23,12 +24,16 @@ export const useComplete = () => {
     }
 
     try {
-      const completedComponent = complete(appState, setHistories, getItemBySelector);
+      const completedComponent = complete(
+        appState,
+        setHistories,
+        getItemBySelector,
+      );
       setNewComponent(completedComponent);
-      
+
       // Get the component data and soft component info
       const componentData = appState.data.root;
-      
+
       if (componentData) {
         void triggerAction({
           type: "complete",
@@ -40,17 +45,24 @@ export const useComplete = () => {
           },
         });
       }
-      
+
       return completedComponent;
     } catch (error) {
       console.error("Failed to complete:", error);
       notify.error(
         "Failed to complete: " +
-          (error instanceof Error ? error.message : String(error))
+          (error instanceof Error ? error.message : String(error)),
       );
       return null;
     }
-  }, [complete, appState, setHistories, status, triggerAction, getItemBySelector]);
+  }, [
+    complete,
+    appState,
+    setHistories,
+    status,
+    triggerAction,
+    getItemBySelector,
+  ]);
 
   const canComplete = status === "building" || status === "remodeling";
 

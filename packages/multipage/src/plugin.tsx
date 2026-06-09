@@ -1,5 +1,5 @@
 import React from "react";
-import type { Plugin } from "@measured/puck";
+import type { Plugin } from "@puckeditor/core";
 import { MultipageActionBar } from "./MultipageActionBar";
 import { MultipageComponentOverlay } from "./MultipageComponentOverlay";
 
@@ -18,7 +18,9 @@ export interface MultipagePluginOptions {
   customActionBar?: React.ComponentType<{ children: React.ReactNode }>;
 }
 
-export const createMultipagePlugin = (options: MultipagePluginOptions = {}): Plugin => {
+export const createMultipagePlugin = (
+  options: MultipagePluginOptions = {},
+): Plugin => {
   const { customActionBar } = options;
 
   return {

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { createUsePuck, Drawer as PuckDrawer, Config } from "@measured/puck";
+import { createUsePuck, Drawer as PuckDrawer, Config } from "@puckeditor/core";
 const useCustomPuck = createUsePuck();
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { DrawerItem } from "./DrawerItem";
@@ -10,7 +10,6 @@ import styles from "./Drawer.module.css";
 const getClassName = getClassNameFactory("Drawer", styles);
 // Separate factory for the category wrapper -> .Drawer-category + .Drawer-category--isExpanded
 const getCategoryClassName = getClassNameFactory("Drawer-category", styles);
-
 
 type GetPermissions = (params: { type: string }) => { insert: boolean };
 
@@ -80,24 +79,29 @@ const CategorySection = ({
  *   overrides={{ drawer: Drawer }}
  */
 export const Drawer = (_props: { children?: React.ReactNode }) => {
-  const config = useCustomPuck((s) => s.config) as unknown as Config & { categories?: Record<string, Category> };
+  const config = useCustomPuck((s) => s.config) as unknown as Config & {
+    categories?: Record<string, Category>;
+  };
   const getPermissions = useCustomPuck((s) => s.getPermissions) as any;
 
   const categories = config.categories ?? {};
 
   const categorised = new Set(
-    Object.values(categories).flatMap((cat) => cat.components ?? [])
+    Object.values(categories).flatMap((cat) => cat.components ?? []),
   );
 
   const allKeys = Object.keys(config.components);
-  const labels = Object.entries(config.components).reduce((acc, [key, comp]) => {
-    acc[key] = comp.label || key;
-    return acc;
-  }, {} as Record<string, string>);
+  const labels = Object.entries(config.components).reduce(
+    (acc, [key, comp]) => {
+      acc[key] = comp.label || key;
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
   const otherKeys = allKeys.filter((k) => !categorised.has(k));
 
   const categoryEntries = Object.entries(categories).filter(
-    ([, cat]) => cat.visible !== false
+    ([, cat]) => cat.visible !== false,
   );
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
@@ -111,7 +115,6 @@ export const Drawer = (_props: { children?: React.ReactNode }) => {
 
   const toggle = (id: string) =>
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-
 
   if (categoryEntries.length === 0) {
     return (
@@ -138,7 +141,7 @@ export const Drawer = (_props: { children?: React.ReactNode }) => {
           id={id}
           title={cat.title ?? id}
           componentKeys={(cat.components ?? []).filter(
-            (k: string) => k in config.components
+            (k: string) => k in config.components,
           )}
           getPermissions={getPermissions}
           expanded={expanded[id] ?? true}

@@ -1,10 +1,14 @@
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@netlisian/softconfig", "@netlisian/tailwind", "@measured/puck"],
+  transpilePackages: [
+    "@netlisian/softconfig",
+    "@netlisian/tailwind",
+    "@puckeditor/core",
+  ],
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      "@measured/puck$": require.resolve("@measured/puck"),
+      "@puckeditor/core$": require.resolve("@puckeditor/core"),
     };
     return config;
   },

@@ -1,5 +1,5 @@
 import React from "react";
-import { PuckContext } from "@measured/puck";
+import { PuckContext } from "@puckeditor/core";
 import { ContainerElement } from "./container-elements";
 import { LeafElement } from "./leaf-elements";
 import { isLeafElement } from "./is-leaf-element";
@@ -21,16 +21,21 @@ const AdminImageElement = ({
     else if (className.includes("object-cover")) backgroundSize = "cover";
     else if (className.includes("object-fill")) backgroundSize = "100% 100%";
     else if (className.includes("object-none")) backgroundSize = "auto";
-    else if (className.includes("object-scale-down")) backgroundSize = "contain";
+    else if (className.includes("object-scale-down"))
+      backgroundSize = "contain";
     else if (className.includes("contain ")) backgroundSize = "contain"; // fallback for old usage
 
     if (className.includes("object-bottom")) backgroundPosition = "bottom";
     else if (className.includes("object-center")) backgroundPosition = "center";
-    else if (className.includes("object-left-bottom")) backgroundPosition = "left bottom";
-    else if (className.includes("object-left-top")) backgroundPosition = "left top";
+    else if (className.includes("object-left-bottom"))
+      backgroundPosition = "left bottom";
+    else if (className.includes("object-left-top"))
+      backgroundPosition = "left top";
     else if (className.includes("object-left")) backgroundPosition = "left";
-    else if (className.includes("object-right-bottom")) backgroundPosition = "right bottom";
-    else if (className.includes("object-right-top")) backgroundPosition = "right top";
+    else if (className.includes("object-right-bottom"))
+      backgroundPosition = "right bottom";
+    else if (className.includes("object-right-top"))
+      backgroundPosition = "right top";
     else if (className.includes("object-right")) backgroundPosition = "right";
     else if (className.includes("object-top")) backgroundPosition = "top";
   }
@@ -127,7 +132,7 @@ export const renderAdmin = ({
 
       if (
         ["iframe", "video", "audio", "embed", "object", "canvas"].includes(
-          element as string
+          element as string,
         )
       ) {
         return (
@@ -179,7 +184,7 @@ export const renderAdmin = ({
                   {},
                   ...(slot?.style ?? [])
                     .filter((s: any) => s.key && typeof s.value === "string")
-                    .map((s: any) => ({ [s.key]: s.value }))
+                    .map((s: any) => ({ [s.key]: s.value })),
                 )
               : {}),
           }}

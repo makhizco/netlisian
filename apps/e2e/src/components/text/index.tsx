@@ -1,4 +1,4 @@
-import { ComponentConfig } from "@measured/puck";
+import { ComponentConfig } from "@puckeditor/core";
 import React from "react";
 import { TextProps } from "./Text";
 import { adminRender } from "./adminRender";
@@ -19,7 +19,7 @@ export const Text: ComponentConfig<TextProps> = {
   },
   render: ({ text, puck, id }) =>
     puck.isEditing ? (
-      adminRender({ text, puck, id})
+      adminRender({ text, puck, id })
     ) : (
       <React.Fragment>{text}</React.Fragment>
     ),

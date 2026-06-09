@@ -1,4 +1,4 @@
-import "@measured/puck/puck.css";
+import "@puckeditor/core/puck.css";
 import "@netlisian/softconfig/puck/index.css";
 // Use demo styles if any, or general tailwind
 import { Metadata } from "next";

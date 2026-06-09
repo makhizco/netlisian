@@ -1,4 +1,4 @@
-import { DefaultComponentProps } from "@measured/puck";
+import { DefaultComponentProps } from "@puckeditor/core";
 import { create, StoreApi } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type {
@@ -6,10 +6,9 @@ import type {
   History,
   ComponentConfig,
   Config,
-  
   PuckAction,
   OnAction,
-} from "@measured/puck";
+} from "@puckeditor/core";
 
 import { rootActionHandler } from "../lib/root-action-handler";
 

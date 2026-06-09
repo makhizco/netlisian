@@ -1,5 +1,5 @@
 "use client";
-import { createUsePuck, Data } from "@measured/puck";
+import { createUsePuck, Data } from "@puckeditor/core";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { SoftComponents } from "../types/SoftComponent";
@@ -26,11 +26,11 @@ export const usePublish = () => {
     }
 
     publish(data, components);
-    
+
     // Get all components to find what was published
     const rootComponentType = data.root?.type;
     const rootVersion = components[rootComponentType]?.defaultVersion;
-    
+
     if (rootComponentType && rootVersion) {
       void triggerAction({
         type: "publish",

@@ -1,5 +1,5 @@
 "use client";
-import { createUsePuck } from "@measured/puck";
+import { createUsePuck } from "@puckeditor/core";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { createSoftConfigStore } from "../store";
@@ -28,7 +28,7 @@ export const useDemolish = () => {
 
     try {
       demolish(componentName, data, dispatch);
-      
+
       void triggerAction({
         type: "demolish",
         payload: {
@@ -39,7 +39,7 @@ export const useDemolish = () => {
       alert("Failed to demolish:" + " " + error);
       notify.error(
         "Failed to demolish: " +
-          (error instanceof Error ? error.message : String(error))
+          (error instanceof Error ? error.message : String(error)),
       );
     }
   };

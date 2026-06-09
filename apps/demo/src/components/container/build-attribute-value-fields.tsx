@@ -1,12 +1,17 @@
 "use client";
 
-import { Field, AutoField } from "@measured/puck";
+import { Field, AutoField } from "@puckeditor/core";
 import { Attribute } from "./base";
 
 export const buildAttributeValueField = (
   key: string,
-  valueType: Attribute["valueType"]
-): Field<string> | Field<number> | Field<boolean> | Field<{ key: string; value: string }> | undefined => {
+  valueType: Attribute["valueType"],
+):
+  | Field<string>
+  | Field<number>
+  | Field<boolean>
+  | Field<{ key: string; value: string }>
+  | undefined => {
   switch (valueType) {
     case "string":
       return { type: "textarea", label: key } as Field<string>;
@@ -14,7 +19,6 @@ export const buildAttributeValueField = (
       return { type: "number", label: key } as Field<number>;
     case "boolean":
       return {
-
         type: "custom",
         label: key,
         render: ({ onChange, value }) => {
@@ -46,10 +50,8 @@ export const buildAttributeValueField = (
           key: "",
           value: "",
         } as any,
-        getItemSummary: (item: {
-          key: string;
-          value: string;
-        }) => `${item.key}: ${item.value}`,
+        getItemSummary: (item: { key: string; value: string }) =>
+          `${item.key}: ${item.value}`,
       };
     case "function":
       return { type: "text", label: `${key} Function name` } as Field<string>;

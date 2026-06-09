@@ -1,13 +1,8 @@
 import styles from "./styles.module.css";
 import getClassNameFactory from "../get-class-name-factory";
 import { ChevronDown, LayoutGrid, Layers, Type } from "lucide-react";
-import {
-  ForwardedRef,
-  forwardRef,
-  useCallback,
-  useRef,
-} from "react";
-import { createUsePuck } from "@measured/puck";
+import { ForwardedRef, forwardRef, useCallback, useRef } from "react";
+import { createUsePuck } from "@puckeditor/core";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 const usePuck = createUsePuck();
@@ -47,7 +42,7 @@ const getZoneLabel = (
   zoneCompound: string,
   nodes: any,
   config: any,
-  label?: string
+  label?: string,
 ) => {
   if (label !== undefined) {
     return label;
@@ -87,7 +82,7 @@ const buildLayerNode = ({
         zoneCompound: childZoneCompound,
         zones,
         zonesByParent,
-      })
+      }),
     ),
     componentType,
     index,
@@ -117,7 +112,7 @@ export const buildLayerTree = ({
         zoneCompound,
         zones,
         zonesByParent,
-      })
+      }),
     ),
     label: getZoneLabel(zoneCompound, nodes, config, label),
     zoneCompound,
@@ -154,7 +149,7 @@ const Layer = forwardRef(function Layer(
     selectedId,
     selectedPathIds,
   }: any,
-  ref: ForwardedRef<HTMLLIElement>
+  ref: ForwardedRef<HTMLLIElement>,
 ) {
   const dispatch = usePuck((s: any) => s.dispatch);
   const isHovering = false; // Replaced context store logic with false for standalone
@@ -164,7 +159,7 @@ const Layer = forwardRef(function Layer(
     (itemSelector: any | null) => {
       dispatch({ type: "setUi", ui: { itemSelector } });
     },
-    [dispatch]
+    [dispatch],
   );
 
   const shouldRenderChildren = isSelected || childIsSelected;
@@ -192,17 +187,23 @@ const Layer = forwardRef(function Layer(
             }
             setItemSelector({ index: node.index, zone: node.zoneCompound });
             // Mocking scroll logic
-            document.querySelector(`[data-puck-node-id="${node.itemId}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+            document
+              .querySelector(`[data-puck-node-id="${node.itemId}"]`)
+              ?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
         >
           {containsZone && (
-            <div className={getClassNameLayer("chevron")} title={isSelected ? "Collapse" : "Expand"}>
+            <div
+              className={getClassNameLayer("chevron")}
+              title={isSelected ? "Collapse" : "Expand"}
+            >
               <ChevronDown size="12" />
             </div>
           )}
           <div className={getClassNameLayer("title")}>
             <div className={getClassNameLayer("icon")}>
-              {node.componentType === "Text" || node.componentType === "Heading" ? (
+              {node.componentType === "Text" ||
+              node.componentType === "Heading" ? (
                 <Type size="16" />
               ) : (
                 <LayoutGrid size="16" />
@@ -215,7 +216,10 @@ const Layer = forwardRef(function Layer(
       {containsZone &&
         shouldRenderChildren &&
         node.childZones.map((childZone: any) => (
-          <div key={childZone.zoneCompound} className={getClassNameLayer("zones")}>
+          <div
+            key={childZone.zoneCompound}
+            className={getClassNameLayer("zones")}
+          >
             <LayerTreeZone
               depth={depth + 1}
               selectedId={selectedId}
@@ -229,28 +233,48 @@ const Layer = forwardRef(function Layer(
 });
 
 const LayerTreeZone = ({ depth, selectedId, selectedPathIds, tree }: any) => {
-  const shouldVirtualize = depth === 0 && tree.items.length >= MIN_VIRTUALIZED_LAYER_COUNT;
+  const shouldVirtualize =
+    depth === 0 && tree.items.length >= MIN_VIRTUALIZED_LAYER_COUNT;
   return (
     <>
       {tree.label && (
         <div className={getClassName("zoneTitle")}>
-          <div className={getClassName("zoneIcon")}><Layers size="16" /></div>
+          <div className={getClassName("zoneIcon")}>
+            <Layers size="16" />
+          </div>
           {tree.label}
         </div>
       )}
       {shouldVirtualize ? (
-        <VirtualizedLayerTreeItems depth={depth} selectedId={selectedId} selectedPathIds={selectedPathIds} tree={tree} />
+        <VirtualizedLayerTreeItems
+          depth={depth}
+          selectedId={selectedId}
+          selectedPathIds={selectedPathIds}
+          tree={tree}
+        />
       ) : (
-        <StaticLayerTreeItems depth={depth} selectedId={selectedId} selectedPathIds={selectedPathIds} tree={tree} />
+        <StaticLayerTreeItems
+          depth={depth}
+          selectedId={selectedId}
+          selectedPathIds={selectedPathIds}
+          tree={tree}
+        />
       )}
     </>
   );
 };
 
-const StaticLayerTreeItems = ({ depth, selectedId, selectedPathIds, tree }: any) => {
+const StaticLayerTreeItems = ({
+  depth,
+  selectedId,
+  selectedPathIds,
+  tree,
+}: any) => {
   return (
     <ul className={getClassName()}>
-      {tree.items.length === 0 && <div className={getClassName("helper")}>No items</div>}
+      {tree.items.length === 0 && (
+        <div className={getClassName("helper")}>No items</div>
+      )}
       {tree.items.map((node: any) => (
         <Layer
           childIsSelected={selectedPathIds.has(node.itemId)}
@@ -266,7 +290,12 @@ const StaticLayerTreeItems = ({ depth, selectedId, selectedPathIds, tree }: any)
   );
 };
 
-const VirtualizedLayerTreeItems = ({ depth, selectedId, selectedPathIds, tree }: any) => {
+const VirtualizedLayerTreeItems = ({
+  depth,
+  selectedId,
+  selectedPathIds,
+  tree,
+}: any) => {
   const listRef = useRef<HTMLUListElement | null>(null);
   const virtualizer = useVirtualizer({
     count: tree.items.length,
@@ -293,7 +322,13 @@ const VirtualizedLayerTreeItems = ({ depth, selectedId, selectedPathIds, tree }:
     const gapSize = Math.max(virtualItem.start - previousEnd, 0);
 
     if (gapSize > 0) {
-      renderedItems.push(<li key={`gap:${tree.zoneCompound}:${previousIndex}:${virtualItem.index}`} aria-hidden="true" style={{ height: `${gapSize}px` }} />);
+      renderedItems.push(
+        <li
+          key={`gap:${tree.zoneCompound}:${previousIndex}:${virtualItem.index}`}
+          aria-hidden="true"
+          style={{ height: `${gapSize}px` }}
+        />,
+      );
     }
 
     renderedItems.push(
@@ -307,7 +342,7 @@ const VirtualizedLayerTreeItems = ({ depth, selectedId, selectedPathIds, tree }:
         ref={virtualizer.measureElement}
         selectedId={selectedId}
         selectedPathIds={selectedPathIds}
-      />
+      />,
     );
 
     previousEnd = virtualItem.end;
@@ -316,12 +351,20 @@ const VirtualizedLayerTreeItems = ({ depth, selectedId, selectedPathIds, tree }:
 
   const trailingGap = Math.max(totalSize - previousEnd, 0);
   if (trailingGap > 0) {
-    renderedItems.push(<li key={`gap:${tree.zoneCompound}:${previousIndex}:end`} aria-hidden="true" style={{ height: `${trailingGap}px` }} />);
+    renderedItems.push(
+      <li
+        key={`gap:${tree.zoneCompound}:${previousIndex}:end`}
+        aria-hidden="true"
+        style={{ height: `${trailingGap}px` }}
+      />,
+    );
   }
 
   return (
     <ul className={getClassName()} ref={listRef}>
-      {tree.items.length === 0 && <div className={getClassName("helper")}>No items</div>}
+      {tree.items.length === 0 && (
+        <div className={getClassName("helper")}>No items</div>
+      )}
       {renderedItems}
     </ul>
   );
@@ -331,7 +374,13 @@ export const LayerTree = ({ selectedId, selectedPathIds, trees }: any) => {
   return (
     <>
       {trees.map((tree: any) => (
-        <LayerTreeZone depth={0} key={tree.zoneCompound} selectedId={selectedId} selectedPathIds={selectedPathIds} tree={tree} />
+        <LayerTreeZone
+          depth={0}
+          key={tree.zoneCompound}
+          selectedId={selectedId}
+          selectedPathIds={selectedPathIds}
+          tree={tree}
+        />
       ))}
     </>
   );

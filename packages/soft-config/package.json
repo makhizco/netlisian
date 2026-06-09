@@ -1,6 +1,6 @@
 {
   "name": "@netlisian/softconfig",
-  "version": "0.1.10",
+  "version": "0.2.0",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -43,7 +43,7 @@
     "@types/node": "^20.11.24",
     "@types/react": "^18.0.0 || ^19.0.0",
     "@types/react-dom": "^18.0.0 || ^19.0.0",
-    "eslint": "^9.36.0",
+    "eslint": "~8.57.1",
     "postcss": "^8.5.6",
     "postcss-modules": "^6.0.1",
     "size-limit": "^11.1.6",
@@ -60,7 +60,7 @@
     "zustand": "^5.0.3"
   },
   "peerDependencies": {
-    "@measured/puck": "0.20.x",
+    "@puckeditor/core": "0.21.x",
     "react": ">=18.0.0 <20.3.0"
   },
   "publishConfig": {

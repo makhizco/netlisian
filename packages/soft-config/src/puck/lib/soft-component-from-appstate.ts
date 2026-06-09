@@ -1,4 +1,4 @@
-import { DefaultComponentProps, AppState, Field, Config, Fields, ComponentData } from "@measured/puck";
+import { DefaultComponentProps, AppState, Field, Config, Fields, ComponentData } from "@puckeditor/core";
 import { SoftComponent, SoftSubComponent } from "../types/SoftComponent";
 import { BuilderRootConfig } from "../types/BuilderConfig";
 import {

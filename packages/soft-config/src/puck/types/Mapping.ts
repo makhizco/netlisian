@@ -1,5 +1,5 @@
 "use client";
-import type { Field } from "@measured/puck";
+import type { Field } from "@puckeditor/core";
 
 export type MapEntry = {
   mode?: "simple" | "cva";

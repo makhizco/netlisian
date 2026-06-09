@@ -1,4 +1,4 @@
-import { DefaultComponentProps, ComponentData  } from "@measured/puck";
+import { DefaultComponentProps, ComponentData } from "@puckeditor/core";
 import { SoftComponents } from "../types/SoftComponent";
 import { subComponentDecomposer } from "./builder/sub-component-decomposer";
 import { resolveSoftComponentData } from "./builder/resolve-soft-component-data";

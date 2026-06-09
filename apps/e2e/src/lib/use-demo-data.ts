@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import config, { componentKey } from "../config";
 import { initialData } from "../config/initial-data";
-import { Data, resolveAllData, Config } from "@measured/puck";
+import { Data, resolveAllData, Config } from "@puckeditor/core";
 import { ComponentProps } from "../config";
 import { resolveSoftConfig, SoftComponents } from "@netlisian/softconfig/puck";
 
@@ -58,7 +58,7 @@ export const useDemoData = ({
       if (globalStored) {
         try {
           return JSON.parse(globalStored) as GlobalSoftStorage;
-        } catch (error) {}
+        } catch (error) { }
       }
 
       // Migration: fallback to path storage if global doesn't exist
@@ -72,7 +72,7 @@ export const useDemoData = ({
               softConfig: parsed.softConfig,
             };
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const initialPathData = (initialData as any)[path as string] || {};
@@ -154,14 +154,14 @@ export const useDemoData = ({
 
 export const useDemoCollection = () => {
   const globalSoftKey = `puck-demo:${componentKey}:global:softComponents`;
-  
+
   const [globalSoft, setGlobalSoft] = useState<GlobalSoftStorage>(() => {
     if (isBrowser) {
       const globalStored = localStorage.getItem(globalSoftKey);
       if (globalStored) {
         try {
           return JSON.parse(globalStored) as GlobalSoftStorage;
-        } catch (error) {}
+        } catch (error) { }
       }
     }
     return {};
@@ -171,14 +171,14 @@ export const useDemoCollection = () => {
     if (isBrowser) {
       const coll: Record<string, DemoStorage> = {};
       const prefix = `puck-demo:${componentKey}:`;
-      
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith(prefix) && key.endsWith(":storage")) {
           const path = key.substring(prefix.length, key.length - ":storage".length);
           try {
             coll[path] = JSON.parse(localStorage.getItem(key)!) as DemoStorage;
-            
+
             // Migration logic for collection loading
             if (coll[path]?.softComponents && !globalSoft.softComponents) {
               const newGlobalSoft = {
@@ -188,7 +188,7 @@ export const useDemoCollection = () => {
               setGlobalSoft(newGlobalSoft);
               localStorage.setItem(globalSoftKey, JSON.stringify(newGlobalSoft));
             }
-          } catch (e) {}
+          } catch (e) { }
         }
       }
 
@@ -218,7 +218,7 @@ export const useDemoCollection = () => {
         data,
         resolvedData: decomposedData,
       };
-      
+
       newCollection[path] = newStorage;
       if (isBrowser) {
         localStorage.setItem(`puck-demo:${componentKey}:${path}:storage`, JSON.stringify(newStorage));

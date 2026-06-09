@@ -1,4 +1,4 @@
-import type { Field } from "@measured/puck";
+import type { Field } from "@puckeditor/core";
 import type {
   BuiltInSoftFieldType,
   CustomFieldDefinition,

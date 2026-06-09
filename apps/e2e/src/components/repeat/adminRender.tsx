@@ -1,10 +1,22 @@
 "use client";
 
-import { createUsePuck } from "@measured/puck";
-import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { createUsePuck } from "@puckeditor/core";
+import React, {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 const useCustomPuck = createUsePuck();
-import { RepeatRenderProps, filterClasses, getComponentLabel, RepeatContent } from "./shared";
+import {
+  RepeatRenderProps,
+  filterClasses,
+  getComponentLabel,
+  RepeatContent,
+} from "./shared";
 import {
   getRepeatComponentRegistry,
   subscribeRepeatComponentRegistry,
@@ -16,14 +28,12 @@ interface CustomFieldProps {
   id: string;
 }
 
-
-
 const useRepeatRegistry = () => {
   const config = useCustomPuck((s) => s.config);
   const registry = React.useSyncExternalStore(
     subscribeRepeatComponentRegistry,
     getRepeatComponentRegistry,
-    getRepeatComponentRegistry
+    getRepeatComponentRegistry,
   );
   const fallbackCategory = "Other Components";
 
@@ -33,7 +43,7 @@ const useRepeatRegistry = () => {
 
     Object.entries(config.categories || {}).forEach(([catKey, cat]) => {
       (cat.components || []).forEach((compKey) =>
-        catMap.set(compKey, cat.title || catKey)
+        catMap.set(compKey, cat.title || catKey),
       );
     });
 
@@ -57,7 +67,11 @@ const useRepeatRegistry = () => {
   return { groupedOptions };
 };
 
-export const ComponentPickerField = ({ value, onChange, id }: CustomFieldProps) => {
+export const ComponentPickerField = ({
+  value,
+  onChange,
+  id,
+}: CustomFieldProps) => {
   const { groupedOptions } = useRepeatRegistry();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -69,7 +83,7 @@ export const ComponentPickerField = ({ value, onChange, id }: CustomFieldProps) 
 
     Object.entries(groupedOptions).forEach(([cat, opts]) => {
       const matches = opts.filter((o) =>
-        o.label.toLowerCase().includes(lowerQuery)
+        o.label.toLowerCase().includes(lowerQuery),
       );
       if (matches.length > 0) filtered[cat] = matches;
     });

@@ -1,5 +1,5 @@
 "use client";
-import { Config } from "@measured/puck";
+import { Config } from "@puckeditor/core";
 import type { SoftFieldDefinition, SoftFieldSettings } from "./SoftFields";
 import type { MapEntry } from "./Mapping";
 

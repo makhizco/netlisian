@@ -1,4 +1,4 @@
-import { Data } from "@measured/puck";
+import { Data } from "@puckeditor/core";
 
 export const initialData: Record<string, Partial<Data>> = {
   "/": {

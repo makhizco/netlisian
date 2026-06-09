@@ -6,7 +6,7 @@ import type { AppStore } from "../store";
 
 export const appStoreContext = createContext<StoreApi<AppStore> | null>(null);
 
-// Create a hook factory similar to createUsePuck from @measured/puck
+// Create a hook factory similar to createUsePuck from @puckeditor/core
 export const createUseSoftConfig = () => {
   // eslint-disable-next-line no-unused-vars
   return function useSoftConfig<T>(

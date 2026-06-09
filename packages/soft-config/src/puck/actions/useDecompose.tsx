@@ -1,7 +1,7 @@
 "use client";
-"use client"
+"use client";
 
-import { ComponentData, createUsePuck, walkTree } from "@measured/puck";
+import { ComponentData, createUsePuck, walkTree } from "@puckeditor/core";
 import { useSoftConfig } from "../context/useStore";
 import { notify } from "../lib/notify";
 import { useActionEvent } from "../hooks/useActionEvent";
@@ -49,24 +49,27 @@ export const useDecompose = () => {
 
       // Walk Tree and replace the component with decomposed components
       let newData = { ...appState.data };
-      const targetAreas = contentAreaNames && contentAreaNames.length > 0
-        ? contentAreaNames
-        : ["content"];
+      const targetAreas =
+        contentAreaNames && contentAreaNames.length > 0
+          ? contentAreaNames
+          : ["content"];
 
       targetAreas.forEach((path) => {
         const contentArray = getPropertyByPath(newData, path) || [];
         const walkedData = walkTree(
-          { content: contentArray, root: newData.root || {} }, 
-          config, 
+          { content: contentArray, root: newData.root || {} },
+          config,
           (components) => {
-            const index = components.findIndex((c) => c.props.id === target.props.id);
+            const index = components.findIndex(
+              (c) => c.props.id === target.props.id,
+            );
 
             if (index !== -1) {
               components.splice(index, 1, ...decomposedComponents);
             }
 
             return components;
-          }
+          },
         );
         setPropertyByPath(newData, path, walkedData.content);
       });
@@ -86,7 +89,7 @@ export const useDecompose = () => {
       alert("Failed to decompose:" + " " + error);
       notify.error(
         "Failed to decompose: " +
-          (error instanceof Error ? error.message : String(error))
+          (error instanceof Error ? error.message : String(error)),
       );
     }
   };

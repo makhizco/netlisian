@@ -13,7 +13,7 @@ To use Soft Components in your Puck editor, you need to wrap your application in
 ```typescript
 import { SoftConfigProvider } from "@netlisian/soft-config";
 import { ActionBar, Header, DrawerItem } from "@netlisian/soft-config/overrides";
-import { Puck } from "@measured/puck";
+import { Puck } from "@puckeditor/core";
 
 const config = {
   // your puck config
@@ -22,8 +22,8 @@ const config = {
 export const Editor = () => {
   return (
     <SoftConfigProvider>
-      <Puck 
-        config={config} 
+      <Puck
+        config={config}
         data={initialData}
         overrides={{
           header: (props) => <Header {...props} />,

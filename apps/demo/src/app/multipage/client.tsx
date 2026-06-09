@@ -13,7 +13,7 @@ import {
   WithChildren,
   DefaultComponentProps,
   Button,
-} from "@measured/puck";
+} from "@puckeditor/core";
 import { initTailwind, TailwindProcessor } from "@netlisian/tailwind";
 import {
   puckDataToCollection,
@@ -23,7 +23,7 @@ import { createMultipagePlugin } from "./components/plugin";
 import { softConfigOverrides } from "../../puck/overrides/softconfig";
 import { useDemoCollection } from "../../lib/use-demo-data";
 import { config as baseConfig } from "../../config";
-import "@measured/puck/puck.css";
+import "@puckeditor/core/puck.css";
 import "@netlisian/outline/dist/index.css";
 import {
   createMultipageRootConfig,

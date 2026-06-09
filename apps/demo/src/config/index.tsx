@@ -1,4 +1,4 @@
-import type { Config, Slot, WithPuckProps } from "@measured/puck";
+import type { Config, Slot, WithPuckProps } from "@puckeditor/core";
 import { Container } from "../components/container";
 import { Text } from "../components/text";
 import { initialData } from "./initial-data";

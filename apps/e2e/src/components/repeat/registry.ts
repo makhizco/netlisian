@@ -1,4 +1,4 @@
-import { ComponentConfig } from "@measured/puck";
+import { ComponentConfig } from "@puckeditor/core";
 
 export type RepeatComponentRegistry = Record<string, ComponentConfig<Record<string, unknown>>>;
 type RepeatRegistryListener = () => void;
