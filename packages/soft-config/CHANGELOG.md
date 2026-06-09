@@ -1,5 +1,15 @@
 # @netlisian/soft-config
 
+## 0.1.10
+
+### Patch Changes
+
+- - feat(apply-mapping): improve stability of apply-mapping
+  - fix(remodel): resolve readonly permission issue for mapped fields
+  - fix(remodel): include map prop in decomposed components
+  - refactor(root-action): remove root-config render function in favor of root-action-handler using onAction instead of useEffect
+  - perf(state): replace general setData and set calls with precise atomic, insert, remodel, replace, and setUi calls to improve performance
+
 ## 0.1.9
 
 ### Patch Changes

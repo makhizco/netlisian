@@ -1,6 +1,6 @@
 {
   "name": "@netlisian/softconfig",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -14,7 +14,10 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
-    "./src/*": { "default": "./src/*" }, "./puck": {
+    "./src/*": {
+      "default": "./src/*"
+    },
+    "./puck": {
       "import": "./dist/puck/index.mjs",
       "require": "./dist/puck/index.js"
     },
